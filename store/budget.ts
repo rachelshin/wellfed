@@ -21,7 +21,8 @@ export interface SpendingEntry {
 
 export interface BudgetSettings {
   dailyBudget: number;
-  startDate: string;   // YYYY-MM-DD — first day of tracking
+  startDate: string;          // YYYY-MM-DD — first day of tracking
+  adjustments?: Record<string, number>; // date → manual remaining override delta
 }
 
 const ENTRIES_KEY = '@budget_entries';
@@ -117,21 +118,23 @@ export function getAvailableBudget(
   settings: BudgetSettings,
   forDate: string
 ): number {
-  const { dailyBudget, startDate } = settings;
+  const { dailyBudget, startDate, adjustments = {} } = settings;
 
   const start = new Date(startDate + 'T00:00:00');
   const end = new Date(forDate + 'T00:00:00');
 
-  let rollover = 0;
+  // carry = end-of-day remaining accumulated from previous days
+  // each day's carry factors in any manual adjustment for that day
+  let carry = 0;
   const cursor = new Date(start);
   while (cursor < end) {
     const dateStr = cursor.toISOString().split('T')[0];
-    const spent = getDaySpent(entries, dateStr);
-    rollover += dailyBudget - spent;
+    const daySpent = getDaySpent(entries, dateStr);
+    carry = dailyBudget + carry - daySpent + (adjustments[dateStr] ?? 0);
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return dailyBudget + rollover;
+  return dailyBudget + carry + (adjustments[forDate] ?? 0);
 }
 
 export const CATEGORIES: Record<

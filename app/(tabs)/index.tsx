@@ -21,7 +21,7 @@ export default function BudgetTab() {
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [editingDaily, setEditingDaily] = useState(false);
+  const [editMode, setEditMode] = useState<'remaining' | 'daily' | null>(null);
   const [editValue, setEditValue] = useState('');
 
   const todayStr = today();
@@ -30,7 +30,7 @@ export default function BudgetTab() {
     const [e, s] = await Promise.all([loadEntries(user?.uid), loadSettings(user?.uid)]);
     setEntries(e);
     setSettings(s);
-    if (!s) { setEditingDaily(true); setEditValue(''); }
+    if (!s) { setEditMode('daily'); setEditValue(''); }
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -47,25 +47,49 @@ export default function BudgetTab() {
   const rollover = settings ? available - settings.dailyBudget : 0;
   const pct = available > 0 ? Math.min(spent / available, 1) : 0;
 
-  const startEdit = () => {
+  const startEditRemaining = () => {
+    if (!settings) { startEditDaily(); return; }
+    setEditValue(remaining >= 0 ? remaining.toFixed(2) : '0');
+    setEditMode('remaining');
+  };
+
+  const startEditDaily = () => {
     setEditValue(settings ? String(settings.dailyBudget) : '');
-    setEditingDaily(true);
+    setEditMode('daily');
   };
 
   const commitEdit = async () => {
     const val = parseFloat(editValue);
     if (!isNaN(val) && val > 0) {
-      const newSettings: BudgetSettings = {
-        dailyBudget: val,
-        startDate: settings?.startDate ?? today(),
-      };
-      await saveSettings(newSettings, user?.uid);
-      setSettings(newSettings);
-      setEditingDaily(false);
+      if (editMode === 'daily') {
+        const newSettings: BudgetSettings = {
+          dailyBudget: val,
+          startDate: settings?.startDate ?? today(),
+          adjustments: settings?.adjustments,
+        };
+        await saveSettings(newSettings, user?.uid);
+        setSettings(newSettings);
+        setEditMode(null);
+      } else if (editMode === 'remaining' && settings) {
+        // Compute adjustment so that remaining = val exactly
+        const baseSettings: BudgetSettings = {
+          ...settings,
+          adjustments: { ...settings.adjustments, [todayStr]: 0 },
+        };
+        const baseRemaining = getAvailableBudget(entries, baseSettings, todayStr) - spent;
+        const newAdj = val - baseRemaining;
+        const newSettings: BudgetSettings = {
+          ...settings,
+          adjustments: { ...(settings.adjustments ?? {}), [todayStr]: newAdj },
+        };
+        await saveSettings(newSettings, user?.uid);
+        setSettings(newSettings);
+        setEditMode(null);
+      }
     } else if (settings) {
-      setEditingDaily(false);
+      setEditMode(null);
     }
-    // no settings + invalid value: stay in edit mode
+    // no settings + invalid value: stay in edit mode until a valid number is entered
   };
 
   const handleDelete = (entry: SpendingEntry) => {
@@ -78,14 +102,17 @@ export default function BudgetTab() {
     ]);
   };
 
-  const encouragingLabel = () => {
+  const bigLabel = () => {
+    if (editMode === 'remaining') return 'set remaining for today';
+    if (editMode === 'daily' && !settings) return 'set your daily budget';
     if (!settings) return 'tap to set your daily budget';
-    if (editingDaily) return 'set daily budget';
     if (remaining < 0) return 'over budget today';
     if (pct < 0.5) return 'plenty left — nice work!';
     if (pct < 0.8) return 'left for today';
     return 'left — almost there!';
   };
+
+  const showBigEdit = editMode === 'remaining' || (editMode === 'daily' && !settings);
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -110,7 +137,7 @@ export default function BudgetTab() {
         <View style={s.card}>
           <Text style={s.dateLabel}>{formatDate(todayStr)}</Text>
 
-          {editingDaily ? (
+          {showBigEdit ? (
             <View style={s.bigEditRow}>
               <TextInput
                 style={s.bigInput}
@@ -128,24 +155,44 @@ export default function BudgetTab() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity onPress={startEdit} activeOpacity={0.7}>
+            <TouchableOpacity onPress={startEditRemaining} activeOpacity={0.7}>
               <Text style={[s.bigAmount, remaining < 0 && s.negative]}>
                 {settings ? `$${Math.abs(remaining).toFixed(2)}` : '—'}
               </Text>
             </TouchableOpacity>
           )}
 
-          <Text style={[s.bigLabel, remaining < 0 && !editingDaily && s.negativeLabelText]}>
-            {encouragingLabel()}
+          <Text style={[s.bigLabel, remaining < 0 && editMode !== 'remaining' && s.negativeLabelText]}>
+            {bigLabel()}
           </Text>
 
           {settings && (
             <>
               <View style={s.statRow}>
-                <TouchableOpacity style={s.stat} onPress={startEdit} activeOpacity={0.6}>
-                  <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
-                  <Text style={s.statLabel}>daily</Text>
-                </TouchableOpacity>
+                {editMode === 'daily' ? (
+                  <View style={s.stat}>
+                    <View style={s.statEditRow}>
+                      <TextInput
+                        style={s.statInput}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        keyboardType="decimal-pad"
+                        autoFocus
+                        onSubmitEditing={commitEdit}
+                        returnKeyType="done"
+                      />
+                      <TouchableOpacity onPress={commitEdit}>
+                        <Text style={s.statDone}>✓</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={s.statLabel}>daily</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={s.stat} onPress={startEditDaily} activeOpacity={0.6}>
+                    <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
+                    <Text style={s.statLabel}>daily</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={s.divider} />
                 <View style={s.stat}>
                   <Text style={[s.statVal, s.spentVal]}>${spent.toFixed(2)}</Text>
@@ -260,7 +307,12 @@ const s = StyleSheet.create({
     borderWidth: 1.5, borderColor: theme.border,
   },
   dateLabel: { fontSize: 13, color: theme.textFaint, fontWeight: '600', marginBottom: 4 },
+
   bigAmount: { fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60 },
+  negative: { color: theme.negative },
+  bigLabel: { fontSize: 15, color: theme.textFaint, marginBottom: 20, fontWeight: '500' },
+  negativeLabelText: { color: theme.negative },
+
   bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
     fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60,
@@ -271,9 +323,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8,
   },
   bigEditDoneText: { color: theme.card, fontSize: 20, fontWeight: '700' },
-  negative: { color: theme.negative },
-  bigLabel: { fontSize: 15, color: theme.textFaint, marginBottom: 20, fontWeight: '500' },
-  negativeLabelText: { color: theme.negative },
 
   statRow: { flexDirection: 'row', marginBottom: 16, backgroundColor: theme.bgTint, borderRadius: 14, padding: 14 },
   stat: { flex: 1, alignItems: 'center' },
@@ -281,6 +330,13 @@ const s = StyleSheet.create({
   spentVal: { color: '#F97316' },
   statLabel: { fontSize: 11, color: theme.textFaint, marginTop: 2, fontWeight: '600' },
   divider: { width: 1, backgroundColor: theme.border, marginVertical: 2 },
+
+  statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statInput: {
+    fontSize: 16, fontWeight: '800', color: theme.textDark,
+    borderWidth: 0, padding: 0, minWidth: 48, textAlign: 'center',
+  },
+  statDone: { fontSize: 14, color: theme.primary, fontWeight: '800' },
 
   rolloverBadge: { backgroundColor: theme.primaryLight, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 14 },
   rolloverBadgeNeg: { backgroundColor: '#FEF3C7', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 14 },
