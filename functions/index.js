@@ -1,9 +1,12 @@
-const functions = require('firebase-functions');
+const { setGlobalOptions } = require('firebase-functions');
+const { onRequest } = require('firebase-functions/https');
 const { default: Anthropic } = require('@anthropic-ai/sdk');
+
+setGlobalOptions({ maxInstances: 10 });
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-exports.generateRecipes = functions.https.onRequest(async (req, res) => {
+exports.generateRecipes = onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
