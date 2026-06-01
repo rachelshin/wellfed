@@ -17,17 +17,17 @@ const theme = {
   border: '#E5DDD5',
 
   // Text
-  textDark: '#3D2E27',
-  textMuted: '#8B7D74',
-  textFaint: '#B5A99E',
-  placeholder: '#C4B5A8',
+  textDark: '#2E1F35',
+  textMuted: '#7A6B82',
+  textFaint: '#B5A8BC',
+  placeholder: '#C4B8CA',
 
   // Semantic
   negative: '#C0392B',
   warning: '#D97706',
 
   // Modal
-  backdrop: 'rgba(40,28,22,0.45)',
+  backdrop: 'rgba(28,18,35,0.5)',
   handle: '#E5DDD5',
 
   // Tab bar
