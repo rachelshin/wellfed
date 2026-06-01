@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Alert,
+  RefreshControl, Alert, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -11,7 +11,6 @@ import {
   today, formatDate, SpendingEntry, BudgetSettings,
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
-import SetBudgetModal from '../../components/budget/SetBudgetModal';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -21,8 +20,9 @@ export default function BudgetTab() {
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [showBudget, setShowBudget] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [editingDaily, setEditingDaily] = useState(false);
+  const [editValue, setEditValue] = useState('');
 
   const todayStr = today();
 
@@ -30,7 +30,7 @@ export default function BudgetTab() {
     const [e, s] = await Promise.all([loadEntries(user?.uid), loadSettings(user?.uid)]);
     setEntries(e);
     setSettings(s);
-    if (!s) setShowBudget(true);
+    if (!s) { setEditingDaily(true); setEditValue(''); }
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -47,6 +47,27 @@ export default function BudgetTab() {
   const rollover = settings ? available - settings.dailyBudget : 0;
   const pct = available > 0 ? Math.min(spent / available, 1) : 0;
 
+  const startEdit = () => {
+    setEditValue(settings ? String(settings.dailyBudget) : '');
+    setEditingDaily(true);
+  };
+
+  const commitEdit = async () => {
+    const val = parseFloat(editValue);
+    if (!isNaN(val) && val > 0) {
+      const newSettings: BudgetSettings = {
+        dailyBudget: val,
+        startDate: settings?.startDate ?? today(),
+      };
+      await saveSettings(newSettings, user?.uid);
+      setSettings(newSettings);
+      setEditingDaily(false);
+    } else if (settings) {
+      setEditingDaily(false);
+    }
+    // no settings + invalid value: stay in edit mode
+  };
+
   const handleDelete = (entry: SpendingEntry) => {
     Alert.alert('Remove entry?', `"${entry.description || CATEGORIES[entry.category].label}"`, [
       { text: 'Keep it', style: 'cancel' },
@@ -58,7 +79,8 @@ export default function BudgetTab() {
   };
 
   const encouragingLabel = () => {
-    if (!settings) return '';
+    if (!settings) return 'tap to set your daily budget';
+    if (editingDaily) return 'set daily budget';
     if (remaining < 0) return 'over budget today';
     if (pct < 0.5) return 'plenty left — nice work!';
     if (pct < 0.8) return 'left for today';
@@ -72,85 +94,86 @@ export default function BudgetTab() {
           <Text style={s.headerEyebrow}>Today</Text>
           <Text style={s.headerTitle}>Well Fed 💸</Text>
         </View>
-        <View style={s.headerRight}>
-          {isGuest && (
-            <TouchableOpacity onPress={exitGuestMode} style={s.signInBtn}>
-              <Text style={s.signInBtnText}>Sign in</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => setShowBudget(true)} style={s.gearBtn}>
-            <Text style={s.gearEmoji}>⚙️</Text>
+        {isGuest && (
+          <TouchableOpacity onPress={exitGuestMode} style={s.signInBtn}>
+            <Text style={s.signInBtnText}>Sign in</Text>
           </TouchableOpacity>
-        </View>
+        )}
       </View>
 
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
+        keyboardShouldPersistTaps="handled"
       >
-        {settings ? (
-          <View style={s.card}>
-            <Text style={s.dateLabel}>{formatDate(todayStr)}</Text>
-            <Text style={[s.bigAmount, remaining < 0 && s.negative]}>
-              ${Math.abs(remaining).toFixed(2)}
-            </Text>
-            <Text style={[s.bigLabel, remaining < 0 && s.negativeLabelText]}>
-              {encouragingLabel()}
-            </Text>
+        <View style={s.card}>
+          <Text style={s.dateLabel}>{formatDate(todayStr)}</Text>
 
-            <View style={s.statRow}>
-              <View style={s.stat}>
-                <Text style={s.statVal}>${available.toFixed(2)}</Text>
-                <Text style={s.statLabel}>available</Text>
-              </View>
-              <View style={s.divider} />
-              <View style={s.stat}>
-                <Text style={[s.statVal, s.spentVal]}>${spent.toFixed(2)}</Text>
-                <Text style={s.statLabel}>spent</Text>
-              </View>
-              <View style={s.divider} />
-              <View style={s.stat}>
-                <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
-                <Text style={s.statLabel}>daily</Text>
-              </View>
-            </View>
+          {editingDaily ? (
+            <TextInput
+              style={s.bigInput}
+              value={editValue}
+              onChangeText={setEditValue}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
+              autoFocus
+              onSubmitEditing={commitEdit}
+              onBlur={commitEdit}
+              returnKeyType="done"
+            />
+          ) : (
+            <TouchableOpacity onPress={startEdit} activeOpacity={0.7}>
+              <Text style={[s.bigAmount, remaining < 0 && s.negative]}>
+                {settings ? `$${Math.abs(remaining).toFixed(2)}` : '—'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
-            {rollover > 0 && (
-              <View style={s.rolloverBadge}>
-                <Text style={s.rolloverText}>
-                  🎉 You saved ${rollover.toFixed(2)} from previous days!
-                </Text>
-              </View>
-            )}
-            {rollover < 0 && (
-              <View style={s.rolloverBadgeNeg}>
-                <Text style={s.rolloverTextNeg}>
-                  💪 Went a bit over — you've got this today!
-                </Text>
-              </View>
-            )}
+          <Text style={[s.bigLabel, remaining < 0 && !editingDaily && s.negativeLabelText]}>
+            {encouragingLabel()}
+          </Text>
 
-            <View style={s.progressTrack}>
-              <View style={[
-                s.progressFill,
-                { width: `${pct * 100}%` },
-                pct >= 1 && s.progressOver,
-              ]} />
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity style={s.emptyCard} onPress={() => setShowBudget(true)}>
-            <Text style={s.emptyEmoji}>💸</Text>
-            <Text style={s.emptyTitle}>Ready to start?</Text>
-            <Text style={s.emptySub}>
-              Set a daily budget and watch your savings grow — unused money rolls over every day!
-            </Text>
-            <View style={s.emptyBtn}>
-              <Text style={s.emptyBtnText}>Set my budget ✨</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+          {settings && (
+            <>
+              <View style={s.statRow}>
+                <TouchableOpacity style={s.stat} onPress={startEdit} activeOpacity={0.6}>
+                  <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
+                  <Text style={s.statLabel}>daily</Text>
+                </TouchableOpacity>
+                <View style={s.divider} />
+                <View style={s.stat}>
+                  <Text style={[s.statVal, s.spentVal]}>${spent.toFixed(2)}</Text>
+                  <Text style={s.statLabel}>spent</Text>
+                </View>
+              </View>
+
+              {rollover > 0 && (
+                <View style={s.rolloverBadge}>
+                  <Text style={s.rolloverText}>
+                    🎉 You saved ${rollover.toFixed(2)} from previous days!
+                  </Text>
+                </View>
+              )}
+              {rollover < 0 && (
+                <View style={s.rolloverBadgeNeg}>
+                  <Text style={s.rolloverTextNeg}>
+                    💪 Went a bit over — you've got this today!
+                  </Text>
+                </View>
+              )}
+
+              <View style={s.progressTrack}>
+                <View style={[
+                  s.progressFill,
+                  { width: `${pct * 100}%` },
+                  pct >= 1 && s.progressOver,
+                ]} />
+              </View>
+            </>
+          )}
+        </View>
 
         <Text style={s.sectionTitle}>Today's Spending</Text>
 
@@ -192,28 +215,20 @@ export default function BudgetTab() {
         <View style={{ height: 110 }} />
       </ScrollView>
 
-      <TouchableOpacity
-        style={[s.fab, { bottom: insets.bottom + 72 }]}
-        onPress={() => (settings ? setShowAdd(true) : setShowBudget(true))}
-        activeOpacity={0.85}
-      >
-        <Text style={s.fabText}>+</Text>
-      </TouchableOpacity>
+      {settings && (
+        <TouchableOpacity
+          style={[s.fab, { bottom: insets.bottom + 72 }]}
+          onPress={() => setShowAdd(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={s.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
 
       <AddEntryModal
         visible={showAdd}
         onClose={() => setShowAdd(false)}
         onAdd={async (entry) => { setEntries(await addEntry(entries, entry, user?.uid)); setShowAdd(false); }}
-      />
-      <SetBudgetModal
-        visible={showBudget}
-        current={settings}
-        onClose={() => setShowBudget(false)}
-        onSave={async (newSettings) => {
-          await saveSettings(newSettings, user?.uid);
-          setSettings(newSettings);
-          setShowBudget(false);
-        }}
       />
     </View>
   );
@@ -228,11 +243,8 @@ const s = StyleSheet.create({
   },
   headerEyebrow: { fontSize: 12, fontWeight: '700', color: theme.textFaint, letterSpacing: 0.5, textTransform: 'uppercase' },
   headerTitle: { fontSize: 26, fontWeight: '900', color: theme.textDark },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
-  signInBtn: { backgroundColor: theme.primaryLight, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  signInBtn: { backgroundColor: theme.primaryLight, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 2 },
   signInBtnText: { color: theme.primary, fontWeight: '800', fontSize: 13 },
-  gearBtn: { padding: 4 },
-  gearEmoji: { fontSize: 22 },
 
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
@@ -245,6 +257,10 @@ const s = StyleSheet.create({
   },
   dateLabel: { fontSize: 13, color: theme.textFaint, fontWeight: '600', marginBottom: 4 },
   bigAmount: { fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60 },
+  bigInput: {
+    fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60,
+    borderWidth: 0, padding: 0, margin: 0,
+  },
   negative: { color: theme.negative },
   bigLabel: { fontSize: 15, color: theme.textFaint, marginBottom: 20, fontWeight: '500' },
   negativeLabelText: { color: theme.negative },
@@ -264,19 +280,6 @@ const s = StyleSheet.create({
   progressTrack: { height: 6, backgroundColor: theme.border, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: theme.primary, borderRadius: 3 },
   progressOver: { backgroundColor: theme.negative },
-
-  emptyCard: {
-    backgroundColor: theme.card, borderRadius: 24, padding: 32, alignItems: 'center',
-    marginBottom: 22, borderWidth: 2, borderColor: theme.border, borderStyle: 'dashed',
-  },
-  emptyEmoji: { fontSize: 48, marginBottom: 14 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: theme.textDark, marginBottom: 8 },
-  emptySub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 22, marginBottom: 20 },
-  emptyBtn: {
-    backgroundColor: theme.primary, borderRadius: 20, paddingHorizontal: 24, paddingVertical: 12,
-    shadowColor: theme.primaryShadow, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
-  },
-  emptyBtnText: { color: theme.card, fontWeight: '800', fontSize: 15 },
 
   sectionTitle: { fontSize: 15, fontWeight: '800', color: theme.textDark, marginBottom: 12 },
 

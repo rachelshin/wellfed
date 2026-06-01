@@ -1,39 +1,39 @@
 const theme = {
   // Backgrounds
-  bg: '#FAF8F4',
-  bgTint: '#F3EDE5',
-  card: '#ffffff',
+  bg: '#FEF6F0',        // petal white
+  bgTint: '#FAEAE0',
+  card: '#FFFFFF',
 
-  // Primary — soft mauve/lavender
-  primary: '#9B80A8',
-  primaryLight: '#EDE5F2',
-  primaryShadow: '#9B80A8',
+  // Primary — soft violet
+  primary: '#A78BDB',
+  primaryLight: '#EDE3F8',
+  primaryShadow: '#A78BDB',
 
-  // Accent — sage green, used sparingly for health/freshness hints
-  accent: '#7AAB87',
-  accentLight: '#E0EDE4',
+  // Accent — blush
+  accent: '#F7A8C4',
+  accentLight: '#FDE0EC',
 
   // Borders
-  border: '#E5DDD5',
+  border: '#F0DDD5',
 
-  // Text
-  textDark: '#2E1F35',
-  textMuted: '#7A6B82',
-  textFaint: '#B5A8BC',
-  placeholder: '#C4B8CA',
+  // Text — deep plum
+  textDark: '#2B2040',
+  textMuted: '#6B5070',
+  textFaint: '#A890B4',
+  placeholder: '#C4AED0',
 
   // Semantic
   negative: '#C0392B',
-  warning: '#D97706',
+  warning: '#F4CF6E',   // chamomile
 
   // Modal
-  backdrop: 'rgba(28,18,35,0.5)',
-  handle: '#E5DDD5',
+  backdrop: 'rgba(43,32,64,0.5)',
+  handle: '#F0DDD5',
 
   // Tab bar
-  tabActive: '#9B80A8',
-  tabInactive: '#B5A99E',
-  tabBorder: '#E5DDD5',
+  tabActive: '#A78BDB',
+  tabInactive: '#A890B4',
+  tabBorder: '#F0DDD5',
 };
 
 export default theme;
