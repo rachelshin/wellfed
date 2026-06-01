@@ -4,10 +4,10 @@ const theme = {
   bgTint: '#F3EDE5',
   card: '#ffffff',
 
-  // Primary — warm terracotta/clay
-  primary: '#C4775A',
-  primaryLight: '#F0DDD5',
-  primaryShadow: '#C4775A',
+  // Primary — soft mauve/lavender
+  primary: '#9B80A8',
+  primaryLight: '#EDE5F2',
+  primaryShadow: '#9B80A8',
 
   // Accent — sage green, used sparingly for health/freshness hints
   accent: '#7AAB87',
@@ -31,7 +31,7 @@ const theme = {
   handle: '#E5DDD5',
 
   // Tab bar
-  tabActive: '#C4775A',
+  tabActive: '#9B80A8',
   tabInactive: '#B5A99E',
   tabBorder: '#E5DDD5',
 };

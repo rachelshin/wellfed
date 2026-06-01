@@ -33,7 +33,7 @@ export default function RecipesTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<AIRecipe | null>(null);
 
-  const hasApiKey = !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+  const hasApiKey = true;
 
   const load = async () => {
     const items = await loadPantry(user?.uid);
