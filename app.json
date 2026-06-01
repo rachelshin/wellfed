@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "food-budget",
+    "name": "Food Budget",
     "slug": "food-budget",
+    "scheme": "food-budget",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +20,20 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Food Budget to access your photos to scan receipts.",
+          "cameraPermission": "Allow Food Budget to use the camera to scan receipts."
+        }
+      ]
+    ]
   }
 }
