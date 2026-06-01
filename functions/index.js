@@ -5,7 +5,9 @@ const { default: Anthropic } = require('@anthropic-ai/sdk');
 setGlobalOptions({ maxInstances: 10 });
 
 exports.generateRecipes = onRequest(async (req, res) => {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('API key present:', !!apiKey, 'length:', apiKey?.length, 'first10:', apiKey?.substring(0, 10));
+  const client = new Anthropic({ apiKey });
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
