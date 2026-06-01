@@ -13,11 +13,13 @@ exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   if (!pantryItems?.length) { res.status(400).json({ error: 'pantryItems required' }); return; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('key length:', apiKey?.length);
   if (!apiKey) {
     res.status(500).json({ error: 'API key not configured' });
     return;
   }
 
+  try {
   const client = new Anthropic({ apiKey });
 
   const prompt = `I have these items in my pantry: ${pantryItems.join(', ')}.
@@ -58,4 +60,8 @@ Mark "have": true only for ingredients clearly matching my pantry list. Write fr
   if (!jsonMatch) { res.status(500).json({ error: 'No JSON in response' }); return; }
 
   res.json(JSON.parse(jsonMatch[0]));
+  } catch (e) {
+    console.error('Function error:', e.message, e.stack);
+    res.status(500).json({ error: e.message });
+  }
 });
