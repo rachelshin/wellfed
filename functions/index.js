@@ -1,13 +1,7 @@
-const { setGlobalOptions } = require('firebase-functions');
-const { onRequest } = require('firebase-functions/https');
+const functions = require('firebase-functions');
 const { default: Anthropic } = require('@anthropic-ai/sdk');
 
-setGlobalOptions({ maxInstances: 10 });
-
-exports.generateRecipes = onRequest(async (req, res) => {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  console.log('API key present:', !!apiKey, 'length:', apiKey?.length, 'first10:', apiKey?.substring(0, 10));
-  const client = new Anthropic({ apiKey });
+exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -17,6 +11,14 @@ exports.generateRecipes = onRequest(async (req, res) => {
 
   const { pantryItems } = req.body;
   if (!pantryItems?.length) { res.status(400).json({ error: 'pantryItems required' }); return; }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: 'API key not configured' });
+    return;
+  }
+
+  const client = new Anthropic({ apiKey });
 
   const prompt = `I have these items in my pantry: ${pantryItems.join(', ')}.
 
