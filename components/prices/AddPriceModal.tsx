@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PriceEntry, Unit, UNITS } from '../../store/prices';
+import theme from '../../lib/theme';
 
 interface Props {
   visible: boolean;
@@ -79,24 +80,24 @@ export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Prop
 
             <Text style={s.label}>Item Name *</Text>
             <TextInput style={s.input} value={displayName} onChangeText={setDisplayName}
-              placeholder="e.g. Whole Milk" placeholderTextColor="#D1C4D4" autoFocus />
+              placeholder="e.g. Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
 
             <Text style={s.label}>Brand</Text>
             <TextInput style={s.input} value={brand} onChangeText={setBrand}
-              placeholder="e.g. Organic Valley" placeholderTextColor="#D1C4D4" />
+              placeholder="e.g. Organic Valley" placeholderTextColor={theme.placeholder} />
 
             <Text style={s.label}>Store *</Text>
             <TextInput style={s.input} value={store} onChangeText={setStore}
-              placeholder="e.g. Trader Joe's" placeholderTextColor="#D1C4D4" />
+              placeholder="e.g. Trader Joe's" placeholderTextColor={theme.placeholder} />
 
             <Text style={s.label}>Price ($) *</Text>
             <TextInput style={s.input} value={price} onChangeText={setPrice}
-              keyboardType="decimal-pad" placeholder="e.g. 4.99" placeholderTextColor="#D1C4D4" />
+              keyboardType="decimal-pad" placeholder="e.g. 4.99" placeholderTextColor={theme.placeholder} />
 
             <Text style={s.label}>Size & Unit</Text>
             <View style={s.sizeRow}>
               <TextInput style={[s.input, s.sizeInput]} value={size} onChangeText={setSize}
-                keyboardType="decimal-pad" placeholder="e.g. 64" placeholderTextColor="#D1C4D4" />
+                keyboardType="decimal-pad" placeholder="e.g. 64" placeholderTextColor={theme.placeholder} />
               <TouchableOpacity style={s.unitBtn} onPress={() => setShowUnitPicker(!showUnitPicker)}>
                 <Text style={s.unitBtnText}>{unit} ▾</Text>
               </TouchableOpacity>
@@ -128,42 +129,39 @@ export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Prop
 }
 
 const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(30,15,40,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: theme.card, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     padding: 24, paddingTop: 16, maxHeight: '92%',
   },
-  handle: {
-    width: 40, height: 4, backgroundColor: '#F3E8FF',
-    borderRadius: 2, alignSelf: 'center', marginBottom: 20,
-  },
-  title: { fontSize: 22, fontWeight: '800', color: '#1E1B4B', marginBottom: 20 },
+  handle: { width: 40, height: 4, backgroundColor: theme.handle, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: '800', color: theme.textDark, marginBottom: 20 },
   label: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: {
-    borderWidth: 2, borderColor: '#FCE7F3', borderRadius: 14,
-    padding: 14, fontSize: 16, color: '#1E1B4B',
-    backgroundColor: '#FFF5F8', marginBottom: 16,
+    borderWidth: 2, borderColor: theme.border, borderRadius: 14,
+    padding: 14, fontSize: 16, color: theme.textDark,
+    backgroundColor: theme.bgTint, marginBottom: 16,
   },
   sizeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   sizeInput: { flex: 1, marginBottom: 0 },
   unitBtn: {
-    borderWidth: 2, borderColor: '#FCE7F3', borderRadius: 14,
-    paddingHorizontal: 18, justifyContent: 'center', backgroundColor: '#FFF5F8',
+    borderWidth: 2, borderColor: theme.border, borderRadius: 14,
+    paddingHorizontal: 18, justifyContent: 'center', backgroundColor: theme.bgTint,
   },
-  unitBtnText: { fontSize: 15, fontWeight: '700', color: '#1E1B4B' },
+  unitBtnText: { fontSize: 15, fontWeight: '700', color: theme.textDark },
   unitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   unitChip: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 2, borderColor: '#FCE7F3', backgroundColor: '#FFF5F8',
+    borderWidth: 2, borderColor: theme.border, backgroundColor: theme.bgTint,
   },
-  unitChipActive: { backgroundColor: '#FFD6EA', borderColor: '#FF6B9D' },
-  unitChipText: { fontSize: 13, color: '#C4B5C8', fontWeight: '600' },
-  unitChipTextActive: { color: '#FF6B9D', fontWeight: '800' },
+  unitChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  unitChipText: { fontSize: 13, color: theme.textFaint, fontWeight: '600' },
+  unitChipTextActive: { color: theme.primary, fontWeight: '800' },
   addBtn: {
-    backgroundColor: '#FF6B9D', borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 8, marginBottom: 12,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
+    backgroundColor: theme.primary, borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 8, marginBottom: 12,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
   },
-  addBtnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  addBtnText: { color: theme.card, fontSize: 17, fontWeight: '800' },
   cancelBtn: { padding: 12, alignItems: 'center' },
-  cancelText: { color: '#C4B5C8', fontSize: 15 },
+  cancelText: { color: theme.textFaint, fontSize: 15 },
 });

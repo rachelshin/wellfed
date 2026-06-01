@@ -10,6 +10,7 @@ import {
 } from '../../store/pantry';
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import { useAuth } from '../../context/auth';
+import theme from '../../lib/theme';
 
 export default function PantryTab() {
   const insets = useSafeAreaInsets();
@@ -38,7 +39,6 @@ export default function PantryTab() {
     ? items.filter((i) => i.itemName.includes(search.toLowerCase().trim()))
     : items;
 
-  // Group alphabetically
   const grouped = filtered
     .slice()
     .sort((a, b) => a.displayName.localeCompare(b.displayName))
@@ -59,16 +59,12 @@ export default function PantryTab() {
           <Text style={s.headerTitle}>Pantry 🥫</Text>
         </View>
         {items.length > 0 && (
-          <TouchableOpacity
-            style={s.recipesBtn}
-            onPress={() => router.push('/(tabs)/recipes')}
-          >
+          <TouchableOpacity style={s.recipesBtn} onPress={() => router.push('/(tabs)/recipes')}>
             <Text style={s.recipesBtnText}>🍳 Recipes</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Stats bar */}
       {items.length > 0 && (
         <View style={s.statsBar}>
           <View style={s.statChip}>
@@ -82,7 +78,6 @@ export default function PantryTab() {
         </View>
       )}
 
-      {/* Search */}
       <View style={s.searchWrap}>
         <Text style={s.searchIcon}>🔍</Text>
         <TextInput
@@ -90,7 +85,7 @@ export default function PantryTab() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search your pantry…"
-          placeholderTextColor="#C4B5C8"
+          placeholderTextColor={theme.placeholder}
           returnKeyType="search"
         />
         {search.length > 0 && (
@@ -103,7 +98,7 @@ export default function PantryTab() {
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B9D" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
         {items.length === 0 && (
           <View style={s.empty}>
@@ -174,74 +169,70 @@ export default function PantryTab() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFF5F8' },
+  root: { flex: 1, backgroundColor: theme.bg },
   header: {
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 10, paddingTop: 6,
   },
-  headerEyebrow: { fontSize: 12, fontWeight: '700', color: '#C4B5C8', letterSpacing: 0.5, textTransform: 'uppercase' },
-  headerTitle: { fontSize: 26, fontWeight: '900', color: '#1E1B4B' },
-  recipesBtn: {
-    backgroundColor: '#FFD6EA', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 2,
-  },
-  recipesBtnText: { color: '#FF6B9D', fontWeight: '800', fontSize: 14 },
+  headerEyebrow: { fontSize: 12, fontWeight: '700', color: theme.textFaint, letterSpacing: 0.5, textTransform: 'uppercase' },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: theme.textDark },
+  recipesBtn: { backgroundColor: theme.primaryLight, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 2 },
+  recipesBtnText: { color: theme.primary, fontWeight: '800', fontSize: 14 },
 
-  statsBar: {
-    flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10, flexWrap: 'wrap',
-  },
-  statChip: { backgroundColor: '#F3E8FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  statChipReceipt: { backgroundColor: '#E0F2FE' },
-  statChipText: { fontSize: 12, fontWeight: '700', color: '#A78BFA' },
-  statChipReceiptText: { color: '#0891B2' },
+  statsBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10, flexWrap: 'wrap' },
+  statChip: { backgroundColor: theme.bgTint, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  statChipReceipt: { backgroundColor: '#E0F2E8' },
+  statChipText: { fontSize: 12, fontWeight: '700', color: theme.primary },
+  statChipReceiptText: { color: '#3A7A5A' },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
-    paddingHorizontal: 14, borderWidth: 2, borderColor: '#FCE7F3',
+    backgroundColor: theme.card, borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
+    paddingHorizontal: 14, borderWidth: 2, borderColor: theme.border,
   },
   searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, paddingVertical: 12, color: '#1E1B4B' },
-  clearIcon: { fontSize: 16, color: '#C4B5C8', padding: 4 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 12, color: theme.textDark },
+  clearIcon: { fontSize: 16, color: theme.textFaint, padding: 4 },
 
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
 
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 24 },
   emptyEmoji: { fontSize: 60, marginBottom: 16 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: '#1E1B4B', marginBottom: 8 },
+  emptyTitle: { fontSize: 22, fontWeight: '900', color: theme.textDark, marginBottom: 8 },
   emptySub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 22 },
-  emptyText: { fontSize: 15, color: '#C4B5C8', fontWeight: '600' },
+  emptyText: { fontSize: 15, color: theme.textFaint, fontWeight: '600' },
 
   groupLetter: {
-    fontSize: 12, fontWeight: '800', color: '#C4B5C8', letterSpacing: 1,
+    fontSize: 12, fontWeight: '800', color: theme.textFaint, letterSpacing: 1,
     textTransform: 'uppercase', marginTop: 16, marginBottom: 6, paddingLeft: 4,
   },
 
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 6,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.05, shadowRadius: 6,
+    backgroundColor: theme.card, borderRadius: 14, padding: 14, marginBottom: 6,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.05, shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 }, elevation: 1,
-    borderWidth: 1.5, borderColor: '#FCE7F3',
+    borderWidth: 1.5, borderColor: theme.border,
   },
   itemIcon: {
-    width: 38, height: 38, borderRadius: 12, backgroundColor: '#FFF5F8',
+    width: 38, height: 38, borderRadius: 12, backgroundColor: theme.bgTint,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   itemSourceEmoji: { fontSize: 18 },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 15, fontWeight: '700', color: '#1E1B4B' },
-  itemQty: { fontSize: 12, color: '#C4B5C8', marginTop: 2, fontWeight: '500' },
-  itemDate: { fontSize: 11, color: '#E5D5E5' },
+  itemName: { fontSize: 15, fontWeight: '700', color: theme.textDark },
+  itemQty: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
+  itemDate: { fontSize: 11, color: theme.border },
 
-  hint: { textAlign: 'center', fontSize: 12, color: '#E8D5E8', marginTop: 8 },
+  hint: { textAlign: 'center', fontSize: 12, color: theme.border, marginTop: 8 },
 
   fab: {
     position: 'absolute', right: 20,
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#FF6B9D', alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FF6B9D', shadowOpacity: 0.5, shadowRadius: 16,
+    backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center',
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.4, shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  fabText: { color: theme.card, fontSize: 30, fontWeight: '300', lineHeight: 34 },
 });

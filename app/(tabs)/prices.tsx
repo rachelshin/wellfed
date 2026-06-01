@@ -14,6 +14,7 @@ import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pa
 import AddPriceModal from '../../components/prices/AddPriceModal';
 import ReceiptScanModal from '../../components/prices/ReceiptScanModal';
 import { useAuth } from '../../context/auth';
+import theme from '../../lib/theme';
 
 export default function PricesTab() {
   const insets = useSafeAreaInsets();
@@ -72,7 +73,7 @@ export default function PricesTab() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search your items…"
-          placeholderTextColor="#C4B5C8"
+          placeholderTextColor={theme.placeholder}
           returnKeyType="search"
         />
         {search.length > 0 && (
@@ -85,7 +86,7 @@ export default function PricesTab() {
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B9D" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
         {prices.length === 0 && (
           <View style={s.empty}>
@@ -188,12 +189,10 @@ export default function PricesTab() {
         visible={showScan}
         onClose={() => setShowScan(false)}
         onAddItems={async (newItems) => {
-          // Add to price tracker
           let current = prices;
           for (const item of newItems) current = await addPrice(current, item, user?.uid);
           setPrices(current);
 
-          // Also sync to pantry so recipes can use them
           const pantry = await loadPantry(user?.uid);
           await addPantryItemsFromReceipt(
             pantry,
@@ -215,83 +214,76 @@ export default function PricesTab() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFF5F8' },
+  root: { flex: 1, backgroundColor: theme.bg },
   header: {
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 12, paddingTop: 6,
   },
-  headerEyebrow: { fontSize: 12, fontWeight: '700', color: '#C4B5C8', letterSpacing: 0.5, textTransform: 'uppercase' },
-  headerTitle: { fontSize: 26, fontWeight: '900', color: '#1E1B4B' },
-  scanBtn: {
-    backgroundColor: '#FFD6EA', borderRadius: 22, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 2,
-  },
-  scanBtnText: { color: '#FF6B9D', fontWeight: '800', fontSize: 14 },
+  headerEyebrow: { fontSize: 12, fontWeight: '700', color: theme.textFaint, letterSpacing: 0.5, textTransform: 'uppercase' },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: theme.textDark },
+  scanBtn: { backgroundColor: theme.primaryLight, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 2 },
+  scanBtnText: { color: theme.primary, fontWeight: '800', fontSize: 14 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
-    paddingHorizontal: 14, borderWidth: 2, borderColor: '#FCE7F3',
+    backgroundColor: theme.card, borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
+    paddingHorizontal: 14, borderWidth: 2, borderColor: theme.border,
   },
   searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, paddingVertical: 12, color: '#1E1B4B' },
-  clearIcon: { fontSize: 16, color: '#C4B5C8', padding: 4 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 12, color: theme.textDark },
+  clearIcon: { fontSize: 16, color: theme.textFaint, padding: 4 },
 
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
 
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 24 },
   emptyEmoji: { fontSize: 52, marginBottom: 16 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: '#1E1B4B', marginBottom: 8 },
+  emptyTitle: { fontSize: 22, fontWeight: '900', color: theme.textDark, marginBottom: 8 },
   emptySub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 22 },
-  emptyText: { fontSize: 15, color: '#C4B5C8', fontWeight: '600' },
+  emptyText: { fontSize: 15, color: theme.textFaint, fontWeight: '600' },
 
   card: {
-    backgroundColor: '#fff', borderRadius: 18, marginBottom: 10,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.07, shadowRadius: 10,
+    backgroundColor: theme.card, borderRadius: 18, marginBottom: 10,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.06, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 2,
-    overflow: 'hidden', borderWidth: 1.5, borderColor: '#FCE7F3',
+    overflow: 'hidden', borderWidth: 1.5, borderColor: theme.border,
   },
-  cardHeader: {
-    flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'space-between',
-  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'space-between' },
   cardTitleWrap: { flex: 1 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1E1B4B' },
-  cardCount: { fontSize: 12, color: '#C4B5C8', marginTop: 2, fontWeight: '500' },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark },
+  cardCount: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bestWrap: { alignItems: 'flex-end' },
-  bestPrice: { fontSize: 15, fontWeight: '800', color: '#FF6B9D' },
-  bestStore: { fontSize: 11, color: '#C4B5C8' },
-  chevron: { fontSize: 11, color: '#C4B5C8' },
+  bestPrice: { fontSize: 15, fontWeight: '800', color: theme.primary },
+  bestStore: { fontSize: 11, color: theme.textFaint },
+  chevron: { fontSize: 11, color: theme.textFaint },
 
-  cardBody: { borderTopWidth: 1.5, borderTopColor: '#FCE7F3', paddingHorizontal: 12, paddingBottom: 12 },
+  cardBody: { borderTopWidth: 1.5, borderTopColor: theme.border, paddingHorizontal: 12, paddingBottom: 12 },
 
   entryRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, marginTop: 8, backgroundColor: '#FFF5F8',
+    paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, marginTop: 8, backgroundColor: theme.bgTint,
   },
-  entryRowBest: { backgroundColor: '#FFD6EA' },
+  entryRowBest: { backgroundColor: theme.primaryLight },
   entryLeft: { flex: 1 },
-  bestBadge: {
-    backgroundColor: '#FF6B9D', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
-    alignSelf: 'flex-start', marginBottom: 4,
-  },
-  bestBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
-  entryStore: { fontSize: 14, fontWeight: '700', color: '#1E1B4B' },
+  bestBadge: { backgroundColor: theme.primary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 4 },
+  bestBadgeText: { fontSize: 10, fontWeight: '800', color: theme.card },
+  entryStore: { fontSize: 14, fontWeight: '700', color: theme.textDark },
   entryBrand: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
-  entrySize: { fontSize: 12, color: '#C4B5C8', marginTop: 2 },
+  entrySize: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
   entryRight: { alignItems: 'flex-end' },
   entryPPU: { fontSize: 14, fontWeight: '800', color: '#9CA3AF' },
-  entryPPUBest: { color: '#FF6B9D' },
-  entryDate: { fontSize: 11, color: '#E5D5E5', marginTop: 2 },
+  entryPPUBest: { color: theme.primary },
+  entryDate: { fontSize: 11, color: theme.border, marginTop: 2 },
 
-  longPressHint: { textAlign: 'center', fontSize: 11, color: '#E8D5E8', marginTop: 8 },
+  longPressHint: { textAlign: 'center', fontSize: 11, color: theme.border, marginTop: 8 },
 
   fab: {
     position: 'absolute', right: 20,
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#FF6B9D', alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FF6B9D', shadowOpacity: 0.5, shadowRadius: 16,
+    backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center',
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.4, shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  fabText: { color: theme.card, fontSize: 30, fontWeight: '300', lineHeight: 34 },
 });

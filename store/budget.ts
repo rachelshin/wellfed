@@ -138,7 +138,7 @@ export const CATEGORIES: Record<
   Category,
   { label: string; emoji: string; color: string }
 > = {
-  groceries: { label: 'Groceries', emoji: '🛒', color: '#FF6B9D' },
+  groceries: { label: 'Groceries', emoji: '🛒', color: '#4A7C59' },
   delivery: { label: 'Delivery', emoji: '🚚', color: '#3B82F6' },
   'fast-food': { label: 'Fast Food', emoji: '🍔', color: '#F97316' },
   restaurants: { label: 'Restaurants', emoji: '🍽️', color: '#A78BFA' },

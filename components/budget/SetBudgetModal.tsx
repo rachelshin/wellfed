@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BudgetSettings, today } from '../../store/budget';
+import theme from '../../lib/theme';
 
 interface Props {
   visible: boolean;
@@ -55,7 +56,7 @@ export default function SetBudgetModal({ visible, current, onClose, onSave }: Pr
               onChangeText={setAmount}
               keyboardType="decimal-pad"
               placeholder="$30"
-              placeholderTextColor="#D1C4D4"
+              placeholderTextColor={theme.placeholder}
               autoFocus
             />
 
@@ -76,31 +77,25 @@ export default function SetBudgetModal({ visible, current, onClose, onSave }: Pr
 }
 
 const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(30,15,40,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 28,
-    paddingTop: 16,
+    backgroundColor: theme.card, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 28, paddingTop: 16,
   },
-  handle: {
-    width: 40, height: 4, backgroundColor: '#F3E8FF',
-    borderRadius: 2, alignSelf: 'center', marginBottom: 20,
-  },
+  handle: { width: 40, height: 4, backgroundColor: theme.handle, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   emoji: { fontSize: 40, textAlign: 'center', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: '#1E1B4B', marginBottom: 6, textAlign: 'center' },
+  title: { fontSize: 24, fontWeight: '800', color: theme.textDark, marginBottom: 6, textAlign: 'center' },
   sub: { fontSize: 14, color: '#9CA3AF', marginBottom: 28, lineHeight: 21, textAlign: 'center' },
   input: {
-    borderWidth: 2, borderColor: '#FCE7F3', borderRadius: 16,
-    padding: 18, fontSize: 32, fontWeight: '800', color: '#1E1B4B',
-    backgroundColor: '#FFF5F8', marginBottom: 24, textAlign: 'center',
+    borderWidth: 2, borderColor: theme.border, borderRadius: 16,
+    padding: 18, fontSize: 32, fontWeight: '800', color: theme.textDark,
+    backgroundColor: theme.bgTint, marginBottom: 24, textAlign: 'center',
   },
   saveBtn: {
-    backgroundColor: '#FF6B9D', borderRadius: 16, padding: 18, alignItems: 'center', marginBottom: 12,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
+    backgroundColor: theme.primary, borderRadius: 16, padding: 18, alignItems: 'center', marginBottom: 12,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
   },
-  saveBtnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  saveBtnText: { color: theme.card, fontSize: 17, fontWeight: '800' },
   cancelBtn: { padding: 12, alignItems: 'center' },
-  cancelText: { color: '#C4B5C8', fontSize: 15 },
+  cancelText: { color: theme.textFaint, fontSize: 15 },
 });

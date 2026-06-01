@@ -5,6 +5,10 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../lib/firebase';
@@ -17,6 +21,7 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   enterGuestMode: () => Promise<void>;
   exitGuestMode: () => Promise<void>;
@@ -30,10 +35,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check persisted guest mode before Firebase resolves
     AsyncStorage.getItem(GUEST_KEY).then((val) => {
       if (val === 'true') setIsGuest(true);
     });
+
+    // Handle redirect result from Google sign-in on mobile PWA
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        await AsyncStorage.removeItem(GUEST_KEY);
+        setIsGuest(false);
+      }
+    }).catch(() => {});
 
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -44,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
-    // Clear guest mode if they sign in
     await AsyncStorage.removeItem(GUEST_KEY);
     setIsGuest(false);
   };
@@ -53,6 +64,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await createUserWithEmailAndPassword(auth, email, password);
     await AsyncStorage.removeItem(GUEST_KEY);
     setIsGuest(false);
+  };
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      await AsyncStorage.removeItem(GUEST_KEY);
+      setIsGuest(false);
+    } catch (e: unknown) {
+      // Popups are blocked on iOS PWA — fall back to redirect
+      if ((e as { code?: string })?.code === 'auth/popup-blocked') {
+        await signInWithRedirect(auth, provider);
+      } else {
+        throw e;
+      }
+    }
   };
 
   const signOut = async () => {
@@ -72,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isGuest, loading, signIn, signUp, signOut, enterGuestMode, exitGuestMode }}>
+    <AuthContext.Provider value={{ user, isGuest, loading, signIn, signUp, signInWithGoogle, signOut, enterGuestMode, exitGuestMode }}>
       {children}
     </AuthContext.Provider>
   );

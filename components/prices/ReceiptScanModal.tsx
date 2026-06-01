@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { PriceEntry, Unit } from '../../store/prices';
+import theme from '../../lib/theme';
 
 interface DetectedItem {
   name: string;
@@ -160,7 +161,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
 
             {scanning && (
               <View style={s.scanningView}>
-                <ActivityIndicator size="large" color="#FF6B9D" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <Text style={s.scanningTitle}>Reading your receipt…</Text>
                 <Text style={s.scanningText}>This'll just take a moment!</Text>
               </View>
@@ -179,7 +180,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
 
                 <Text style={s.label}>Store Name</Text>
                 <TextInput style={s.storeInput} value={storeName} onChangeText={setStoreName}
-                  placeholder="e.g. Whole Foods" placeholderTextColor="#D1C4D4" />
+                  placeholder="e.g. Whole Foods" placeholderTextColor={theme.placeholder} />
 
                 {items.length === 0 ? (
                   <View style={s.noItems}>
@@ -190,11 +191,11 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                   items.map((item, i) => (
                     <View key={i} style={[s.itemRow, !item.selected && s.itemRowDimmed]}>
                       <TouchableOpacity onPress={() => updateItem(i, 'selected', !item.selected)}>
-                        <Text style={s.checkbox}>{item.selected ? '🩷' : '○'}</Text>
+                        <Text style={s.checkbox}>{item.selected ? '🌿' : '○'}</Text>
                       </TouchableOpacity>
                       <View style={s.itemFields}>
                         <TextInput style={s.itemName} value={item.name}
-                          onChangeText={(v) => updateItem(i, 'name', v)} placeholder="Item name" placeholderTextColor="#D1C4D4" />
+                          onChangeText={(v) => updateItem(i, 'name', v)} placeholder="Item name" placeholderTextColor={theme.placeholder} />
                         <View style={s.itemRow2}>
                           <View style={s.priceWrap}>
                             <Text style={s.itemFieldLabel}>$</Text>
@@ -203,7 +204,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                           </View>
                           <TextInput style={s.itemSize} value={item.size}
                             onChangeText={(v) => updateItem(i, 'size', v)} keyboardType="decimal-pad"
-                            placeholder="size" placeholderTextColor="#D1C4D4" />
+                            placeholder="size" placeholderTextColor={theme.placeholder} />
                           <View style={s.unitSelect}>
                             {(['oz', 'lb', 'count', 'fl oz'] as Unit[]).map((u) => (
                               <TouchableOpacity key={u} onPress={() => updateItem(i, 'unit', u)}
@@ -238,75 +239,72 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
 }
 
 const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(30,15,40,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: theme.card, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     padding: 24, paddingTop: 16, maxHeight: '94%',
   },
-  handle: {
-    width: 40, height: 4, backgroundColor: '#F3E8FF',
-    borderRadius: 2, alignSelf: 'center', marginBottom: 20,
-  },
+  handle: { width: 40, height: 4, backgroundColor: theme.handle, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   emoji: { fontSize: 36, textAlign: 'center', marginBottom: 4 },
-  title: { fontSize: 22, fontWeight: '800', color: '#1E1B4B', marginBottom: 6 },
+  title: { fontSize: 22, fontWeight: '800', color: theme.textDark, marginBottom: 6 },
   sub: { fontSize: 14, color: '#9CA3AF', marginBottom: 20, lineHeight: 20 },
   label: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   storeInput: {
-    borderWidth: 2, borderColor: '#FCE7F3', borderRadius: 14,
-    padding: 12, fontSize: 16, color: '#1E1B4B',
-    backgroundColor: '#FFF5F8', marginBottom: 16,
+    borderWidth: 2, borderColor: theme.border, borderRadius: 14,
+    padding: 12, fontSize: 16, color: theme.textDark,
+    backgroundColor: theme.bgTint, marginBottom: 16,
   },
   preview: { width: '100%', height: 180, borderRadius: 16, marginBottom: 20 },
   imagePlaceholder: {
     width: '100%', height: 140, borderRadius: 16, borderWidth: 2,
-    borderColor: '#FCE7F3', borderStyle: 'dashed', alignItems: 'center',
-    justifyContent: 'center', marginBottom: 20, backgroundColor: '#FFF5F8',
+    borderColor: theme.border, borderStyle: 'dashed', alignItems: 'center',
+    justifyContent: 'center', marginBottom: 20, backgroundColor: theme.bgTint,
   },
   placeholderEmoji: { fontSize: 36, marginBottom: 8 },
-  placeholderText: { fontSize: 14, color: '#C4B5C8' },
+  placeholderText: { fontSize: 14, color: theme.textFaint },
   scanningView: { alignItems: 'center', paddingVertical: 48 },
-  scanningTitle: { marginTop: 16, fontSize: 18, fontWeight: '700', color: '#1E1B4B' },
+  scanningTitle: { marginTop: 16, fontSize: 18, fontWeight: '700', color: theme.textDark },
   scanningText: { marginTop: 6, fontSize: 14, color: '#9CA3AF' },
   noItems: { paddingVertical: 24, alignItems: 'center' },
   noItemsEmoji: { fontSize: 36, marginBottom: 8 },
   noItemsText: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 20 },
   itemRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 12,
-    padding: 12, backgroundColor: '#FFF5F8', borderRadius: 14, borderWidth: 1.5, borderColor: '#FCE7F3',
+    padding: 12, backgroundColor: theme.bgTint, borderRadius: 14, borderWidth: 1.5, borderColor: theme.border,
   },
   itemRowDimmed: { opacity: 0.35 },
   checkbox: { fontSize: 22, marginTop: 4 },
   itemFields: { flex: 1 },
   itemName: {
-    fontSize: 15, fontWeight: '700', color: '#1E1B4B',
-    borderBottomWidth: 1.5, borderBottomColor: '#FCE7F3', paddingBottom: 6, marginBottom: 8,
+    fontSize: 15, fontWeight: '700', color: theme.textDark,
+    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, marginBottom: 8,
   },
   itemRow2: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   priceWrap: { flexDirection: 'row', alignItems: 'center' },
-  itemFieldLabel: { fontSize: 15, color: '#C4B5C8', fontWeight: '700' },
+  itemFieldLabel: { fontSize: 15, color: theme.textFaint, fontWeight: '700' },
   itemPrice: {
-    fontSize: 15, color: '#1E1B4B', fontWeight: '700',
-    borderWidth: 1.5, borderColor: '#FCE7F3', borderRadius: 8,
+    fontSize: 15, color: theme.textDark, fontWeight: '700',
+    borderWidth: 1.5, borderColor: theme.border, borderRadius: 8,
     paddingHorizontal: 6, paddingVertical: 3, width: 60,
   },
   itemSize: {
-    fontSize: 14, color: '#1E1B4B', borderWidth: 1.5, borderColor: '#FCE7F3',
+    fontSize: 14, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
     borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 46,
   },
   unitSelect: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: '#FCE7F3' },
-  miniUnitActive: { backgroundColor: '#FFD6EA', borderColor: '#FF6B9D' },
-  miniUnitText: { fontSize: 11, color: '#C4B5C8' },
-  miniUnitTextActive: { color: '#FF6B9D', fontWeight: '800' },
+  miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: theme.border },
+  miniUnitActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  miniUnitText: { fontSize: 11, color: theme.textFaint },
+  miniUnitTextActive: { color: theme.primary, fontWeight: '800' },
   primaryBtn: {
-    backgroundColor: '#FF6B9D', borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 16, marginBottom: 10,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
+    backgroundColor: theme.primary, borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 16, marginBottom: 10,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
   },
-  primaryBtnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  primaryBtnText: { color: theme.card, fontSize: 17, fontWeight: '800' },
   secondaryBtn: {
-    borderWidth: 2, borderColor: '#FCE7F3', borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 10,
+    borderWidth: 2, borderColor: theme.border, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 10,
   },
-  secondaryBtnText: { color: '#FF6B9D', fontSize: 16, fontWeight: '700' },
+  secondaryBtnText: { color: theme.primary, fontSize: 16, fontWeight: '700' },
   cancelBtn: { padding: 12, alignItems: 'center' },
-  cancelText: { color: '#C4B5C8', fontSize: 15 },
+  cancelText: { color: theme.textFaint, fontSize: 15 },
 });

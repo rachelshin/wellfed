@@ -13,6 +13,7 @@ import {
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import SetBudgetModal from '../../components/budget/SetBudgetModal';
 import { useAuth } from '../../context/auth';
+import theme from '../../lib/theme';
 
 export default function BudgetTab() {
   const insets = useSafeAreaInsets();
@@ -59,7 +60,7 @@ export default function BudgetTab() {
   const encouragingLabel = () => {
     if (!settings) return '';
     if (remaining < 0) return 'over budget today';
-    if (pct < 0.5) return 'plenty left — nice work! 🌟';
+    if (pct < 0.5) return 'plenty left — nice work!';
     if (pct < 0.8) return 'left for today';
     return 'left — almost there!';
   };
@@ -69,7 +70,7 @@ export default function BudgetTab() {
       <View style={s.header}>
         <View>
           <Text style={s.headerEyebrow}>Today</Text>
-          <Text style={s.headerTitle}>Food Budget 💸</Text>
+          <Text style={s.headerTitle}>Well Fed 💸</Text>
         </View>
         <View style={s.headerRight}>
           {isGuest && (
@@ -86,7 +87,7 @@ export default function BudgetTab() {
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B9D" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
         {settings ? (
           <View style={s.card}>
@@ -219,19 +220,17 @@ export default function BudgetTab() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFF5F8' },
+  root: { flex: 1, backgroundColor: theme.bg },
 
   header: {
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 14, paddingTop: 6,
   },
-  headerEyebrow: { fontSize: 12, fontWeight: '700', color: '#C4B5C8', letterSpacing: 0.5, textTransform: 'uppercase' },
-  headerTitle: { fontSize: 26, fontWeight: '900', color: '#1E1B4B' },
+  headerEyebrow: { fontSize: 12, fontWeight: '700', color: theme.textFaint, letterSpacing: 0.5, textTransform: 'uppercase' },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: theme.textDark },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
-  signInBtn: {
-    backgroundColor: '#FFD6EA', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
-  },
-  signInBtnText: { color: '#FF6B9D', fontWeight: '800', fontSize: 13 },
+  signInBtn: { backgroundColor: theme.primaryLight, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  signInBtnText: { color: theme.primary, fontWeight: '800', fontSize: 13 },
   gearBtn: { padding: 4 },
   gearEmoji: { fontSize: 22 },
 
@@ -239,81 +238,75 @@ const s = StyleSheet.create({
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
 
   card: {
-    backgroundColor: '#fff', borderRadius: 24, padding: 22, marginBottom: 22,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.1, shadowRadius: 20,
+    backgroundColor: theme.card, borderRadius: 24, padding: 22, marginBottom: 22,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.08, shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 }, elevation: 4,
-    borderWidth: 1.5, borderColor: '#FCE7F3',
+    borderWidth: 1.5, borderColor: theme.border,
   },
-  dateLabel: { fontSize: 13, color: '#C4B5C8', fontWeight: '600', marginBottom: 4 },
-  bigAmount: { fontSize: 56, fontWeight: '900', color: '#FF6B9D', lineHeight: 60 },
-  negative: { color: '#F43F5E' },
-  bigLabel: { fontSize: 15, color: '#C4B5C8', marginBottom: 20, fontWeight: '500' },
-  negativeLabelText: { color: '#F43F5E' },
+  dateLabel: { fontSize: 13, color: theme.textFaint, fontWeight: '600', marginBottom: 4 },
+  bigAmount: { fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60 },
+  negative: { color: theme.negative },
+  bigLabel: { fontSize: 15, color: theme.textFaint, marginBottom: 20, fontWeight: '500' },
+  negativeLabelText: { color: theme.negative },
 
-  statRow: { flexDirection: 'row', marginBottom: 16, backgroundColor: '#FFF5F8', borderRadius: 14, padding: 14 },
+  statRow: { flexDirection: 'row', marginBottom: 16, backgroundColor: theme.bgTint, borderRadius: 14, padding: 14 },
   stat: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: 16, fontWeight: '800', color: '#1E1B4B' },
+  statVal: { fontSize: 16, fontWeight: '800', color: theme.textDark },
   spentVal: { color: '#F97316' },
-  statLabel: { fontSize: 11, color: '#C4B5C8', marginTop: 2, fontWeight: '600' },
-  divider: { width: 1, backgroundColor: '#FCE7F3', marginVertical: 2 },
+  statLabel: { fontSize: 11, color: theme.textFaint, marginTop: 2, fontWeight: '600' },
+  divider: { width: 1, backgroundColor: theme.border, marginVertical: 2 },
 
-  rolloverBadge: {
-    backgroundColor: '#FFD6EA', borderRadius: 12, paddingHorizontal: 14,
-    paddingVertical: 8, marginBottom: 14,
-  },
-  rolloverBadgeNeg: {
-    backgroundColor: '#FEF3C7', borderRadius: 12, paddingHorizontal: 14,
-    paddingVertical: 8, marginBottom: 14,
-  },
-  rolloverText: { fontSize: 13, color: '#FF6B9D', fontWeight: '700' },
-  rolloverTextNeg: { fontSize: 13, color: '#D97706', fontWeight: '700' },
+  rolloverBadge: { backgroundColor: theme.primaryLight, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 14 },
+  rolloverBadgeNeg: { backgroundColor: '#FEF3C7', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 14 },
+  rolloverText: { fontSize: 13, color: theme.primary, fontWeight: '700' },
+  rolloverTextNeg: { fontSize: 13, color: theme.warning, fontWeight: '700' },
 
-  progressTrack: { height: 6, backgroundColor: '#FCE7F3', borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#FF6B9D', borderRadius: 3 },
-  progressOver: { backgroundColor: '#F43F5E' },
+  progressTrack: { height: 6, backgroundColor: theme.border, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: theme.primary, borderRadius: 3 },
+  progressOver: { backgroundColor: theme.negative },
 
   emptyCard: {
-    backgroundColor: '#fff', borderRadius: 24, padding: 32, alignItems: 'center',
-    marginBottom: 22, borderWidth: 2, borderColor: '#FCE7F3', borderStyle: 'dashed',
+    backgroundColor: theme.card, borderRadius: 24, padding: 32, alignItems: 'center',
+    marginBottom: 22, borderWidth: 2, borderColor: theme.border, borderStyle: 'dashed',
   },
   emptyEmoji: { fontSize: 48, marginBottom: 14 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: '#1E1B4B', marginBottom: 8 },
+  emptyTitle: { fontSize: 22, fontWeight: '900', color: theme.textDark, marginBottom: 8 },
   emptySub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 22, marginBottom: 20 },
   emptyBtn: {
-    backgroundColor: '#FF6B9D', borderRadius: 20, paddingHorizontal: 24, paddingVertical: 12,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: theme.primary, borderRadius: 20, paddingHorizontal: 24, paddingVertical: 12,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
   },
-  emptyBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  emptyBtnText: { color: theme.card, fontWeight: '800', fontSize: 15 },
 
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: '#1E1B4B', marginBottom: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: theme.textDark, marginBottom: 12 },
 
   noEntries: { alignItems: 'center', paddingVertical: 36 },
   noEntriesEmoji: { fontSize: 42, marginBottom: 12 },
-  noEntriesTitle: { fontSize: 17, fontWeight: '800', color: '#1E1B4B', marginBottom: 4 },
-  noEntriesText: { fontSize: 14, color: '#C4B5C8' },
+  noEntriesTitle: { fontSize: 17, fontWeight: '800', color: theme.textDark, marginBottom: 4 },
+  noEntriesText: { fontSize: 14, color: theme.textFaint },
 
   entryRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 8,
-    shadowColor: '#FF6B9D', shadowOpacity: 0.06, shadowRadius: 8,
+    backgroundColor: theme.card, borderRadius: 16, padding: 14, marginBottom: 8,
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.05, shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 }, elevation: 1,
-    borderWidth: 1, borderColor: '#FCE7F3',
+    borderWidth: 1, borderColor: theme.border,
   },
   catIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   catEmoji: { fontSize: 22 },
   entryInfo: { flex: 1, marginLeft: 12 },
-  entryDesc: { fontSize: 15, fontWeight: '700', color: '#1E1B4B' },
-  entryCat: { fontSize: 12, color: '#C4B5C8', marginTop: 2, fontWeight: '500' },
-  entryAmt: { fontSize: 17, fontWeight: '800', color: '#1E1B4B' },
+  entryDesc: { fontSize: 15, fontWeight: '700', color: theme.textDark },
+  entryCat: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
+  entryAmt: { fontSize: 17, fontWeight: '800', color: theme.textDark },
 
-  hint: { textAlign: 'center', fontSize: 12, color: '#E8D5E8', marginTop: 4, marginBottom: 8 },
+  hint: { textAlign: 'center', fontSize: 12, color: theme.border, marginTop: 4, marginBottom: 8 },
 
   fab: {
     position: 'absolute', right: 20,
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#FF6B9D', alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FF6B9D', shadowOpacity: 0.5, shadowRadius: 16,
+    backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center',
+    shadowColor: theme.primaryShadow, shadowOpacity: 0.4, shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  fabText: { color: theme.card, fontSize: 30, fontWeight: '300', lineHeight: 34 },
 });

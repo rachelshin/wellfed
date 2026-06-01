@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/auth';
+import theme from '../lib/theme';
 
 function AuthGate() {
   const { user, isGuest, loading } = useAuth();
@@ -20,7 +21,7 @@ function AuthGate() {
     }
   }, [user, isGuest, loading]);
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: '#FFF5F8' }} />;
+  if (loading) return <View style={{ flex: 1, backgroundColor: theme.bg }} />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
