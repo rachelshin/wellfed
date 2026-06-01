@@ -179,7 +179,7 @@ export default function RecipesTab() {
               <View style={s.progressTrack}>
                 <View style={[
                   s.progressFill,
-                  { width: `${pct * 100}%`, backgroundColor: pct >= 0.7 ? theme.primary : pct >= 0.4 ? '#FBBF24' : theme.border },
+                  { width: `${pct * 100}%`, backgroundColor: pct >= 0.7 ? theme.accent : pct >= 0.4 ? '#FBBF24' : theme.border },
                 ]} />
               </View>
 
@@ -327,13 +327,13 @@ const s = StyleSheet.create({
   recipeDesc: { fontSize: 13, color: '#9CA3AF', marginBottom: 10, lineHeight: 18 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
   metaText: { fontSize: 12, color: theme.textFaint, fontWeight: '500' },
-  metaHave: { color: theme.primary, fontWeight: '700' },
+  metaHave: { color: theme.accent, fontWeight: '700' },
   metaDot: { color: theme.border },
   progressTrack: { height: 5, backgroundColor: theme.border, borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
   progressFill: { height: '100%', borderRadius: 3 },
   ingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  ingChip: { backgroundColor: theme.primaryLight, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  ingChipText: { fontSize: 11, color: theme.primary, fontWeight: '700' },
+  ingChip: { backgroundColor: theme.accentLight, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  ingChipText: { fontSize: 11, color: theme.accent, fontWeight: '700' },
 
   modalBackdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   detailSheet: {
@@ -347,8 +347,8 @@ const s = StyleSheet.create({
   detailDesc: { fontSize: 14, color: '#9CA3AF', marginBottom: 12, lineHeight: 20 },
   detailMeta: { flexDirection: 'row', gap: 16, marginBottom: 16, flexWrap: 'wrap' },
   detailMetaText: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  haveCard: { backgroundColor: theme.primaryLight, borderRadius: 14, padding: 14, marginBottom: 20 },
-  haveText: { fontSize: 14, color: theme.primary, fontWeight: '700', lineHeight: 20 },
+  haveCard: { backgroundColor: theme.accentLight, borderRadius: 14, padding: 14, marginBottom: 20 },
+  haveText: { fontSize: 14, color: theme.accent, fontWeight: '700', lineHeight: 20 },
   detailSection: {
     fontSize: 12, fontWeight: '800', color: theme.textFaint, marginBottom: 10,
     textTransform: 'uppercase', letterSpacing: 0.8,
@@ -365,10 +365,10 @@ const s = StyleSheet.create({
   ingAmt: { fontSize: 12, color: theme.border, marginTop: 1 },
   stepRow: { flexDirection: 'row', gap: 12, marginBottom: 14, alignItems: 'flex-start' },
   stepNum: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: theme.primaryLight,
+    width: 28, height: 28, borderRadius: 14, backgroundColor: theme.accentLight,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
   },
-  stepNumText: { fontSize: 13, fontWeight: '800', color: theme.primary },
+  stepNumText: { fontSize: 13, fontWeight: '800', color: theme.accent },
   stepText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 22 },
   closeBtn: {
     backgroundColor: theme.primary, borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 24,

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Well Fed" />
-    <meta name="theme-color" content="#4A7C59" />
+    <meta name="theme-color" content="#C4775A" />
 
     <title>Well Fed</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
@@ -38,5 +38,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+              const worker = reg.installing;
+              worker.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.location.reload();
+                }
+              });
+            });
+          });
+        });
+      }
+    </script>
   </body>
 </html>

@@ -159,7 +159,7 @@ const s = StyleSheet.create({
     shadowColor: theme.primaryShadow, shadowOpacity: 0.06, shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 }, elevation: 2, gap: 10,
   },
-  googleG: { fontSize: 18, fontWeight: '800', color: theme.primary },
+  googleG: { fontSize: 18, fontWeight: '800', color: theme.accent },
   googleBtnText: { fontSize: 16, fontWeight: '700', color: theme.textDark },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },

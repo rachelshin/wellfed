@@ -181,9 +181,9 @@ const s = StyleSheet.create({
 
   statsBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10, flexWrap: 'wrap' },
   statChip: { backgroundColor: theme.bgTint, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  statChipReceipt: { backgroundColor: '#E0F2E8' },
-  statChipText: { fontSize: 12, fontWeight: '700', color: theme.primary },
-  statChipReceiptText: { color: '#3A7A5A' },
+  statChipReceipt: { backgroundColor: theme.accentLight },
+  statChipText: { fontSize: 12, fontWeight: '700', color: theme.textMuted },
+  statChipReceiptText: { color: theme.accent },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
