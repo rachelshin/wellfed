@@ -111,18 +111,22 @@ export default function BudgetTab() {
           <Text style={s.dateLabel}>{formatDate(todayStr)}</Text>
 
           {editingDaily ? (
-            <TextInput
-              style={s.bigInput}
-              value={editValue}
-              onChangeText={setEditValue}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={theme.placeholder}
-              autoFocus
-              onSubmitEditing={commitEdit}
-              onBlur={commitEdit}
-              returnKeyType="done"
-            />
+            <View style={s.bigEditRow}>
+              <TextInput
+                style={s.bigInput}
+                value={editValue}
+                onChangeText={setEditValue}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={theme.placeholder}
+                autoFocus
+                onSubmitEditing={commitEdit}
+                returnKeyType="done"
+              />
+              <TouchableOpacity onPress={commitEdit} style={s.bigEditDone}>
+                <Text style={s.bigEditDoneText}>✓</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity onPress={startEdit} activeOpacity={0.7}>
               <Text style={[s.bigAmount, remaining < 0 && s.negative]}>
@@ -257,10 +261,16 @@ const s = StyleSheet.create({
   },
   dateLabel: { fontSize: 13, color: theme.textFaint, fontWeight: '600', marginBottom: 4 },
   bigAmount: { fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60 },
+  bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
     fontSize: 56, fontWeight: '900', color: theme.primary, lineHeight: 60,
-    borderWidth: 0, padding: 0, margin: 0,
+    borderWidth: 0, padding: 0, margin: 0, minWidth: 80,
   },
+  bigEditDone: {
+    backgroundColor: theme.primary, borderRadius: 20,
+    paddingHorizontal: 16, paddingVertical: 8,
+  },
+  bigEditDoneText: { color: theme.card, fontSize: 20, fontWeight: '700' },
   negative: { color: theme.negative },
   bigLabel: { fontSize: 15, color: theme.textFaint, marginBottom: 20, fontWeight: '500' },
   negativeLabelText: { color: theme.negative },
