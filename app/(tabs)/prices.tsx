@@ -13,6 +13,8 @@ import {
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
 import AddPriceModal from '../../components/prices/AddPriceModal';
 import ReceiptScanModal from '../../components/prices/ReceiptScanModal';
+import HeroHeader from '../../components/HeroHeader';
+import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -55,53 +57,49 @@ export default function PricesTab() {
   filtered.sort((a, b) => a[0].localeCompare(b[0]));
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
-      <View style={s.header}>
-        <View>
-          <Text style={s.headerEyebrow}>Track & Compare</Text>
-          <Text style={s.headerTitle}>Prices 🏷️</Text>
-        </View>
-        <TouchableOpacity style={s.scanBtn} onPress={() => setShowScan(true)}>
-          <Text style={s.scanBtnText}>📄 Scan</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={s.searchWrap}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput
-          style={s.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search your items…"
-          placeholderTextColor={theme.placeholder}
-          returnKeyType="search"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Text style={s.clearIcon}>✕</Text>
+    <View style={s.root}>
+      <HeroHeader
+        eyebrow="Track & Compare"
+        title="Prices"
+        right={
+          <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => setShowScan(true)}>
+            <Text style={heroOutlineBtn.text}>Scan</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        }
+      >
+        <View style={darkSearch.wrap}>
+          <TextInput
+            style={darkSearch.input}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search items…"
+            placeholderTextColor="rgba(254,246,240,0.35)"
+            returnKeyType="search"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Text style={darkSearch.clear}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </HeroHeader>
 
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {prices.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🛍️</Text>
-            <Text style={s.emptyTitle}>Nothing tracked yet!</Text>
+            <Text style={s.emptyTitle}>Nothing tracked yet</Text>
             <Text style={s.emptySub}>
-              Scan a receipt to add prices automatically, or tap + to add them yourself.{'\n'}
-              The more you track, the easier it is to find the best deals!
+              Scan a receipt to add prices automatically, or tap + to add them yourself.
             </Text>
           </View>
         )}
 
         {prices.length > 0 && filtered.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🕵️</Text>
             <Text style={s.emptyText}>No items match "{search}"</Text>
           </View>
         )}
@@ -148,7 +146,7 @@ export default function PricesTab() {
                           <View style={s.entryLeft}>
                             {isBest && (
                               <View style={s.bestBadge}>
-                                <Text style={s.bestBadgeText}>Best deal 🌟</Text>
+                                <Text style={s.bestBadgeText}>✦ Best</Text>
                               </View>
                             )}
                             <Text style={s.entryStore}>{entry.store || 'Unknown store'}</Text>
@@ -162,7 +160,7 @@ export default function PricesTab() {
                         </TouchableOpacity>
                       );
                     })}
-                  <Text style={s.longPressHint}>Hold an entry to remove it</Text>
+                  <Text style={s.hint}>Hold to remove</Text>
                 </View>
               )}
             </View>
@@ -173,11 +171,11 @@ export default function PricesTab() {
       </ScrollView>
 
       <TouchableOpacity
-        style={[s.fab, { bottom: insets.bottom + 72 }]}
+        style={[fab.btn, { bottom: insets.bottom + 72 }]}
         onPress={() => setShowAdd(true)}
         activeOpacity={0.85}
       >
-        <Text style={s.fabText}>+</Text>
+        <Text style={fab.label}>+</Text>
       </TouchableOpacity>
 
       <AddPriceModal
@@ -192,7 +190,6 @@ export default function PricesTab() {
           let current = prices;
           for (const item of newItems) current = await addPrice(current, item, user?.uid);
           setPrices(current);
-
           const pantry = await loadPantry(user?.uid);
           await addPantryItemsFromReceipt(
             pantry,
@@ -205,7 +202,6 @@ export default function PricesTab() {
             })),
             user?.uid,
           );
-
           setShowScan(false);
         }}
       />
@@ -215,38 +211,18 @@ export default function PricesTab() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 12, paddingTop: 6,
-  },
-  headerEyebrow: { fontSize: 12, fontWeight: '700', color: theme.textFaint, letterSpacing: 0.5, textTransform: 'uppercase' },
-  headerTitle: { fontSize: 26, fontWeight: '900', color: theme.textDark },
-  scanBtn: { backgroundColor: theme.primaryLight, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 2 },
-  scanBtnText: { color: theme.primary, fontWeight: '800', fontSize: 14 },
-
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.card, borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
-    paddingHorizontal: 14, borderWidth: 2, borderColor: theme.border,
-  },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, paddingVertical: 12, color: theme.textDark },
-  clearIcon: { fontSize: 16, color: theme.textFaint, padding: 4 },
 
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 24 },
 
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 24 },
-  emptyEmoji: { fontSize: 52, marginBottom: 16 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: theme.textDark, marginBottom: 8 },
-  emptySub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.textDark, marginBottom: 8 },
+  emptySub: { fontSize: 14, color: theme.textFaint, textAlign: 'center', lineHeight: 22 },
   emptyText: { fontSize: 15, color: theme.textFaint, fontWeight: '600' },
 
   card: {
-    backgroundColor: theme.card, borderRadius: 18, marginBottom: 10,
-    shadowColor: theme.primaryShadow, shadowOpacity: 0.06, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 }, elevation: 2,
-    overflow: 'hidden', borderWidth: 1.5, borderColor: theme.border,
+    backgroundColor: '#FFFFFF', borderRadius: 18, marginBottom: 10,
+    overflow: 'hidden', borderLeftWidth: 3, borderLeftColor: theme.accent,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'space-between' },
   cardTitleWrap: { flex: 1 },
@@ -254,36 +230,31 @@ const s = StyleSheet.create({
   cardCount: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bestWrap: { alignItems: 'flex-end' },
-  bestPrice: { fontSize: 15, fontWeight: '800', color: theme.primary },
+  bestPrice: { fontSize: 15, fontWeight: '800', color: theme.textDark },
   bestStore: { fontSize: 11, color: theme.textFaint },
   chevron: { fontSize: 11, color: theme.textFaint },
 
-  cardBody: { borderTopWidth: 1.5, borderTopColor: theme.border, paddingHorizontal: 12, paddingBottom: 12 },
+  cardBody: { borderTopWidth: 1, borderTopColor: theme.border, paddingHorizontal: 12, paddingBottom: 12 },
 
   entryRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, marginTop: 8, backgroundColor: theme.bgTint,
+    paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, marginTop: 8,
+    backgroundColor: theme.bg,
   },
-  entryRowBest: { backgroundColor: theme.primaryLight },
+  entryRowBest: { backgroundColor: 'rgba(244,207,110,0.12)' },
   entryLeft: { flex: 1 },
-  bestBadge: { backgroundColor: theme.primary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 4 },
-  bestBadgeText: { fontSize: 10, fontWeight: '800', color: theme.card },
+  bestBadge: {
+    backgroundColor: theme.warning, borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 4,
+  },
+  bestBadgeText: { fontSize: 10, fontWeight: '800', color: theme.textDark },
   entryStore: { fontSize: 14, fontWeight: '700', color: theme.textDark },
-  entryBrand: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
+  entryBrand: { fontSize: 12, color: theme.textFaint, marginTop: 1 },
   entrySize: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
   entryRight: { alignItems: 'flex-end' },
-  entryPPU: { fontSize: 14, fontWeight: '800', color: '#9CA3AF' },
-  entryPPUBest: { color: theme.primary },
-  entryDate: { fontSize: 11, color: theme.border, marginTop: 2 },
+  entryPPU: { fontSize: 14, fontWeight: '800', color: theme.textFaint },
+  entryPPUBest: { color: theme.textDark },
+  entryDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5, marginTop: 2 },
 
-  longPressHint: { textAlign: 'center', fontSize: 11, color: theme.border, marginTop: 8 },
-
-  fab: {
-    position: 'absolute', right: 20,
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center',
-    shadowColor: theme.primaryShadow, shadowOpacity: 0.4, shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 }, elevation: 8,
-  },
-  fabText: { color: theme.card, fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  hint: { textAlign: 'center', fontSize: 11, color: theme.textFaint, opacity: 0.5, marginTop: 8 },
 });

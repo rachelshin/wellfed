@@ -1,6 +1,56 @@
 const functions = require('firebase-functions');
 const { default: Anthropic } = require('@anthropic-ai/sdk');
 
+exports.scanReceipt = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
+
+  const { imageBase64, mediaType } = req.body;
+  if (!imageBase64) { res.status(400).json({ error: 'imageBase64 required' }); return; }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: imageBase64 },
+          },
+          {
+            type: 'text',
+            text: 'Extract every grocery/food line item and its price from this receipt. Return ONLY a raw JSON array — no markdown, no code fences, no explanation. Each element: {"name": string, "price": string}. Omit totals, subtotals, taxes, discounts, and store/header lines.',
+          },
+        ],
+      }],
+    });
+
+    const raw = message.content[0].text.trim();
+    const clean = raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
+    let items = [];
+    try {
+      items = JSON.parse(clean);
+    } catch {
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (match) items = JSON.parse(match[0]);
+    }
+    res.json({ items });
+  } catch (e) {
+    console.error('scanReceipt error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');

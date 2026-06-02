@@ -1,14 +1,16 @@
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
-import theme from '../../lib/theme';
 
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  return <Text style={[s.icon, focused && s.iconFocused]}>{emoji}</Text>;
+const PLUM  = '#2B2040';
+const BLUSH = '#F7A8C4';
+
+function TabIcon({ label, focused }: { label: string; focused: boolean }) {
+  return <Text style={[s.icon, focused && s.iconFocused]}>{label}</Text>;
 }
 
 const s = StyleSheet.create({
-  icon: { fontSize: 22, opacity: 0.4 },
-  iconFocused: { opacity: 1 },
+  icon: { fontSize: 18, fontWeight: '700', color: PLUM, opacity: 0.3 },
+  iconFocused: { opacity: 1, color: PLUM },
 });
 
 export default function TabLayout() {
@@ -16,11 +18,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.tabActive,
-        tabBarInactiveTintColor: theme.tabInactive,
+        tabBarActiveTintColor: PLUM,
+        tabBarInactiveTintColor: PLUM,
         tabBarStyle: {
-          backgroundColor: theme.card,
-          borderTopColor: theme.tabBorder,
+          backgroundColor: '#FFFFFF',
+          borderTopColor: 'rgba(43,32,64,0.08)',
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,
@@ -35,24 +37,23 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Budget',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="💸" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label="$" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="prices"
         options={{
           title: 'Prices',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏷️" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label="≈" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="recipes"
         options={{
           title: 'Recipes',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🍳" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label="✦" focused={focused} />,
         }}
       />
-      {/* Pantry is a screen but not shown in the tab bar */}
       <Tabs.Screen
         name="pantry"
         options={{ href: null }}

@@ -49,7 +49,7 @@ export async function addPantryItem(
 export async function updatePantryItem(
   items: PantryItem[],
   id: string,
-  patch: Partial<Pick<PantryItem, 'quantity'>>,
+  patch: Partial<Pick<PantryItem, 'quantity' | 'displayName' | 'itemName'>>,
   uid?: string | null,
 ): Promise<PantryItem[]> {
   const updated = items.map((i) => (i.id === id ? { ...i, ...patch } : i));

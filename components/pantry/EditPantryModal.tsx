@@ -4,25 +4,28 @@ import {
   Platform, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PantryItem, todayDate } from '../../store/pantry';
+import { PantryItem } from '../../store/pantry';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
 
 interface Props {
-  visible: boolean;
+  item: PantryItem | null;
   onClose: () => void;
-  onAdd: (item: Omit<PantryItem, 'id'>) => void;
+  onSave: (id: string, displayName: string, itemName: string, quantity: string) => void;
 }
 
-export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
+export default function EditPantryModal({ item, onClose, onSave }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
-    if (!visible) { setName(''); setQuantity(''); }
-  }, [visible]);
+    if (item) {
+      setName(item.displayName);
+      setQuantity(item.quantity);
+    }
+  }, [item]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -33,25 +36,19 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
     return () => window.visualViewport!.removeEventListener('resize', onResize);
   }, []);
 
-  const handleAdd = () => {
-    if (!name.trim()) return;
-    onAdd({
-      displayName: name.trim(),
-      itemName: name.trim().toLowerCase(),
-      quantity: quantity.trim() || 'some',
-      addedDate: todayDate(),
-      source: 'manual',
-    });
+  const handleSave = () => {
+    if (!name.trim() || !item) return;
+    onSave(item.id, name.trim(), name.trim().toLowerCase(), quantity.trim() || 'some');
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={!!item} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
-            <Text style={modalSheet.title}>Add to Pantry</Text>
+            <Text style={modalSheet.title}>Edit Item</Text>
 
-            <Text style={modalSheet.label}>Item Name *</Text>
+            <Text style={modalSheet.label}>Item Name</Text>
             <TextInput
               style={modalSheet.input}
               value={name}
@@ -69,11 +66,11 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
               placeholder="e.g. 2 bags, half a jar"
               placeholderTextColor={theme.placeholder}
               returnKeyType="done"
-              onSubmitEditing={handleAdd}
+              onSubmitEditing={handleSave}
             />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleAdd}>
-              <Text style={modalSheet.primaryBtnText}>Add</Text>
+            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
+              <Text style={modalSheet.primaryBtnText}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
               <Text style={modalSheet.cancelText}>Cancel</Text>

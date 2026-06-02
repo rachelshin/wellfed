@@ -11,13 +11,10 @@ import {
   today, formatDate, SpendingEntry, BudgetSettings,
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
+import HeroHeader from '../../components/HeroHeader';
+import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
-
-const PLUM   = '#2B2040';
-const CHAMOMILE = '#F4CF6E';
-const BLUSH  = '#F7A8C4';
-const PETAL  = '#FEF6F0';
 
 export default function BudgetTab() {
   const insets = useSafeAreaInsets();
@@ -26,7 +23,7 @@ export default function BudgetTab() {
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [editMode, setEditMode] = useState<'remaining' | 'daily' | null>(null);
+  const [editMode, setEditMode] = useState<'remaining' | 'daily' | 'bank' | null>(null);
   const [editValue, setEditValue] = useState('');
 
   const todayStr = today();
@@ -63,6 +60,11 @@ export default function BudgetTab() {
     setEditMode('daily');
   };
 
+  const startEditBank = () => {
+    setEditValue(settings?.bankBalance != null ? String(settings.bankBalance) : '');
+    setEditMode('bank');
+  };
+
   const commitEdit = async () => {
     const val = parseFloat(editValue);
     if (!isNaN(val) && val > 0) {
@@ -90,6 +92,11 @@ export default function BudgetTab() {
         setSettings(newSettings);
         setEditMode(null);
       }
+    } else if (editMode === 'bank' && settings) {
+        const newSettings: BudgetSettings = { ...settings, bankBalance: val };
+        await saveSettings(newSettings, user?.uid);
+        setSettings(newSettings);
+        setEditMode(null);
     } else if (settings) {
       setEditMode(null);
     }
@@ -119,20 +126,15 @@ export default function BudgetTab() {
 
   return (
     <View style={s.root}>
-      {/* ── Hero ── */}
-      <View style={[s.hero, { paddingTop: insets.top + 16 }]}>
-        <View style={s.heroHeader}>
-          <View>
-            <Text style={s.heroEyebrow}>{formatDate(todayStr)}</Text>
-            <Text style={s.heroTitle}>Well Fed 💸</Text>
-          </View>
-          {isGuest && (
-            <TouchableOpacity onPress={exitGuestMode} style={s.signInBtn}>
-              <Text style={s.signInBtnText}>Sign in</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
+      <HeroHeader
+        eyebrow={formatDate(todayStr)}
+        title="Well Fed"
+        right={isGuest ? (
+          <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
+            <Text style={heroOutlineBtn.text}>Sign in</Text>
+          </TouchableOpacity>
+        ) : null}
+      >
         {showBigEdit ? (
           <View style={s.bigEditRow}>
             <TextInput
@@ -194,16 +196,43 @@ export default function BudgetTab() {
                 <Text style={[s.statVal, s.statSpent]}>${spent.toFixed(2)}</Text>
                 <Text style={s.statLabel}>SPENT</Text>
               </View>
+              <View style={s.statDivider} />
+              {editMode === 'bank' ? (
+                <View style={s.stat}>
+                  <View style={s.statEditRow}>
+                    <TextInput
+                      style={s.statInput}
+                      value={editValue}
+                      onChangeText={setEditValue}
+                      keyboardType="decimal-pad"
+                      autoFocus
+                      onSubmitEditing={commitEdit}
+                      returnKeyType="done"
+                    />
+                    <TouchableOpacity onPress={commitEdit}>
+                      <Text style={s.statDone}>✓</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={s.statLabel}>IN BANK</Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={s.stat} onPress={startEditBank} activeOpacity={0.6}>
+                  <Text style={s.statVal}>
+                    {settings.bankBalance != null ? `$${settings.bankBalance.toFixed(2)}` : '—'}
+                  </Text>
+                  <Text style={s.statLabel}>IN BANK</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {rollover > 0 && (
               <View style={s.rolloverBadge}>
-                <Text style={s.rolloverText}>🎉 +${rollover.toFixed(2)} rolled over</Text>
+                <Text style={s.rolloverText}>+${rollover.toFixed(2)} saved from before</Text>
               </View>
             )}
             {rollover < 0 && (
               <View style={s.rolloverBadgeNeg}>
-                <Text style={s.rolloverTextNeg}>💪 ${Math.abs(rollover).toFixed(2)} carried over</Text>
+                <Text style={s.rolloverTextNeg}>${Math.abs(rollover).toFixed(2)} carried over</Text>
               </View>
             )}
 
@@ -212,20 +241,18 @@ export default function BudgetTab() {
             </View>
           </>
         )}
-      </View>
+      </HeroHeader>
 
-      {/* ── List ── */}
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BLUSH} colors={[BLUSH]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={s.sectionTitle}>Today's Spending</Text>
 
         {todayEntries.length === 0 ? (
           <View style={s.noEntries}>
-            <Text style={s.noEntriesEmoji}>🍽️</Text>
             <Text style={s.noEntriesTitle}>Nothing logged yet</Text>
             <Text style={s.noEntriesText}>Tap + to add your first entry today.</Text>
           </View>
@@ -261,11 +288,11 @@ export default function BudgetTab() {
 
       {settings && (
         <TouchableOpacity
-          style={[s.fab, { bottom: insets.bottom + 72 }]}
+          style={[fab.btn, { bottom: insets.bottom + 72 }]}
           onPress={() => setShowAdd(true)}
           activeOpacity={0.85}
         >
-          <Text style={s.fabText}>+</Text>
+          <Text style={fab.label}>+</Text>
         </TouchableOpacity>
       )}
 
@@ -279,33 +306,10 @@ export default function BudgetTab() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: PETAL },
-
-  // Hero
-  hero: {
-    backgroundColor: PLUM,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    paddingHorizontal: 26,
-    paddingBottom: 28,
-  },
-  heroHeader: {
-    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  heroEyebrow: {
-    fontSize: 12, fontWeight: '700', color: 'rgba(254,246,240,0.45)',
-    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 3,
-  },
-  heroTitle: { fontSize: 24, fontWeight: '900', color: PETAL },
-  signInBtn: {
-    borderWidth: 1, borderColor: 'rgba(254,246,240,0.3)',
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginTop: 4,
-  },
-  signInBtnText: { color: PETAL, fontWeight: '700', fontSize: 13 },
+  root: { flex: 1, backgroundColor: theme.bg },
 
   // Big number
-  bigAmount: { fontSize: 64, fontWeight: '900', color: CHAMOMILE, lineHeight: 68 },
+  bigAmount: { fontSize: 64, fontWeight: '900', color: theme.warning, lineHeight: 68 },
   bigAmountNeg: { color: theme.negative },
   bigLabel: {
     fontSize: 14, color: 'rgba(254,246,240,0.5)', marginBottom: 22,
@@ -315,20 +319,20 @@ const s = StyleSheet.create({
 
   bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
-    fontSize: 64, fontWeight: '900', color: CHAMOMILE, lineHeight: 68,
+    fontSize: 64, fontWeight: '900', color: theme.warning, lineHeight: 68,
     borderWidth: 0, padding: 0, margin: 0, minWidth: 80,
   },
   bigEditDone: {
-    borderWidth: 1.5, borderColor: CHAMOMILE, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.warning, borderRadius: 20,
     paddingHorizontal: 16, paddingVertical: 8,
   },
-  bigEditDoneText: { color: CHAMOMILE, fontSize: 18, fontWeight: '700' },
+  bigEditDoneText: { color: theme.warning, fontSize: 18, fontWeight: '700' },
 
-  // Stats row
+  // Stats
   statRow: { flexDirection: 'row', marginBottom: 18 },
   stat: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: 18, fontWeight: '800', color: PETAL },
-  statSpent: { color: BLUSH },
+  statVal: { fontSize: 18, fontWeight: '800', color: theme.bg },
+  statSpent: { color: theme.accent },
   statLabel: {
     fontSize: 10, color: 'rgba(254,246,240,0.4)', marginTop: 3,
     fontWeight: '700', letterSpacing: 0.6,
@@ -337,12 +341,12 @@ const s = StyleSheet.create({
 
   statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statInput: {
-    fontSize: 18, fontWeight: '800', color: PETAL,
+    fontSize: 18, fontWeight: '800', color: theme.bg,
     borderWidth: 0, padding: 0, minWidth: 52, textAlign: 'center',
   },
-  statDone: { fontSize: 15, color: CHAMOMILE, fontWeight: '800' },
+  statDone: { fontSize: 15, color: theme.warning, fontWeight: '800' },
 
-  // Rollover badges
+  // Rollover
   rolloverBadge: {
     backgroundColor: 'rgba(167,139,219,0.18)', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
@@ -352,14 +356,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
   },
   rolloverText: { fontSize: 12, color: theme.primary, fontWeight: '700' },
-  rolloverTextNeg: { fontSize: 12, color: CHAMOMILE, fontWeight: '700' },
+  rolloverTextNeg: { fontSize: 12, color: theme.warning, fontWeight: '700' },
 
-  // Progress bar
+  // Progress
   progressTrack: {
     height: 6, backgroundColor: 'rgba(254,246,240,0.12)',
     borderRadius: 3, overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: BLUSH, borderRadius: 3 },
+  progressFill: { height: '100%', backgroundColor: theme.accent, borderRadius: 3 },
   progressOver: { backgroundColor: theme.negative },
 
   // List
@@ -371,14 +375,12 @@ const s = StyleSheet.create({
   },
 
   noEntries: { alignItems: 'center', paddingVertical: 48 },
-  noEntriesEmoji: { fontSize: 44, marginBottom: 12 },
   noEntriesTitle: { fontSize: 17, fontWeight: '800', color: theme.textDark, marginBottom: 6 },
   noEntriesText: { fontSize: 14, color: theme.textFaint },
 
   entryRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14, padding: 14, marginBottom: 10,
+    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 10,
     borderLeftWidth: 4,
   },
   catEmoji: { fontSize: 24, marginRight: 12 },
@@ -391,13 +393,4 @@ const s = StyleSheet.create({
     textAlign: 'center', fontSize: 12, color: theme.textFaint,
     opacity: 0.5, marginTop: 4, marginBottom: 8,
   },
-
-  fab: {
-    position: 'absolute', right: 20,
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: BLUSH, alignItems: 'center', justifyContent: 'center',
-    shadowColor: PLUM, shadowOpacity: 0.25, shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 }, elevation: 8,
-  },
-  fabText: { color: PLUM, fontSize: 28, fontWeight: '400', lineHeight: 32 },
 });

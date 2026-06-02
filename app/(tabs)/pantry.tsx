@@ -6,11 +6,46 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
-  loadPantry, addPantryItem, deletePantryItem, PantryItem,
+  loadPantry, addPantryItem, updatePantryItem, deletePantryItem, PantryItem,
 } from '../../store/pantry';
 import AddPantryModal from '../../components/pantry/AddPantryModal';
+import EditPantryModal from '../../components/pantry/EditPantryModal';
+import HeroHeader from '../../components/HeroHeader';
+import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
+
+const EMOJI_MAP: [string, string][] = [
+  ['apple', '🍎'], ['banana', '🍌'], ['orange', '🍊'], ['grape', '🍇'],
+  ['strawberr', '🍓'], ['lemon', '🍋'], ['lime', '🍋'], ['watermelon', '🍉'],
+  ['peach', '🍑'], ['pear', '🍐'], ['cherr', '🍒'], ['blueberr', '🫐'],
+  ['mango', '🥭'], ['pineapple', '🍍'], ['coconut', '🥥'], ['kiwi', '🥝'],
+  ['melon', '🍈'], ['avocado', '🥑'], ['broccoli', '🥦'], ['carrot', '🥕'],
+  ['corn', '🌽'], ['cucumber', '🥒'], ['garlic', '🧄'], ['lettuce', '🥬'],
+  ['spinach', '🥬'], ['cabbage', '🥬'], ['mushroom', '🍄'], ['onion', '🧅'],
+  ['potato', '🥔'], ['tomato', '🍅'], ['eggplant', '🍆'], ['pepper', '🫑'],
+  ['celery', '🥬'], ['pea', '🫛'], ['bean', '🫘'], ['lentil', '🫘'],
+  ['bread', '🍞'], ['rice', '🍚'], ['pasta', '🍝'], ['flour', '🌾'],
+  ['oat', '🌾'], ['cereal', '🌾'], ['egg', '🥚'], ['chicken', '🍗'],
+  ['beef', '🥩'], ['bacon', '🥓'], ['sausage', '🌭'], ['turkey', '🦃'],
+  ['fish', '🐟'], ['salmon', '🐟'], ['tuna', '🐟'], ['shrimp', '🍤'],
+  ['crab', '🦀'], ['lobster', '🦞'], ['milk', '🥛'], ['cream', '🥛'],
+  ['cheese', '🧀'], ['butter', '🧈'], ['yogurt', '🫙'], ['coffee', '☕'],
+  ['tea', '🍵'], ['juice', '🧃'], ['pizza', '🍕'], ['salad', '🥗'],
+  ['soup', '🍲'], ['oil', '🫒'], ['olive', '🫒'], ['salt', '🧂'],
+  ['sugar', '🍬'], ['honey', '🍯'], ['jam', '🍯'], ['chocolate', '🍫'],
+  ['nut', '🥜'], ['peanut', '🥜'], ['almond', '🌰'], ['walnut', '🌰'],
+  ['sauce', '🥫'], ['ketchup', '🥫'], ['mayo', '🥫'], ['vinegar', '🍶'],
+  ['ice cream', '🍦'], ['cake', '🎂'], ['cookie', '🍪'],
+];
+
+function getEmoji(itemName: string): string | null {
+  const lower = itemName.toLowerCase();
+  for (const [key, emoji] of EMOJI_MAP) {
+    if (lower.includes(key)) return emoji;
+  }
+  return null;
+}
 
 export default function PantryTab() {
   const insets = useSafeAreaInsets();
@@ -19,11 +54,17 @@ export default function PantryTab() {
   const [items, setItems] = useState<PantryItem[]>([]);
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
+  const [editing, setEditing] = useState<PantryItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => setItems(await loadPantry(user?.uid));
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  const handleEdit = async (id: string, displayName: string, itemName: string, quantity: string) => {
+    setItems(await updatePantryItem(items, id, { displayName, itemName, quantity }, user?.uid));
+    setEditing(null);
+  };
 
   const handleDelete = (item: PantryItem) => {
     Alert.alert('Remove from pantry?', item.displayName, [
@@ -52,68 +93,54 @@ export default function PantryTab() {
   const receiptCount = items.filter((i) => i.source === 'receipt').length;
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
-      <View style={s.header}>
-        <View>
-          <Text style={s.headerEyebrow}>What's in your kitchen?</Text>
-          <Text style={s.headerTitle}>Pantry 🥫</Text>
-        </View>
-        {items.length > 0 && (
-          <TouchableOpacity style={s.recipesBtn} onPress={() => router.push('/(tabs)/recipes')}>
-            <Text style={s.recipesBtnText}>🍳 Recipes</Text>
+    <View style={s.root}>
+      <HeroHeader
+        eyebrow="What's in your kitchen?"
+        title="Pantry"
+        right={items.length > 0 ? (
+          <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => router.push('/(tabs)/recipes')}>
+            <Text style={heroOutlineBtn.text}>Recipes →</Text>
           </TouchableOpacity>
+        ) : null}
+      >
+        {items.length > 0 && (
+          <Text style={s.heroStats}>
+            {items.length} items{receiptCount > 0 ? ` · ${receiptCount} from receipts` : ''}
+          </Text>
         )}
-      </View>
-
-      {items.length > 0 && (
-        <View style={s.statsBar}>
-          <View style={s.statChip}>
-            <Text style={s.statChipText}>🥫 {items.length} total items</Text>
-          </View>
-          {receiptCount > 0 && (
-            <View style={[s.statChip, s.statChipReceipt]}>
-              <Text style={[s.statChipText, s.statChipReceiptText]}>📄 {receiptCount} from receipts</Text>
-            </View>
+        <View style={darkSearch.wrap}>
+          <TextInput
+            style={darkSearch.input}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search your pantry…"
+            placeholderTextColor="rgba(254,246,240,0.35)"
+            returnKeyType="search"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Text style={darkSearch.clear}>✕</Text>
+            </TouchableOpacity>
           )}
         </View>
-      )}
-
-      <View style={s.searchWrap}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput
-          style={s.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search your pantry…"
-          placeholderTextColor={theme.placeholder}
-          returnKeyType="search"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Text style={s.clearIcon}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      </HeroHeader>
 
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {items.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🥫</Text>
-            <Text style={s.emptyTitle}>Your pantry is empty!</Text>
+            <Text style={s.emptyTitle}>Your pantry is empty</Text>
             <Text style={s.emptySub}>
-              Tap + to add items manually, or scan a receipt in the Prices tab — items will appear here automatically.{'\n\n'}
-              The more you add, the better your recipe suggestions will be!
+              Tap + to add items manually, or scan a receipt in the Prices tab — items will appear here automatically.
             </Text>
           </View>
         )}
 
         {items.length > 0 && filtered.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🕵️</Text>
             <Text style={s.emptyText}>Nothing matches "{search}"</Text>
           </View>
         )}
@@ -121,39 +148,43 @@ export default function PantryTab() {
         {Object.entries(grouped).map(([letter, groupItems]) => (
           <View key={letter}>
             <Text style={s.groupLetter}>{letter}</Text>
-            {groupItems.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={s.itemRow}
-                onLongPress={() => handleDelete(item)}
-                activeOpacity={0.7}
-              >
-                <View style={s.itemIcon}>
-                  <Text style={s.itemSourceEmoji}>{item.source === 'receipt' ? '📄' : '✏️'}</Text>
-                </View>
-                <View style={s.itemInfo}>
-                  <Text style={s.itemName}>{item.displayName}</Text>
-                  <Text style={s.itemQty}>{item.quantity}</Text>
-                </View>
-                <Text style={s.itemDate}>{item.addedDate}</Text>
-              </TouchableOpacity>
-            ))}
+            {groupItems.map((item) => {
+              const emoji = getEmoji(item.itemName);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={s.itemRow}
+                  onPress={() => setEditing(item)}
+                  activeOpacity={0.7}
+                >
+                  {emoji ? <Text style={s.itemEmoji}>{emoji}</Text> : null}
+                  <View style={s.itemInfo}>
+                    <Text style={s.itemName}>{item.displayName}</Text>
+                    <Text style={s.itemQty}>{item.quantity}</Text>
+                  </View>
+                  <Text style={s.itemDate}>{item.addedDate}</Text>
+                  <TouchableOpacity
+                    style={s.deleteBtn}
+                    onPress={() => handleDelete(item)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={s.deleteBtnText}>✕</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         ))}
-
-        {items.length > 0 && (
-          <Text style={s.hint}>Hold an item to remove it</Text>
-        )}
 
         <View style={{ height: 110 }} />
       </ScrollView>
 
       <TouchableOpacity
-        style={[s.fab, { bottom: insets.bottom + 72 }]}
+        style={[fab.btn, { bottom: insets.bottom + 72 }]}
         onPress={() => setShowAdd(true)}
         activeOpacity={0.85}
       >
-        <Text style={s.fabText}>+</Text>
+        <Text style={fab.label}>+</Text>
       </TouchableOpacity>
 
       <AddPantryModal
@@ -164,43 +195,29 @@ export default function PantryTab() {
           setShowAdd(false);
         }}
       />
+      <EditPantryModal
+        item={editing}
+        onClose={() => setEditing(null)}
+        onSave={handleEdit}
+      />
     </View>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 10, paddingTop: 6,
-  },
-  headerEyebrow: { fontSize: 12, fontWeight: '700', color: theme.textFaint, letterSpacing: 0.5, textTransform: 'uppercase' },
-  headerTitle: { fontSize: 26, fontWeight: '900', color: theme.textDark },
-  recipesBtn: { backgroundColor: theme.primaryLight, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 2 },
-  recipesBtnText: { color: theme.primary, fontWeight: '800', fontSize: 14 },
 
-  statsBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10, flexWrap: 'wrap' },
-  statChip: { backgroundColor: theme.bgTint, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  statChipReceipt: { backgroundColor: theme.accentLight },
-  statChipText: { fontSize: 12, fontWeight: '700', color: theme.textMuted },
-  statChipReceiptText: { color: theme.accent },
-
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.card, borderRadius: 16, marginHorizontal: 16, marginBottom: 12,
-    paddingHorizontal: 14, borderWidth: 2, borderColor: theme.border,
+  heroStats: {
+    fontSize: 12, color: 'rgba(254,246,240,0.45)',
+    fontWeight: '500', marginBottom: 12,
   },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, paddingVertical: 12, color: theme.textDark },
-  clearIcon: { fontSize: 16, color: theme.textFaint, padding: 4 },
 
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20 },
 
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 24 },
-  emptyEmoji: { fontSize: 60, marginBottom: 16 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: theme.textDark, marginBottom: 8 },
-  emptySub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.textDark, marginBottom: 8 },
+  emptySub: { fontSize: 14, color: theme.textFaint, textAlign: 'center', lineHeight: 22 },
   emptyText: { fontSize: 15, color: theme.textFaint, fontWeight: '600' },
 
   groupLetter: {
@@ -210,29 +227,14 @@ const s = StyleSheet.create({
 
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.card, borderRadius: 14, padding: 14, marginBottom: 6,
-    shadowColor: theme.primaryShadow, shadowOpacity: 0.05, shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 }, elevation: 1,
-    borderWidth: 1.5, borderColor: theme.border,
+    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 6,
+    borderLeftWidth: 3, borderLeftColor: theme.accent,
   },
-  itemIcon: {
-    width: 38, height: 38, borderRadius: 12, backgroundColor: theme.bgTint,
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
-  },
-  itemSourceEmoji: { fontSize: 18 },
+  itemEmoji: { fontSize: 22, marginRight: 10 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: '700', color: theme.textDark },
   itemQty: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
-  itemDate: { fontSize: 11, color: theme.border },
-
-  hint: { textAlign: 'center', fontSize: 12, color: theme.border, marginTop: 8 },
-
-  fab: {
-    position: 'absolute', right: 20,
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center',
-    shadowColor: theme.primaryShadow, shadowOpacity: 0.4, shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 }, elevation: 8,
-  },
-  fabText: { color: theme.card, fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  itemDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5, marginRight: 10 },
+  deleteBtn: { padding: 4 },
+  deleteBtnText: { fontSize: 13, color: theme.textFaint, opacity: 0.5, fontWeight: '600' },
 });

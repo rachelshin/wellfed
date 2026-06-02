@@ -23,6 +23,7 @@ export interface BudgetSettings {
   dailyBudget: number;
   startDate: string;          // YYYY-MM-DD — first day of tracking
   adjustments?: Record<string, number>; // date → manual remaining override delta
+  bankBalance?: number;
 }
 
 const ENTRIES_KEY = '@budget_entries';
