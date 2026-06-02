@@ -7,12 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadPrices, addPrice, updatePrice, deletePrice,
-  pricePerUnit, formatPricePerUnit, groupByItem, bestPrice,
+  pricePerUnit, formatPricePerUnit, bestPrice,
   PriceEntry,
 } from '../../store/prices';
+import {
+  loadCategories, saveCategory, updateCategory, deleteCategory,
+  PriceCategory,
+} from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
 import AddPriceModal from '../../components/prices/AddPriceModal';
 import EditPriceModal from '../../components/prices/EditPriceModal';
+import CategoryModal from '../../components/prices/CategoryModal';
 import ReceiptScanModal from '../../components/prices/ReceiptScanModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
@@ -23,14 +28,31 @@ export default function PricesTab() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [prices, setPrices] = useState<PriceEntry[]>([]);
+  const [categories, setCategories] = useState<PriceCategory[]>([]);
   const [search, setSearch] = useState('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [showAdd, setShowAdd] = useState(false);
   const [showScan, setShowScan] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<PriceCategory | null>(null);
   const [editing, setEditing] = useState<PriceEntry | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => setPrices(await loadPrices(user?.uid));
+  const load = async () => {
+    const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
+    // Auto-create categories for any price entries that don't have one yet
+    const categoryItemNames = new Set(c.map((cat) => cat.itemName));
+    let current = c;
+    for (const itemName of new Set(p.map((e) => e.itemName))) {
+      if (!categoryItemNames.has(itemName)) {
+        const catName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+        current = await saveCategory(current, { name: catName, itemName }, user?.uid);
+        categoryItemNames.add(itemName);
+      }
+    }
+    setPrices(p);
+    setCategories(current);
+  };
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
@@ -42,23 +64,58 @@ export default function PricesTab() {
     });
   };
 
-  const handleUpdate = async (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => {
+  const handleUpdateEntry = async (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => {
     setPrices(await updatePrice(prices, id, updates, user?.uid));
     setEditing(null);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteEntry = async (id: string) => {
     setPrices(await deletePrice(prices, id, user?.uid));
     setEditing(null);
   };
 
-  const existingCategories = [...new Set(prices.map((p) => p.itemName))].sort();
+  const handleAddCategory = async (name: string) => {
+    const itemName = name.toLowerCase().trim();
+    setCategories(await saveCategory(categories, { name, itemName }, user?.uid));
+    setShowAddCategory(false);
+  };
 
-  const grouped = groupByItem(prices);
-  const filtered = search.trim()
-    ? Array.from(grouped.entries()).filter(([key]) => key.includes(search.toLowerCase().trim()))
-    : Array.from(grouped.entries());
-  filtered.sort((a, b) => a[0].localeCompare(b[0]));
+  const handleUpdateCategory = async (name: string) => {
+    if (!editingCategory) return;
+    setCategories(await updateCategory(categories, editingCategory.id, name, user?.uid));
+    setEditingCategory(null);
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!editingCategory) return;
+    setCategories(await deleteCategory(categories, editingCategory.id, user?.uid));
+    setEditingCategory(null);
+  };
+
+  const ensureCategory = async (
+    current: PriceCategory[],
+    itemName: string,
+    displayName: string,
+  ): Promise<PriceCategory[]> => {
+    if (current.some((c) => c.itemName === itemName)) return current;
+    const catName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+    return saveCategory(current, { name: catName, itemName }, user?.uid);
+  };
+
+  // Build display list from categories only
+  let displayList = categories
+    .map((cat) => ({
+      cat,
+      entries: prices.filter((p) => p.itemName === cat.itemName),
+    }))
+    .filter(({ cat }) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase().trim();
+      return cat.itemName.includes(q) || cat.name.toLowerCase().includes(q);
+    })
+    .sort((a, b) => a.cat.name.localeCompare(b.cat.name));
+
+  const categoryNames = categories.map((c) => c.itemName);
 
   return (
     <View style={s.root}>
@@ -77,7 +134,7 @@ export default function PricesTab() {
             style={darkSearch.input}
             value={search}
             onChangeText={setSearch}
-            placeholder="Search items…"
+            placeholder="Search categories…"
             placeholderTextColor={theme.placeholder}
             returnKeyType="search"
           />
@@ -94,83 +151,104 @@ export default function PricesTab() {
         contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
-        {prices.length === 0 && (
+        {categories.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyTitle}>Nothing tracked yet</Text>
+            <Text style={s.emptyTitle}>No categories yet</Text>
             <Text style={s.emptySub}>
-              Scan a receipt to add prices automatically, or tap + to add them yourself.
+              Scan a receipt, tap + to add a price, or use "Add a category" below.
             </Text>
           </View>
         )}
 
-        {prices.length > 0 && filtered.length === 0 && (
+        {categories.length > 0 && displayList.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyText}>No items match "{search}"</Text>
+            <Text style={s.emptyText}>No categories match "{search}"</Text>
           </View>
         )}
 
-        {filtered.map(([itemName, entries]) => {
+        {displayList.map(({ cat, entries }) => {
           const best = bestPrice(entries);
-          const isExpanded = expandedItems.has(itemName);
-          const displayName = entries[0]?.displayName ?? itemName;
+          const isExpanded = expandedItems.has(cat.itemName);
 
           return (
-            <View key={itemName} style={s.card}>
-              <TouchableOpacity style={s.cardHeader} onPress={() => toggleExpand(itemName)} activeOpacity={0.7}>
+            <View key={cat.id} style={s.card}>
+              <TouchableOpacity
+                style={s.cardHeader}
+                onPress={() => toggleExpand(cat.itemName)}
+                activeOpacity={0.7}
+              >
                 <View style={s.cardTitleWrap}>
-                  <Text style={s.cardTitle}>{displayName}</Text>
+                  <Text style={s.cardTitle}>{cat.name}</Text>
                   <Text style={s.cardCount}>
-                    {entries.length} {entries.length === 1 ? 'store' : 'stores'}
+                    {entries.length === 0
+                      ? 'No entries'
+                      : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
                   </Text>
                 </View>
                 <View style={s.cardRight}>
                   {best && (
                     <View style={s.bestWrap}>
                       <Text style={s.bestPrice}>{formatPricePerUnit(best)}</Text>
-                      <Text style={s.bestStore}>{best.store || 'Unknown store'}</Text>
+                      <Text style={s.bestStore}>{best.store || 'Unknown'}</Text>
                     </View>
                   )}
+                  <TouchableOpacity
+                    onPress={() => setEditingCategory(cat)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 4 }}
+                  >
+                    <Text style={s.editIcon}>✎</Text>
+                  </TouchableOpacity>
                   <Text style={s.chevron}>{isExpanded ? '▲' : '▼'}</Text>
                 </View>
               </TouchableOpacity>
 
               {isExpanded && (
                 <View style={s.cardBody}>
-                  {entries
-                    .slice()
-                    .sort((a, b) => pricePerUnit(a) - pricePerUnit(b))
-                    .map((entry) => {
-                      const isBest = best?.id === entry.id;
-                      return (
-                        <TouchableOpacity
-                          key={entry.id}
-                          style={[s.entryRow, isBest && s.entryRowBest]}
-                          onPress={() => setEditing(entry)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={s.entryLeft}>
-                            {isBest && (
-                              <View style={s.bestBadge}>
-                                <Text style={s.bestBadgeText}>✦ Best</Text>
-                              </View>
-                            )}
-                            <Text style={s.entryStore}>{entry.store || 'Unknown store'}</Text>
-                            {entry.brand ? <Text style={s.entryBrand}>{entry.brand}</Text> : null}
-                            <Text style={s.entrySize}>{entry.size} {entry.unit} · ${entry.price.toFixed(2)}</Text>
-                          </View>
-                          <View style={s.entryRight}>
-                            <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>{formatPricePerUnit(entry)}</Text>
-                            <Text style={s.entryDate}>{entry.dateAdded}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  <Text style={s.hint}>Tap to edit or remove</Text>
+                  {entries.length === 0 ? (
+                    <View style={s.emptyEntries}>
+                      <Text style={s.emptyEntriesText}>No price entries yet — tap + to add one.</Text>
+                    </View>
+                  ) : (
+                    entries
+                      .slice()
+                      .sort((a, b) => pricePerUnit(a) - pricePerUnit(b))
+                      .map((entry) => {
+                        const isBest = best?.id === entry.id;
+                        return (
+                          <TouchableOpacity
+                            key={entry.id}
+                            style={[s.entryRow, isBest && s.entryRowBest]}
+                            onPress={() => setEditing(entry)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={s.entryLeft}>
+                              {isBest && (
+                                <View style={s.bestBadge}>
+                                  <Text style={s.bestBadgeText}>✦ Best</Text>
+                                </View>
+                              )}
+                              <Text style={s.entryName}>{entry.displayName}</Text>
+                              <Text style={s.entryStore}>{entry.store || 'Unknown store'}</Text>
+                              <Text style={s.entrySize}>{entry.size} {entry.unit} · ${entry.price.toFixed(2)}</Text>
+                            </View>
+                            <View style={s.entryRight}>
+                              <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>{formatPricePerUnit(entry)}</Text>
+                              <Text style={s.entryDate}>{entry.dateAdded}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })
+                  )}
+                  {entries.length > 0 && <Text style={s.hint}>Tap entry to edit or move</Text>}
                 </View>
               )}
             </View>
           );
         })}
+
+        <TouchableOpacity style={s.addCatBtn} onPress={() => setShowAddCategory(true)}>
+          <Text style={s.addCatBtnText}>+ Add a category</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 110 }} />
       </ScrollView>
@@ -183,35 +261,62 @@ export default function PricesTab() {
         <Text style={fab.label}>+</Text>
       </TouchableOpacity>
 
+      <CategoryModal
+        visible={showAddCategory}
+        onClose={() => setShowAddCategory(false)}
+        onSave={handleAddCategory}
+      />
+      <CategoryModal
+        visible={!!editingCategory}
+        onClose={() => setEditingCategory(null)}
+        onSave={handleUpdateCategory}
+        onDelete={handleDeleteCategory}
+        initialName={editingCategory?.name}
+      />
       <EditPriceModal
         entry={editing}
         onClose={() => setEditing(null)}
-        onSave={handleUpdate}
-        onDelete={handleDelete}
-        existingCategories={existingCategories}
+        onSave={handleUpdateEntry}
+        onDelete={handleDeleteEntry}
+        existingCategories={categoryNames}
       />
       <AddPriceModal
         visible={showAdd}
         onClose={() => setShowAdd(false)}
-        onAdd={async (entry) => { setPrices(await addPrice(prices, entry, user?.uid)); setShowAdd(false); }}
+        onAdd={async (entry) => {
+          const updatedPrices = await addPrice(prices, entry, user?.uid);
+          const updatedCategories = await ensureCategory(categories, entry.itemName, entry.displayName);
+          setPrices(updatedPrices);
+          setCategories(updatedCategories);
+          setShowAdd(false);
+        }}
       />
       <ReceiptScanModal
         visible={showScan}
         onClose={() => setShowScan(false)}
-        existingCategories={existingCategories}
+        existingCategories={categoryNames}
         onAddItems={async (newItems) => {
-          let current = prices;
-          for (const item of newItems) current = await addPrice(current, item, user?.uid);
-          setPrices(current);
+          let currentPrices = prices;
+          let currentCategories = categories;
+          for (const item of newItems) {
+            currentPrices = await addPrice(currentPrices, item, user?.uid);
+            currentCategories = await ensureCategory(currentCategories, item.itemName, item.itemName);
+          }
+          setPrices(currentPrices);
+          setCategories(currentCategories);
           const pantry = await loadPantry(user?.uid);
           await addPantryItemsFromReceipt(
             pantry,
-            newItems.map((item) => ({
-              displayName: item.displayName,
-              itemName: item.itemName,
-              addedDate: todayDate(),
-              source: 'receipt' as const,
-            })),
+            newItems.map((item) => {
+              const cat = currentCategories.find((c) => c.itemName === item.itemName);
+              const catName = cat?.name ?? (item.itemName.charAt(0).toUpperCase() + item.itemName.slice(1));
+              return {
+                displayName: catName,
+                itemName: item.itemName,
+                addedDate: todayDate(),
+                source: 'receipt' as const,
+              };
+            }),
             user?.uid,
           );
           setShowScan(false);
@@ -240,13 +345,16 @@ const s = StyleSheet.create({
   cardTitleWrap: { flex: 1 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark },
   cardCount: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
-  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bestWrap: { alignItems: 'flex-end' },
   bestPrice: { fontSize: 15, fontWeight: '800', color: theme.textDark },
   bestStore: { fontSize: 11, color: theme.textFaint },
+  editIcon: { fontSize: 15, color: theme.textFaint },
   chevron: { fontSize: 11, color: theme.textFaint },
 
   cardBody: { borderTopWidth: 1, borderTopColor: theme.border, paddingHorizontal: 12, paddingBottom: 12 },
+  emptyEntries: { paddingVertical: 16, alignItems: 'center' },
+  emptyEntriesText: { fontSize: 13, color: theme.textFaint },
 
   entryRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -260,8 +368,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 4,
   },
   bestBadgeText: { fontSize: 10, fontWeight: '800', color: theme.textDark },
-  entryStore: { fontSize: 14, fontWeight: '700', color: theme.textDark },
-  entryBrand: { fontSize: 12, color: theme.textFaint, marginTop: 1 },
+  entryName: { fontSize: 14, fontWeight: '700', color: theme.textDark },
+  entryStore: { fontSize: 12, color: theme.textFaint, marginTop: 1 },
   entrySize: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
   entryRight: { alignItems: 'flex-end' },
   entryPPU: { fontSize: 14, fontWeight: '800', color: theme.textFaint },
@@ -269,4 +377,7 @@ const s = StyleSheet.create({
   entryDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5, marginTop: 2 },
 
   hint: { textAlign: 'center', fontSize: 11, color: theme.textFaint, opacity: 0.5, marginTop: 8 },
+
+  addCatBtn: { alignItems: 'center', paddingVertical: 18 },
+  addCatBtnText: { fontSize: 15, color: theme.primary, fontWeight: '700' },
 });
