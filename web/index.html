@@ -19,12 +19,18 @@
 
     <style>
       /* Prevent iOS PWA zoom on input focus; remove browser focus ring */
-      input, textarea, select,
-      input:focus, textarea:focus, select:focus {
+      input, textarea, select {
         font-size: 16px !important;
         outline: none !important;
         outline-width: 0 !important;
         box-shadow: none !important;
+        -webkit-appearance: none;
+      }
+      input:focus, textarea:focus, select:focus {
+        outline: none !important;
+        outline-width: 0 !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
       }
 
       html, body, #root {

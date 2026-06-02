@@ -331,7 +331,7 @@ const s = StyleSheet.create({
   itemNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   itemName: {
     fontSize: 16, fontWeight: '700', color: theme.textDark,
-    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, outlineWidth: 0,
+    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, outlineWidth: 0, outlineStyle: 'none',
   },
   removeBtn: { paddingLeft: 10, paddingBottom: 6 },
   removeBtnText: { fontSize: 16, color: theme.textFaint, fontWeight: '600' },
@@ -342,11 +342,11 @@ const s = StyleSheet.create({
   itemPrice: {
     fontSize: 16, color: theme.textDark, fontWeight: '700',
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 8,
-    paddingHorizontal: 6, paddingVertical: 3, width: 64, outlineWidth: 0,
+    paddingHorizontal: 6, paddingVertical: 3, width: 64, outlineWidth: 0, outlineStyle: 'none',
   },
   itemSize: {
     fontSize: 16, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
-    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48, outlineWidth: 0,
+    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48, outlineWidth: 0, outlineStyle: 'none',
   },
   unitSelect: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: theme.border },
@@ -374,6 +374,6 @@ const s = StyleSheet.create({
   catInput: {
     fontSize: 16, borderWidth: 1.5, borderColor: theme.border, borderRadius: 10,
     paddingHorizontal: 10, paddingVertical: 6, color: theme.textDark,
-    backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0,
+    backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0, outlineStyle: 'none',
   },
 });

@@ -67,6 +67,15 @@ export default function BudgetTab() {
 
   const commitEdit = async () => {
     const val = parseFloat(editValue);
+    if (editMode === 'bank' && settings) {
+      if (!isNaN(val)) {
+        const newSettings: BudgetSettings = { ...settings, bankBalance: val };
+        await saveSettings(newSettings, user?.uid);
+        setSettings(newSettings);
+      }
+      setEditMode(null);
+      return;
+    }
     if (!isNaN(val) && val > 0) {
       if (editMode === 'daily') {
         const newSettings: BudgetSettings = {
@@ -92,11 +101,6 @@ export default function BudgetTab() {
         setSettings(newSettings);
         setEditMode(null);
       }
-    } else if (editMode === 'bank' && settings) {
-        const newSettings: BudgetSettings = { ...settings, bankBalance: val };
-        await saveSettings(newSettings, user?.uid);
-        setSettings(newSettings);
-        setEditMode(null);
     } else if (settings) {
       setEditMode(null);
     }
@@ -201,6 +205,7 @@ export default function BudgetTab() {
               {editMode === 'bank' ? (
                 <View style={s.stat}>
                   <View style={s.statEditRow}>
+                    <Text style={s.statDollar}>$</Text>
                     <TextInput
                       style={s.statInput}
                       value={editValue}
@@ -321,7 +326,7 @@ const s = StyleSheet.create({
   bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
     fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68,
-    borderWidth: 0, padding: 0, margin: 0, minWidth: 80, outlineWidth: 0,
+    borderWidth: 0, padding: 0, margin: 0, minWidth: 80, outlineWidth: 0, outlineStyle: 'none',
   },
   bigEditDone: {
     borderWidth: 1.5, borderColor: 'rgba(43,32,64,0.3)', borderRadius: 20,
@@ -341,9 +346,11 @@ const s = StyleSheet.create({
   statDivider: { width: 1, backgroundColor: 'rgba(43,32,64,0.12)', marginVertical: 4 },
 
   statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statDollar: { fontSize: 18, fontWeight: '800', color: theme.textDark },
   statInput: {
     fontSize: 18, fontWeight: '800', color: theme.textDark,
-    borderWidth: 0, padding: 0, minWidth: 52, textAlign: 'center', outlineWidth: 0,
+    borderWidth: 0, padding: 0, minWidth: 52, textAlign: 'center',
+    outlineWidth: 0, outlineStyle: 'none',
   },
   statDone: { fontSize: 15, color: theme.textDark, fontWeight: '800' },
 
