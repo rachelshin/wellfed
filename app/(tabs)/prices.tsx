@@ -52,6 +52,8 @@ export default function PricesTab() {
     setEditing(null);
   };
 
+  const existingCategories = [...new Set(prices.map((p) => p.itemName))].sort();
+
   const grouped = groupByItem(prices);
   const filtered = search.trim()
     ? Array.from(grouped.entries()).filter(([key]) => key.includes(search.toLowerCase().trim()))
@@ -63,7 +65,7 @@ export default function PricesTab() {
       <HeroHeader
         eyebrow="Track & Compare"
         title="Prices 🏷️"
-        cardColor="#3B6B8F"
+        cardColor="#F7A8C4"
         right={
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => setShowScan(true)}>
             <Text style={heroOutlineBtn.text}>Scan</Text>
@@ -76,7 +78,7 @@ export default function PricesTab() {
             value={search}
             onChangeText={setSearch}
             placeholder="Search items…"
-            placeholderTextColor="rgba(254,246,240,0.35)"
+            placeholderTextColor={theme.placeholder}
             returnKeyType="search"
           />
           {search.length > 0 && (
@@ -186,6 +188,7 @@ export default function PricesTab() {
         onClose={() => setEditing(null)}
         onSave={handleUpdate}
         onDelete={handleDelete}
+        existingCategories={existingCategories}
       />
       <AddPriceModal
         visible={showAdd}
@@ -195,6 +198,7 @@ export default function PricesTab() {
       <ReceiptScanModal
         visible={showScan}
         onClose={() => setShowScan(false)}
+        existingCategories={existingCategories}
         onAddItems={async (newItems) => {
           let current = prices;
           for (const item of newItems) current = await addPrice(current, item, user?.uid);

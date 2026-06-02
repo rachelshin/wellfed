@@ -9,11 +9,15 @@ exports.scanReceipt = functions.https.onRequest(async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
 
-  const { imageBase64, mediaType } = req.body;
+  const { imageBase64, mediaType, existingCategories } = req.body;
   if (!imageBase64) { res.status(400).json({ error: 'imageBase64 required' }); return; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
+
+  const categoriesStr = existingCategories?.length
+    ? `Existing categories: ${existingCategories.join(', ')}.`
+    : 'No categories exist yet — create new ones as needed.';
 
   try {
     const client = new Anthropic({ apiKey });
@@ -29,7 +33,7 @@ exports.scanReceipt = functions.https.onRequest(async (req, res) => {
           },
           {
             type: 'text',
-            text: 'Extract every grocery/food line item and its price from this receipt. Return ONLY a raw JSON array — no markdown, no code fences, no explanation. Each element: {"name": string, "price": string}. Omit totals, subtotals, taxes, discounts, and store/header lines.',
+            text: `You are cataloguing a grocery receipt.\n\n${categoriesStr}\n\nExtract every food/grocery line item. For each item return:\n- "name": the display name as printed on the receipt\n- "price": price as a decimal string\n- "category": a short normalised food name used for grouping (1–3 words, lowercase). Use an existing category if it clearly fits. Otherwise create a clean new one (e.g. "Kirkland Organic Firm Tofu 14oz" → "tofu", "2% Reduced Fat Milk 1 Gal" → "milk", "Nature Valley Oats & Honey Bar" → "granola bars").\n\nReturn ONLY a raw JSON array, no markdown, no explanation:\n[{"name":"...","price":"...","category":"..."}]\nOmit totals, subtotals, taxes, discounts, and non-food lines.`,
           },
         ],
       }],

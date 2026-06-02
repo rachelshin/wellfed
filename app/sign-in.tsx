@@ -169,7 +169,7 @@ const s = StyleSheet.create({
   input: {
     backgroundColor: theme.card, borderRadius: 14, borderWidth: 1.5,
     borderColor: theme.border, padding: 15, fontSize: 16,
-    color: theme.textDark, marginBottom: 12,
+    color: theme.textDark, marginBottom: 12, outlineWidth: 0,
   },
 
   error: { color: theme.negative, fontSize: 13, fontWeight: '600', marginBottom: 10, textAlign: 'center' },

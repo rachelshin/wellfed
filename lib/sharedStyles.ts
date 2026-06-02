@@ -1,11 +1,6 @@
 import { StyleSheet } from 'react-native';
 import theme from './theme';
 
-// Petal white at various opacities — used for elements on the dark plum hero
-const p08 = 'rgba(254,246,240,0.08)';
-const p12 = 'rgba(254,246,240,0.12)';
-const p30 = 'rgba(254,246,240,0.30)';
-const p45 = 'rgba(254,246,240,0.45)';
 
 // Blush FAB — shared across all tabs
 export const fab = StyleSheet.create({
@@ -20,24 +15,24 @@ export const fab = StyleSheet.create({
   label: { color: theme.textDark, fontSize: 28, fontWeight: '400', lineHeight: 32 },
 });
 
-// Search bar that sits inside the dark plum hero
+// Search bar that sits inside the hero card
 export const darkSearch = StyleSheet.create({
   wrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: p08, borderRadius: 14, paddingHorizontal: 14,
-    borderWidth: 1, borderColor: p12,
+    backgroundColor: 'rgba(43,32,64,0.07)', borderRadius: 14, paddingHorizontal: 14,
+    borderWidth: 1, borderColor: 'rgba(43,32,64,0.1)',
   },
-  input: { flex: 1, fontSize: 16, color: theme.bg, paddingVertical: 11 },
-  clear: { color: p45, fontSize: 15, padding: 4 },
+  input: { flex: 1, fontSize: 16, color: theme.textDark, paddingVertical: 11, outlineWidth: 0 },
+  clear: { color: theme.textMuted, fontSize: 15, padding: 4 },
 });
 
-// Outline button on the dark hero (Scan, Recipes →, Sign in)
+// Outline button on the hero card (Scan, Recipes →, Sign in)
 export const heroOutlineBtn = StyleSheet.create({
   btn: {
-    borderWidth: 1, borderColor: p30,
+    borderWidth: 1, borderColor: 'rgba(43,32,64,0.2)',
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
   },
-  text: { color: theme.bg, fontWeight: '700', fontSize: 14 },
+  text: { color: theme.textDark, fontWeight: '700', fontSize: 14 },
 });
 
 // Bottom sheet modals — backdrop, sheet container, common fields
@@ -55,7 +50,7 @@ export const modalSheet = StyleSheet.create({
   input: {
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 14,
     padding: 14, fontSize: 16, color: theme.textDark,
-    backgroundColor: theme.bgTint, marginBottom: 16,
+    backgroundColor: theme.bgTint, marginBottom: 16, outlineWidth: 0,
   },
   primaryBtn: {
     backgroundColor: theme.textDark, borderRadius: 16, padding: 18,

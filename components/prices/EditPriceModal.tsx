@@ -13,11 +13,13 @@ interface Props {
   onClose: () => void;
   onSave: (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => void;
   onDelete: (id: string) => void;
+  existingCategories: string[];
 }
 
-export default function EditPriceModal({ entry, onClose, onSave, onDelete }: Props) {
+export default function EditPriceModal({ entry, onClose, onSave, onDelete, existingCategories }: Props) {
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
+  const [group, setGroup] = useState('');
   const [store, setStore] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
@@ -28,6 +30,7 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete }: Pro
   useEffect(() => {
     if (entry) {
       setDisplayName(entry.displayName);
+      setGroup(entry.itemName);
       setStore(entry.store);
       setPrice(String(entry.price));
       setSize(String(entry.size));
@@ -37,7 +40,7 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete }: Pro
 
   useEffect(() => {
     if (!entry) {
-      setDisplayName(''); setStore(''); setPrice('');
+      setDisplayName(''); setGroup(''); setStore(''); setPrice('');
       setSize(''); setUnit('oz'); setShowUnitPicker(false);
     }
   }, [entry]);
@@ -55,9 +58,10 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete }: Pro
     const priceVal = parseFloat(price);
     const sizeVal = parseFloat(size);
     if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0 || !entry) return;
+    const resolvedGroup = group.trim().toLowerCase() || displayName.trim().toLowerCase();
     onSave(entry.id, {
       displayName: displayName.trim(),
-      itemName: displayName.trim().toLowerCase(),
+      itemName: resolvedGroup,
       store: store.trim(),
       price: priceVal,
       size: isNaN(sizeVal) ? 1 : sizeVal,
@@ -74,7 +78,24 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete }: Pro
 
             <Text style={modalSheet.label}>Item Name</Text>
             <TextInput style={modalSheet.input} value={displayName} onChangeText={setDisplayName}
-              placeholder="e.g. Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
+              placeholder="e.g. Organic Firm Tofu" placeholderTextColor={theme.placeholder} autoFocus />
+
+            <Text style={modalSheet.label}>Group</Text>
+            <TextInput style={modalSheet.input} value={group} onChangeText={(v) => setGroup(v.toLowerCase())}
+              placeholder="e.g. tofu" placeholderTextColor={theme.placeholder} />
+            {existingCategories.length > 0 && (
+              <View style={s.catChipRow}>
+                {existingCategories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[s.catChip, group === cat && s.catChipActive]}
+                    onPress={() => setGroup(cat)}
+                  >
+                    <Text style={[s.catChipText, group === cat && s.catChipTextActive]}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <Text style={modalSheet.label}>Store</Text>
             <TextInput style={modalSheet.input} value={store} onChangeText={setStore}
@@ -122,6 +143,14 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete }: Pro
 }
 
 const s = StyleSheet.create({
+  catChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16, marginTop: -8 },
+  catChip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bgTint,
+  },
+  catChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  catChipText: { fontSize: 13, color: theme.textFaint, fontWeight: '600' },
+  catChipTextActive: { color: theme.primary, fontWeight: '800' },
   sizeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   sizeInput: { flex: 1, marginBottom: 0 },
   unitBtn: {

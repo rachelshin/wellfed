@@ -61,7 +61,7 @@ export default function BudgetTab() {
   };
 
   const startEditBank = () => {
-    setEditValue(settings?.bankBalance != null ? settings.bankBalance.toFixed(2) : '');
+    setEditValue('');
     setEditMode('bank');
   };
 
@@ -129,7 +129,7 @@ export default function BudgetTab() {
       <HeroHeader
         eyebrow={formatDate(todayStr)}
         title="Well Fed ✨"
-        cardColor="#7050BE"
+        cardColor="#F4CF6E"
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
@@ -144,7 +144,7 @@ export default function BudgetTab() {
               onChangeText={setEditValue}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor="rgba(254,246,240,0.3)"
+              placeholderTextColor={theme.placeholder}
               autoFocus
               onSubmitEditing={commitEdit}
               returnKeyType="done"
@@ -201,7 +201,6 @@ export default function BudgetTab() {
               {editMode === 'bank' ? (
                 <View style={s.stat}>
                   <View style={s.statEditRow}>
-                    <Text style={s.statVal}>$</Text>
                     <TextInput
                       style={s.statInput}
                       value={editValue}
@@ -311,61 +310,61 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   // Big number
-  bigAmount: { fontSize: 64, fontWeight: '900', color: theme.warning, lineHeight: 68 },
+  bigAmount: { fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68 },
   bigAmountNeg: { color: theme.negative },
   bigLabel: {
-    fontSize: 14, color: 'rgba(254,246,240,0.5)', marginBottom: 22,
+    fontSize: 14, color: 'rgba(43,32,64,0.5)', marginBottom: 22,
     fontWeight: '500', marginTop: 2,
   },
   bigLabelNeg: { color: theme.negative },
 
   bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
-    fontSize: 64, fontWeight: '900', color: theme.warning, lineHeight: 68,
-    borderWidth: 0, padding: 0, margin: 0, minWidth: 80,
+    fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68,
+    borderWidth: 0, padding: 0, margin: 0, minWidth: 80, outlineWidth: 0,
   },
   bigEditDone: {
-    borderWidth: 1.5, borderColor: theme.warning, borderRadius: 20,
+    borderWidth: 1.5, borderColor: 'rgba(43,32,64,0.3)', borderRadius: 20,
     paddingHorizontal: 16, paddingVertical: 8,
   },
-  bigEditDoneText: { color: theme.warning, fontSize: 18, fontWeight: '700' },
+  bigEditDoneText: { color: theme.textDark, fontSize: 18, fontWeight: '700' },
 
   // Stats
   statRow: { flexDirection: 'row', marginBottom: 18 },
   stat: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: 18, fontWeight: '800', color: theme.bg },
-  statSpent: { color: theme.accent },
+  statVal: { fontSize: 18, fontWeight: '800', color: theme.textDark },
+  statSpent: { color: theme.negative },
   statLabel: {
-    fontSize: 10, color: 'rgba(254,246,240,0.4)', marginTop: 3,
+    fontSize: 10, color: 'rgba(43,32,64,0.4)', marginTop: 3,
     fontWeight: '700', letterSpacing: 0.6,
   },
-  statDivider: { width: 1, backgroundColor: 'rgba(254,246,240,0.12)', marginVertical: 4 },
+  statDivider: { width: 1, backgroundColor: 'rgba(43,32,64,0.12)', marginVertical: 4 },
 
   statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statInput: {
-    fontSize: 18, fontWeight: '800', color: theme.bg,
-    borderWidth: 0, padding: 0, minWidth: 52, textAlign: 'center',
+    fontSize: 18, fontWeight: '800', color: theme.textDark,
+    borderWidth: 0, padding: 0, minWidth: 52, textAlign: 'center', outlineWidth: 0,
   },
-  statDone: { fontSize: 15, color: theme.warning, fontWeight: '800' },
+  statDone: { fontSize: 15, color: theme.textDark, fontWeight: '800' },
 
   // Rollover
   rolloverBadge: {
-    backgroundColor: 'rgba(167,139,219,0.18)', borderRadius: 10,
+    backgroundColor: theme.primaryLight, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
   },
   rolloverBadgeNeg: {
-    backgroundColor: 'rgba(244,207,110,0.15)', borderRadius: 10,
+    backgroundColor: theme.accentLight, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
   },
   rolloverText: { fontSize: 12, color: theme.primary, fontWeight: '700' },
-  rolloverTextNeg: { fontSize: 12, color: theme.warning, fontWeight: '700' },
+  rolloverTextNeg: { fontSize: 12, color: theme.negative, fontWeight: '700' },
 
   // Progress
   progressTrack: {
-    height: 6, backgroundColor: 'rgba(254,246,240,0.12)',
+    height: 6, backgroundColor: 'rgba(43,32,64,0.1)',
     borderRadius: 3, overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: theme.accent, borderRadius: 3 },
+  progressFill: { height: '100%', backgroundColor: theme.textDark, borderRadius: 3 },
   progressOver: { backgroundColor: theme.negative },
 
   // List

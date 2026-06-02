@@ -87,7 +87,7 @@ export default function PantryTab() {
       <HeroHeader
         eyebrow="What's in your kitchen?"
         title="Pantry 🧺"
-        cardColor="#4A7B5E"
+        cardColor="#A78BDB"
         right={items.length > 0 ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => router.push('/(tabs)/recipes')}>
             <Text style={heroOutlineBtn.text}>Recipes →</Text>
@@ -105,7 +105,7 @@ export default function PantryTab() {
             value={search}
             onChangeText={setSearch}
             placeholder="Search your pantry…"
-            placeholderTextColor="rgba(254,246,240,0.35)"
+            placeholderTextColor={theme.placeholder}
             returnKeyType="search"
           />
           {search.length > 0 && (
@@ -196,7 +196,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   heroStats: {
-    fontSize: 12, color: 'rgba(254,246,240,0.45)',
+    fontSize: 12, color: 'rgba(43,32,64,0.5)',
     fontWeight: '500', marginBottom: 12,
   },
 

@@ -16,12 +16,14 @@ interface DetectedItem {
   unit: Unit;
   store: string;
   selected: boolean;
+  category: string;
 }
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   onAddItems: (items: Omit<PriceEntry, 'id'>[]) => void;
+  existingCategories: string[];
 }
 
 function today() {
@@ -29,20 +31,20 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-
-export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props) {
+export default function ReceiptScanModal({ visible, onClose, onAddItems, existingCategories }: Props) {
   const insets = useSafeAreaInsets();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[]>([]);
   const [storeName, setStoreName] = useState('');
   const [step, setStep] = useState<'pick' | 'review'>('pick');
+  const [openCategoryIndex, setOpenCategoryIndex] = useState<number | null>(null);
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
     if (!visible) {
       setImageUri(null); setScanning(false);
-      setItems([]); setStoreName(''); setStep('pick');
+      setItems([]); setStoreName(''); setStep('pick'); setOpenCategoryIndex(null);
     }
   }, [visible]);
 
@@ -80,18 +82,19 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
       const res = await fetch('https://us-central1-well-fed-66136.cloudfunctions.net/scanReceipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mediaType }),
+        body: JSON.stringify({ imageBase64: base64, mediaType, existingCategories }),
       });
       if (!res.ok) throw new Error('Server error');
 
       const { items: raw } = await res.json();
-      const detected: DetectedItem[] = (raw as { name: string; price: string }[]).map((it) => ({
+      const detected: DetectedItem[] = (raw as { name: string; price: string; category: string }[]).map((it) => ({
         name: it.name || '',
         price: String(parseFloat(it.price) || 0),
         size: '1',
         unit: 'count',
         store: '',
         selected: true,
+        category: (it.category || it.name || '').toLowerCase().trim(),
       }));
       setItems(detected);
       setStep('review');
@@ -112,11 +115,11 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
     if (selected.length === 0) { onClose(); return; }
     const entries: Omit<PriceEntry, 'id'>[] = selected.map((it) => ({
       displayName: it.name.trim(),
-      itemName: it.name.trim().toLowerCase(),
+      itemName: it.category.trim() || it.name.trim().toLowerCase(),
       brand: '',
       store: storeName.trim() || it.store.trim(),
       price: parseFloat(it.price) || 0,
-      size: parseFloat(it.size) || 1,
+      size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),
       unit: it.unit,
       dateAdded: today(),
     }));
@@ -170,7 +173,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                 </Text>
                 <Text style={s.sub}>
                   {items.length > 0
-                    ? 'Deselect anything you don\'t want to save. Tap any field to edit.'
+                    ? 'Review names, prices, and groups. Deselect anything you don\'t want to save.'
                     : 'The receipt was tricky to read — add items from the + button on the Prices tab.'}
                 </Text>
 
@@ -185,6 +188,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                 ) : (
                   items.map((item, i) => {
                     const sizeNA = item.size === 'n/a';
+                    const catOpen = openCategoryIndex === i;
                     return (
                       <View key={i} style={[s.itemRow, !item.selected && s.itemRowDimmed]}>
                         <TouchableOpacity onPress={() => updateItem(i, 'selected', !item.selected)}>
@@ -193,13 +197,18 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                           </Text>
                         </TouchableOpacity>
                         <View style={s.itemFields}>
+
+                          {/* Name row */}
                           <View style={s.itemNameRow}>
                             <TextInput style={[s.itemName, { flex: 1 }]} value={item.name}
-                              onChangeText={(v) => updateItem(i, 'name', v)} placeholder="Item name" placeholderTextColor={theme.placeholder} />
+                              onChangeText={(v) => updateItem(i, 'name', v)} placeholder="Item name"
+                              placeholderTextColor={theme.placeholder} />
                             <TouchableOpacity onPress={() => setItems((prev) => prev.filter((_, idx) => idx !== i))} style={s.removeBtn}>
                               <Text style={s.removeBtnText}>✕</Text>
                             </TouchableOpacity>
                           </View>
+
+                          {/* Price / Size / Unit row */}
                           <View style={s.itemRow2}>
                             <View style={s.priceWrap}>
                               <Text style={s.itemFieldLabel}>$</Text>
@@ -229,6 +238,42 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                               </TouchableOpacity>
                             </View>
                           </View>
+
+                          {/* Category row */}
+                          <TouchableOpacity
+                            style={s.catBadge}
+                            onPress={() => setOpenCategoryIndex(catOpen ? null : i)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={s.catBadgeText}>{item.category || 'set group…'}</Text>
+                            <Text style={s.catBadgeArrow}>{catOpen ? '▲' : '▾'}</Text>
+                          </TouchableOpacity>
+
+                          {catOpen && (
+                            <View style={s.catPicker}>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catChipRow}>
+                                {existingCategories.map((cat) => (
+                                  <TouchableOpacity
+                                    key={cat}
+                                    style={[s.catChip, item.category === cat && s.catChipActive]}
+                                    onPress={() => { updateItem(i, 'category', cat); setOpenCategoryIndex(null); }}
+                                  >
+                                    <Text style={[s.catChipText, item.category === cat && s.catChipTextActive]}>{cat}</Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </ScrollView>
+                              <TextInput
+                                style={s.catInput}
+                                value={item.category}
+                                onChangeText={(v) => updateItem(i, 'category', v.toLowerCase())}
+                                placeholder="or type a new group…"
+                                placeholderTextColor={theme.placeholder}
+                                returnKeyType="done"
+                                onSubmitEditing={() => setOpenCategoryIndex(null)}
+                              />
+                            </View>
+                          )}
+
                         </View>
                       </View>
                     );
@@ -272,6 +317,7 @@ const s = StyleSheet.create({
   scanningTitle: { marginTop: 16, fontSize: 18, fontWeight: '700', color: theme.textDark },
   noItems: { paddingVertical: 24, alignItems: 'center' },
   noItemsText: { fontSize: 14, color: theme.textFaint, textAlign: 'center', lineHeight: 20 },
+
   itemRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 12,
     padding: 12, backgroundColor: theme.bgTint, borderRadius: 14,
@@ -281,28 +327,53 @@ const s = StyleSheet.create({
   checkbox: { fontSize: 20, marginTop: 4, color: theme.textFaint },
   checkboxSelected: { color: theme.primary, fontWeight: '800' },
   itemFields: { flex: 1 },
+
   itemNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   itemName: {
     fontSize: 16, fontWeight: '700', color: theme.textDark,
-    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6,
+    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, outlineWidth: 0,
   },
   removeBtn: { paddingLeft: 10, paddingBottom: 6 },
   removeBtnText: { fontSize: 16, color: theme.textFaint, fontWeight: '600' },
-  itemRow2: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+
+  itemRow2: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   priceWrap: { flexDirection: 'row', alignItems: 'center' },
   itemFieldLabel: { fontSize: 16, color: theme.textFaint, fontWeight: '700' },
   itemPrice: {
     fontSize: 16, color: theme.textDark, fontWeight: '700',
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 8,
-    paddingHorizontal: 6, paddingVertical: 3, width: 64,
+    paddingHorizontal: 6, paddingVertical: 3, width: 64, outlineWidth: 0,
   },
   itemSize: {
     fontSize: 16, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
-    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48,
+    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48, outlineWidth: 0,
   },
   unitSelect: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: theme.border },
   miniUnitActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
   miniUnitText: { fontSize: 11, color: theme.textFaint },
   miniUnitTextActive: { color: theme.primary, fontWeight: '800' },
+
+  catBadge: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
+    backgroundColor: theme.primaryLight, borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 4, gap: 4,
+  },
+  catBadgeText: { fontSize: 12, fontWeight: '700', color: theme.primary },
+  catBadgeArrow: { fontSize: 10, color: theme.primary },
+
+  catPicker: { marginTop: 8 },
+  catChipRow: { gap: 6, paddingBottom: 8, flexDirection: 'row' },
+  catChip: {
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bg,
+  },
+  catChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  catChipText: { fontSize: 12, color: theme.textFaint, fontWeight: '600' },
+  catChipTextActive: { color: theme.primary, fontWeight: '800' },
+  catInput: {
+    fontSize: 16, borderWidth: 1.5, borderColor: theme.border, borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 6, color: theme.textDark,
+    backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0,
+  },
 });
