@@ -11,21 +11,17 @@ import theme from '../../lib/theme';
 interface Props {
   item: PantryItem | null;
   onClose: () => void;
-  onSave: (id: string, displayName: string, itemName: string, quantity: string) => void;
+  onSave: (id: string, displayName: string, itemName: string) => void;
   onDelete: (id: string) => void;
 }
 
 export default function EditPantryModal({ item, onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
-    if (item) {
-      setName(item.displayName);
-      setQuantity(item.quantity);
-    }
+    if (item) setName(item.displayName);
   }, [item]);
 
   useEffect(() => {
@@ -39,7 +35,7 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
 
   const handleSave = () => {
     if (!name.trim() || !item) return;
-    onSave(item.id, name.trim(), name.trim().toLowerCase(), quantity.trim() || 'some');
+    onSave(item.id, name.trim(), name.trim().toLowerCase());
   };
 
   return (
@@ -57,15 +53,6 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
               placeholder="e.g. Pasta, Eggs, Olive oil"
               placeholderTextColor={theme.placeholder}
               autoFocus
-            />
-
-            <Text style={modalSheet.label}>Quantity</Text>
-            <TextInput
-              style={modalSheet.input}
-              value={quantity}
-              onChangeText={setQuantity}
-              placeholder="e.g. 2 bags, half a jar"
-              placeholderTextColor={theme.placeholder}
               returnKeyType="done"
               onSubmitEditing={handleSave}
             />

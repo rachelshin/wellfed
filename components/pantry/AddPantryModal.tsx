@@ -17,11 +17,10 @@ interface Props {
 export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
-    if (!visible) { setName(''); setQuantity(''); }
+    if (!visible) { setName(''); }
   }, [visible]);
 
   useEffect(() => {
@@ -38,7 +37,6 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
     onAdd({
       displayName: name.trim(),
       itemName: name.trim().toLowerCase(),
-      quantity: quantity.trim() || 'some',
       addedDate: todayDate(),
       source: 'manual',
     });
@@ -59,15 +57,6 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
               placeholder="e.g. Pasta, Eggs, Olive oil"
               placeholderTextColor={theme.placeholder}
               autoFocus
-            />
-
-            <Text style={modalSheet.label}>Quantity</Text>
-            <TextInput
-              style={modalSheet.input}
-              value={quantity}
-              onChangeText={setQuantity}
-              placeholder="e.g. 2 bags, half a jar"
-              placeholderTextColor={theme.placeholder}
               returnKeyType="done"
               onSubmitEditing={handleAdd}
             />

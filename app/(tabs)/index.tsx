@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Alert, TextInput,
+  RefreshControl, Alert, TextInput, Modal, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -12,7 +12,7 @@ import {
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
+import { fab, heroOutlineBtn, modalSheet } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -23,8 +23,11 @@ export default function BudgetTab() {
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [editMode, setEditMode] = useState<'remaining' | 'daily' | 'bank' | null>(null);
+  const [editMode, setEditMode] = useState<'remaining' | 'daily' | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [bankInput, setBankInput] = useState('');
+  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   const todayStr = today();
 
@@ -60,22 +63,29 @@ export default function BudgetTab() {
     setEditMode('daily');
   };
 
-  const startEditBank = () => {
-    setEditValue('');
-    setEditMode('bank');
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    if (!window.navigator?.standalone || !window.visualViewport) return;
+    const onResize = () =>
+      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
+    window.visualViewport.addEventListener('resize', onResize);
+    return () => window.visualViewport!.removeEventListener('resize', onResize);
+  }, []);
+
+  const openBankModal = () => { setBankInput(''); setShowBankModal(true); };
+
+  const saveBankBalance = async () => {
+    const val = parseFloat(bankInput);
+    if (!isNaN(val) && settings) {
+      const newSettings: BudgetSettings = { ...settings, bankBalance: val };
+      await saveSettings(newSettings, user?.uid);
+      setSettings(newSettings);
+    }
+    setShowBankModal(false);
   };
 
   const commitEdit = async () => {
     const val = parseFloat(editValue);
-    if (editMode === 'bank' && settings) {
-      if (!isNaN(val)) {
-        const newSettings: BudgetSettings = { ...settings, bankBalance: val };
-        await saveSettings(newSettings, user?.uid);
-        setSettings(newSettings);
-      }
-      setEditMode(null);
-      return;
-    }
     if (!isNaN(val) && val > 0) {
       if (editMode === 'daily') {
         const newSettings: BudgetSettings = {
@@ -202,33 +212,12 @@ export default function BudgetTab() {
                 <Text style={s.statLabel}>SPENT</Text>
               </View>
               <View style={s.statDivider} />
-              {editMode === 'bank' ? (
-                <View style={s.stat}>
-                  <View style={s.statEditRow}>
-                    <Text style={s.statDollar}>$</Text>
-                    <TextInput
-                      style={s.statInput}
-                      value={editValue}
-                      onChangeText={setEditValue}
-                      keyboardType="decimal-pad"
-                      autoFocus
-                      onSubmitEditing={commitEdit}
-                      returnKeyType="done"
-                    />
-                    <TouchableOpacity onPress={commitEdit}>
-                      <Text style={s.statDone}>✓</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={s.statLabel}>IN BANK</Text>
-                </View>
-              ) : (
-                <TouchableOpacity style={s.stat} onPress={startEditBank} activeOpacity={0.6}>
-                  <Text style={s.statVal}>
-                    {settings.bankBalance != null ? `$${settings.bankBalance.toFixed(2)}` : '—'}
-                  </Text>
-                  <Text style={s.statLabel}>IN BANK</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={s.stat} onPress={openBankModal} activeOpacity={0.6}>
+                <Text style={s.statVal}>
+                  {settings.bankBalance != null ? `$${settings.bankBalance.toFixed(2)}` : '—'}
+                </Text>
+                <Text style={s.statLabel}>IN BANK</Text>
+              </TouchableOpacity>
             </View>
 
             {rollover > 0 && (
@@ -307,6 +296,32 @@ export default function BudgetTab() {
         onClose={() => setShowAdd(false)}
         onAdd={async (entry) => { setEntries(await addEntry(entries, entry, user?.uid)); setShowAdd(false); }}
       />
+
+      <Modal visible={showBankModal} animationType="slide" transparent>
+        <View style={modalSheet.backdrop}>
+          <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
+            <Text style={modalSheet.title}>Bank balance</Text>
+            <Text style={modalSheet.label}>Amount ($)</Text>
+            <TextInput
+              style={modalSheet.input}
+              value={bankInput}
+              onChangeText={setBankInput}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 1250.00"
+              placeholderTextColor={theme.placeholder}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={saveBankBalance}
+            />
+            <TouchableOpacity style={modalSheet.primaryBtn} onPress={saveBankBalance}>
+              <Text style={modalSheet.primaryBtnText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={modalSheet.cancelBtn} onPress={() => setShowBankModal(false)}>
+              <Text style={modalSheet.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -346,13 +361,6 @@ const s = StyleSheet.create({
   statDivider: { width: 1, backgroundColor: 'rgba(43,32,64,0.12)', marginVertical: 4 },
 
   statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statDollar: { fontSize: 18, fontWeight: '800', color: theme.textDark },
-  statInput: {
-    fontSize: 18, fontWeight: '800', color: theme.textDark,
-    borderWidth: 0, padding: 0, minWidth: 52, textAlign: 'center',
-    outlineWidth: 0, outlineStyle: 'none',
-  },
-  statDone: { fontSize: 15, color: theme.textDark, fontWeight: '800' },
 
   // Rollover
   rolloverBadge: {

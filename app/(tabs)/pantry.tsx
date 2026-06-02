@@ -61,8 +61,8 @@ export default function PantryTab() {
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const handleEdit = async (id: string, displayName: string, itemName: string, quantity: string) => {
-    setItems(await updatePantryItem(items, id, { displayName, itemName, quantity }, user?.uid));
+  const handleEdit = async (id: string, displayName: string, itemName: string) => {
+    setItems(await updatePantryItem(items, id, { displayName, itemName }, user?.uid));
     setEditing(null);
   };
 
@@ -151,7 +151,6 @@ export default function PantryTab() {
                   {emoji ? <Text style={s.itemEmoji}>{emoji}</Text> : null}
                   <View style={s.itemInfo}>
                     <Text style={s.itemName}>{item.displayName}</Text>
-                    <Text style={s.itemQty}>{item.quantity}</Text>
                   </View>
                   <Text style={s.itemDate}>{item.addedDate}</Text>
                 </TouchableOpacity>
@@ -221,6 +220,5 @@ const s = StyleSheet.create({
   itemEmoji: { fontSize: 22, marginRight: 10 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: '700', color: theme.textDark },
-  itemQty: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
   itemDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5 },
 });

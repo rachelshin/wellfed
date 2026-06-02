@@ -6,7 +6,6 @@ export interface PantryItem {
   id: string;
   displayName: string;
   itemName: string;    // lowercase for matching/dedup
-  quantity: string;    // free text: "2 cups", "some", "1 bag"
   addedDate: string;   // YYYY-MM-DD
   source: 'manual' | 'receipt';
 }
@@ -49,7 +48,7 @@ export async function addPantryItem(
 export async function updatePantryItem(
   items: PantryItem[],
   id: string,
-  patch: Partial<Pick<PantryItem, 'quantity' | 'displayName' | 'itemName'>>,
+  patch: Partial<Pick<PantryItem, 'displayName' | 'itemName'>>,
   uid?: string | null,
 ): Promise<PantryItem[]> {
   const updated = items.map((i) => (i.id === id ? { ...i, ...patch } : i));

@@ -209,7 +209,6 @@ export default function PricesTab() {
             newItems.map((item) => ({
               displayName: item.displayName,
               itemName: item.itemName,
-              quantity: `${item.size} ${item.unit}`,
               addedDate: todayDate(),
               source: 'receipt' as const,
             })),
