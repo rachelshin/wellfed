@@ -61,7 +61,7 @@ export default function BudgetTab() {
   };
 
   const startEditBank = () => {
-    setEditValue(settings?.bankBalance != null ? String(settings.bankBalance) : '');
+    setEditValue(settings?.bankBalance != null ? settings.bankBalance.toFixed(2) : '');
     setEditMode('bank');
   };
 
@@ -113,13 +113,13 @@ export default function BudgetTab() {
   };
 
   const bigLabel = () => {
-    if (editMode === 'remaining') return 'set remaining for today';
-    if (editMode === 'daily' && !settings) return 'set your daily budget';
-    if (!settings) return 'tap to set your daily budget';
-    if (remaining < 0) return 'over budget today';
-    if (pct < 0.5) return 'plenty left — nice work!';
-    if (pct < 0.8) return 'left for today';
-    return 'left — almost there!';
+    if (editMode === 'remaining') return 'set remaining for today ✏️';
+    if (editMode === 'daily' && !settings) return 'set your daily budget 🌟';
+    if (!settings) return 'tap to set your daily budget 🌟';
+    if (remaining < 0) return 'over budget today 😬';
+    if (pct < 0.5) return 'plenty left — nice work! ✨';
+    if (pct < 0.8) return 'left for today 🌸';
+    return 'left — almost there! 💪';
   };
 
   const showBigEdit = editMode === 'remaining' || (editMode === 'daily' && !settings);
@@ -128,7 +128,8 @@ export default function BudgetTab() {
     <View style={s.root}>
       <HeroHeader
         eyebrow={formatDate(todayStr)}
-        title="Well Fed"
+        title="Well Fed ✨"
+        cardColor="#7050BE"
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
@@ -200,6 +201,7 @@ export default function BudgetTab() {
               {editMode === 'bank' ? (
                 <View style={s.stat}>
                   <View style={s.statEditRow}>
+                    <Text style={s.statVal}>$</Text>
                     <TextInput
                       style={s.statInput}
                       value={editValue}
@@ -227,12 +229,12 @@ export default function BudgetTab() {
 
             {rollover > 0 && (
               <View style={s.rolloverBadge}>
-                <Text style={s.rolloverText}>+${rollover.toFixed(2)} saved from before</Text>
+                <Text style={s.rolloverText}>+${rollover.toFixed(2)} saved from before 🎉</Text>
               </View>
             )}
             {rollover < 0 && (
               <View style={s.rolloverBadgeNeg}>
-                <Text style={s.rolloverTextNeg}>${Math.abs(rollover).toFixed(2)} carried over</Text>
+                <Text style={s.rolloverTextNeg}>${Math.abs(rollover).toFixed(2)} carried over 😅</Text>
               </View>
             )}
 
@@ -253,7 +255,7 @@ export default function BudgetTab() {
 
         {todayEntries.length === 0 ? (
           <View style={s.noEntries}>
-            <Text style={s.noEntriesTitle}>Nothing logged yet</Text>
+            <Text style={s.noEntriesTitle}>Nothing logged yet 🍽️</Text>
             <Text style={s.noEntriesText}>Tap + to add your first entry today.</Text>
           </View>
         ) : (

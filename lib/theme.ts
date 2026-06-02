@@ -16,6 +16,9 @@ const theme = {
   // Borders
   border: '#F0DDD5',
 
+  // Hero card — medium violet (lighter than textDark so it feels friendly, not severe)
+  heroCard: '#7050BE',
+
   // Text — deep plum
   textDark: '#2B2040',
   textMuted: '#6B5070',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
-  Platform, ScrollView,
+  Platform, ScrollView, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PantryItem } from '../../store/pantry';
@@ -12,9 +12,10 @@ interface Props {
   item: PantryItem | null;
   onClose: () => void;
   onSave: (id: string, displayName: string, itemName: string, quantity: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export default function EditPantryModal({ item, onClose, onSave }: Props) {
+export default function EditPantryModal({ item, onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -75,9 +76,17 @@ export default function EditPantryModal({ item, onClose, onSave }: Props) {
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
               <Text style={modalSheet.cancelText}>Cancel</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={s.deleteBtn} onPress={() => item && onDelete(item.id)}>
+              <Text style={s.deleteBtnText}>Remove from pantry</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </View>
     </Modal>
   );
 }
+
+const s = StyleSheet.create({
+  deleteBtn: { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
+  deleteBtnText: { fontSize: 15, color: theme.negative, fontWeight: '600' },
+});

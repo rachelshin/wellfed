@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl, Alert,
+  TextInput, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -66,16 +66,6 @@ export default function PantryTab() {
     setEditing(null);
   };
 
-  const handleDelete = (item: PantryItem) => {
-    Alert.alert('Remove from pantry?', item.displayName, [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Remove', style: 'destructive',
-        onPress: async () => setItems(await deletePantryItem(items, item.id, user?.uid)),
-      },
-    ]);
-  };
-
   const filtered = search.trim()
     ? items.filter((i) => i.itemName.includes(search.toLowerCase().trim()))
     : items;
@@ -96,7 +86,8 @@ export default function PantryTab() {
     <View style={s.root}>
       <HeroHeader
         eyebrow="What's in your kitchen?"
-        title="Pantry"
+        title="Pantry 🧺"
+        cardColor="#4A7B5E"
         right={items.length > 0 ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => router.push('/(tabs)/recipes')}>
             <Text style={heroOutlineBtn.text}>Recipes →</Text>
@@ -163,13 +154,6 @@ export default function PantryTab() {
                     <Text style={s.itemQty}>{item.quantity}</Text>
                   </View>
                   <Text style={s.itemDate}>{item.addedDate}</Text>
-                  <TouchableOpacity
-                    style={s.deleteBtn}
-                    onPress={() => handleDelete(item)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={s.deleteBtnText}>✕</Text>
-                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
@@ -199,6 +183,10 @@ export default function PantryTab() {
         item={editing}
         onClose={() => setEditing(null)}
         onSave={handleEdit}
+        onDelete={async (id) => {
+          setItems(await deletePantryItem(items, id, user?.uid));
+          setEditing(null);
+        }}
       />
     </View>
   );
@@ -234,7 +222,5 @@ const s = StyleSheet.create({
   itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: '700', color: theme.textDark },
   itemQty: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
-  itemDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5, marginRight: 10 },
-  deleteBtn: { padding: 4 },
-  deleteBtnText: { fontSize: 13, color: theme.textFaint, opacity: 0.5, fontWeight: '600' },
+  itemDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5 },
 });

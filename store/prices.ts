@@ -47,6 +47,22 @@ export async function addPrice(
   return [...prices, newPrice];
 }
 
+export async function updatePrice(
+  prices: PriceEntry[],
+  id: string,
+  updates: Partial<Omit<PriceEntry, 'id'>>,
+  uid?: string | null,
+): Promise<PriceEntry[]> {
+  const updated = prices.map((p) => p.id === id ? { ...p, ...updates } : p);
+  const entry = updated.find((p) => p.id === id)!;
+  if (uid) {
+    await setDoc(doc(pricesCol(uid), id), entry);
+  } else {
+    await AsyncStorage.setItem(PRICES_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
 export async function deletePrice(
   prices: PriceEntry[],
   id: string,

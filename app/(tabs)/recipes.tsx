@@ -79,7 +79,7 @@ export default function RecipesTab() {
 
   return (
     <View style={s.root}>
-      <HeroHeader eyebrow="What can you make?" title="Recipes" />
+      <HeroHeader eyebrow="What can you make?" title="Recipes 🍳" cardColor="#B84E72" />
 
       <ScrollView
         style={s.scroll}

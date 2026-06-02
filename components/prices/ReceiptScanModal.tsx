@@ -183,37 +183,56 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems }: Props
                     <Text style={s.noItemsText}>No items detected. Try a clearer photo next time.</Text>
                   </View>
                 ) : (
-                  items.map((item, i) => (
-                    <View key={i} style={[s.itemRow, !item.selected && s.itemRowDimmed]}>
-                      <TouchableOpacity onPress={() => updateItem(i, 'selected', !item.selected)}>
-                        <Text style={[s.checkbox, item.selected && s.checkboxSelected]}>
-                          {item.selected ? '✓' : '○'}
-                        </Text>
-                      </TouchableOpacity>
-                      <View style={s.itemFields}>
-                        <TextInput style={s.itemName} value={item.name}
-                          onChangeText={(v) => updateItem(i, 'name', v)} placeholder="Item name" placeholderTextColor={theme.placeholder} />
-                        <View style={s.itemRow2}>
-                          <View style={s.priceWrap}>
-                            <Text style={s.itemFieldLabel}>$</Text>
-                            <TextInput style={s.itemPrice} value={item.price}
-                              onChangeText={(v) => updateItem(i, 'price', v)} keyboardType="decimal-pad" />
+                  items.map((item, i) => {
+                    const sizeNA = item.size === 'n/a';
+                    return (
+                      <View key={i} style={[s.itemRow, !item.selected && s.itemRowDimmed]}>
+                        <TouchableOpacity onPress={() => updateItem(i, 'selected', !item.selected)}>
+                          <Text style={[s.checkbox, item.selected && s.checkboxSelected]}>
+                            {item.selected ? '✓' : '○'}
+                          </Text>
+                        </TouchableOpacity>
+                        <View style={s.itemFields}>
+                          <View style={s.itemNameRow}>
+                            <TextInput style={[s.itemName, { flex: 1 }]} value={item.name}
+                              onChangeText={(v) => updateItem(i, 'name', v)} placeholder="Item name" placeholderTextColor={theme.placeholder} />
+                            <TouchableOpacity onPress={() => setItems((prev) => prev.filter((_, idx) => idx !== i))} style={s.removeBtn}>
+                              <Text style={s.removeBtnText}>✕</Text>
+                            </TouchableOpacity>
                           </View>
-                          <TextInput style={s.itemSize} value={item.size}
-                            onChangeText={(v) => updateItem(i, 'size', v)} keyboardType="decimal-pad"
-                            placeholder="size" placeholderTextColor={theme.placeholder} />
-                          <View style={s.unitSelect}>
-                            {(['oz', 'lb', 'count', 'fl oz'] as Unit[]).map((u) => (
-                              <TouchableOpacity key={u} onPress={() => updateItem(i, 'unit', u)}
-                                style={[s.miniUnit, item.unit === u && s.miniUnitActive]}>
-                                <Text style={[s.miniUnitText, item.unit === u && s.miniUnitTextActive]}>{u}</Text>
+                          <View style={s.itemRow2}>
+                            <View style={s.priceWrap}>
+                              <Text style={s.itemFieldLabel}>$</Text>
+                              <TextInput style={s.itemPrice} value={item.price}
+                                onChangeText={(v) => updateItem(i, 'price', v)} keyboardType="decimal-pad" />
+                            </View>
+                            {sizeNA ? (
+                              <TouchableOpacity style={[s.miniUnit, s.miniUnitActive]} onPress={() => updateItem(i, 'size', '1')}>
+                                <Text style={[s.miniUnitText, s.miniUnitTextActive]}>n/a</Text>
                               </TouchableOpacity>
-                            ))}
+                            ) : (
+                              <TextInput style={s.itemSize} value={item.size}
+                                onChangeText={(v) => updateItem(i, 'size', v)} keyboardType="decimal-pad"
+                                placeholder="qty" placeholderTextColor={theme.placeholder} />
+                            )}
+                            <View style={s.unitSelect}>
+                              {(['oz', 'lb', 'count', 'fl oz'] as Unit[]).map((u) => (
+                                <TouchableOpacity key={u} onPress={() => updateItem(i, 'unit', u)}
+                                  style={[s.miniUnit, item.unit === u && s.miniUnitActive]}>
+                                  <Text style={[s.miniUnitText, item.unit === u && s.miniUnitTextActive]}>{u}</Text>
+                                </TouchableOpacity>
+                              ))}
+                              <TouchableOpacity
+                                style={[s.miniUnit, sizeNA && s.miniUnitActive]}
+                                onPress={() => updateItem(i, 'size', sizeNA ? '1' : 'n/a')}>
+                                <Text style={[s.miniUnitText, sizeNA && s.miniUnitTextActive]}>n/a</Text>
+                              </TouchableOpacity>
+                            </View>
                           </View>
                         </View>
                       </View>
-                    </View>
-                  ))
+                    );
+                  })
                 )}
 
                 {items.length > 0 && (
@@ -262,21 +281,24 @@ const s = StyleSheet.create({
   checkbox: { fontSize: 20, marginTop: 4, color: theme.textFaint },
   checkboxSelected: { color: theme.primary, fontWeight: '800' },
   itemFields: { flex: 1 },
+  itemNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   itemName: {
-    fontSize: 15, fontWeight: '700', color: theme.textDark,
-    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, marginBottom: 8,
+    fontSize: 16, fontWeight: '700', color: theme.textDark,
+    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6,
   },
+  removeBtn: { paddingLeft: 10, paddingBottom: 6 },
+  removeBtnText: { fontSize: 16, color: theme.textFaint, fontWeight: '600' },
   itemRow2: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   priceWrap: { flexDirection: 'row', alignItems: 'center' },
-  itemFieldLabel: { fontSize: 15, color: theme.textFaint, fontWeight: '700' },
+  itemFieldLabel: { fontSize: 16, color: theme.textFaint, fontWeight: '700' },
   itemPrice: {
-    fontSize: 15, color: theme.textDark, fontWeight: '700',
+    fontSize: 16, color: theme.textDark, fontWeight: '700',
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 8,
-    paddingHorizontal: 6, paddingVertical: 3, width: 60,
+    paddingHorizontal: 6, paddingVertical: 3, width: 64,
   },
   itemSize: {
-    fontSize: 14, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
-    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 46,
+    fontSize: 16, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
+    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48,
   },
   unitSelect: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: theme.border },

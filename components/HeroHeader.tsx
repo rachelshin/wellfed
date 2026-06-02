@@ -6,14 +6,15 @@ import theme from '../lib/theme';
 interface Props {
   eyebrow: string;
   title: string;
+  cardColor?: string;
   right?: React.ReactNode;
   children?: React.ReactNode;
 }
 
-export default function HeroHeader({ eyebrow, title, right, children }: Props) {
+export default function HeroHeader({ eyebrow, title, cardColor, right, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[s.hero, { marginTop: insets.top + 8 }]}>
+    <View style={[s.hero, { marginTop: insets.top + 8 }, cardColor ? { backgroundColor: cardColor } : null]}>
       <View style={s.row}>
         <View style={s.left}>
           <Text style={s.eyebrow}>{eyebrow}</Text>
@@ -28,8 +29,9 @@ export default function HeroHeader({ eyebrow, title, right, children }: Props) {
 
 const s = StyleSheet.create({
   hero: {
-    backgroundColor: theme.textDark,
+    backgroundColor: theme.heroCard,
     borderRadius: 32,
+    marginHorizontal: 16,
     paddingHorizontal: 26,
     paddingTop: 20,
     paddingBottom: 28,

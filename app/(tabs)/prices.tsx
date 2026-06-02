@@ -1,17 +1,18 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl, Alert,
+  TextInput, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
-  loadPrices, addPrice, deletePrice,
+  loadPrices, addPrice, updatePrice, deletePrice,
   pricePerUnit, formatPricePerUnit, groupByItem, bestPrice,
   PriceEntry,
 } from '../../store/prices';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
 import AddPriceModal from '../../components/prices/AddPriceModal';
+import EditPriceModal from '../../components/prices/EditPriceModal';
 import ReceiptScanModal from '../../components/prices/ReceiptScanModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
@@ -26,6 +27,7 @@ export default function PricesTab() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [showAdd, setShowAdd] = useState(false);
   const [showScan, setShowScan] = useState(false);
+  const [editing, setEditing] = useState<PriceEntry | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => setPrices(await loadPrices(user?.uid));
@@ -40,14 +42,14 @@ export default function PricesTab() {
     });
   };
 
-  const handleDelete = (entry: PriceEntry) => {
-    Alert.alert('Remove this price?', `${entry.displayName} @ ${entry.store}`, [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Remove', style: 'destructive',
-        onPress: async () => setPrices(await deletePrice(prices, entry.id, user?.uid)),
-      },
-    ]);
+  const handleUpdate = async (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => {
+    setPrices(await updatePrice(prices, id, updates, user?.uid));
+    setEditing(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    setPrices(await deletePrice(prices, id, user?.uid));
+    setEditing(null);
   };
 
   const grouped = groupByItem(prices);
@@ -60,7 +62,8 @@ export default function PricesTab() {
     <View style={s.root}>
       <HeroHeader
         eyebrow="Track & Compare"
-        title="Prices"
+        title="Prices 🏷️"
+        cardColor="#3B6B8F"
         right={
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => setShowScan(true)}>
             <Text style={heroOutlineBtn.text}>Scan</Text>
@@ -140,7 +143,7 @@ export default function PricesTab() {
                         <TouchableOpacity
                           key={entry.id}
                           style={[s.entryRow, isBest && s.entryRowBest]}
-                          onLongPress={() => handleDelete(entry)}
+                          onPress={() => setEditing(entry)}
                           activeOpacity={0.7}
                         >
                           <View style={s.entryLeft}>
@@ -160,7 +163,7 @@ export default function PricesTab() {
                         </TouchableOpacity>
                       );
                     })}
-                  <Text style={s.hint}>Hold to remove</Text>
+                  <Text style={s.hint}>Tap to edit or remove</Text>
                 </View>
               )}
             </View>
@@ -178,6 +181,12 @@ export default function PricesTab() {
         <Text style={fab.label}>+</Text>
       </TouchableOpacity>
 
+      <EditPriceModal
+        entry={editing}
+        onClose={() => setEditing(null)}
+        onSave={handleUpdate}
+        onDelete={handleDelete}
+      />
       <AddPriceModal
         visible={showAdd}
         onClose={() => setShowAdd(false)}

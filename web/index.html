@@ -18,9 +18,10 @@
     <link rel="manifest" href="/manifest.json" />
 
     <style>
-      /* Prevent iOS PWA zoom on input focus */
+      /* Prevent iOS PWA zoom on input focus; remove browser focus ring */
       input, textarea, select {
         font-size: 16px !important;
+        outline: none !important;
       }
 
       html, body, #root {
