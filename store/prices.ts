@@ -14,6 +14,7 @@ export interface PriceEntry {
   size: number;        // quantity (e.g. 16 for 16 oz)
   unit: Unit;
   dateAdded: string;   // YYYY-MM-DD
+  scannedName?: string; // original name from receipt OCR, used for deduplication
 }
 
 const PRICES_KEY = '@price_entries';
@@ -38,6 +39,16 @@ export async function addPrice(
   price: Omit<PriceEntry, 'id'>,
   uid?: string | null,
 ): Promise<PriceEntry[]> {
+  // Skip duplicates from receipt scans: same original scanned name, price, and store
+  if (price.scannedName) {
+    const isDuplicate = prices.some(
+      (p) =>
+        p.scannedName === price.scannedName &&
+        Math.abs(p.price - price.price) < 0.001 &&
+        p.store.toLowerCase() === price.store.toLowerCase(),
+    );
+    if (isDuplicate) return prices;
+  }
   const newPrice: PriceEntry = { ...price, id: `${Date.now()}-${Math.random()}` };
   if (uid) {
     await setDoc(doc(pricesCol(uid), newPrice.id), newPrice);

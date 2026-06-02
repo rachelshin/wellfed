@@ -40,11 +40,11 @@ export async function getCachedPantryHash(): Promise<string> {
   return (await AsyncStorage.getItem(CACHE_PANTRY_KEY)) ?? '';
 }
 
-export async function generateRecipes(pantryItems: string[]): Promise<AIRecipe[]> {
+export async function generateRecipes(pantryItems: string[], userPrompt?: string): Promise<AIRecipe[]> {
   const response = await fetch(FUNCTION_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pantryItems }),
+    body: JSON.stringify({ pantryItems, userPrompt: userPrompt || undefined }),
   });
 
   if (!response.ok) {

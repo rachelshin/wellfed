@@ -24,6 +24,17 @@ import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
+const CAT_PALETTE = [
+  '#A78BDB', '#7BAFD4', '#94B8A4', '#F7A8C4',
+  '#D4A574', '#C4A8D4', '#7CC8A4', '#F4A8A8',
+];
+
+function categoryColor(itemName: string): string {
+  let h = 0;
+  for (let i = 0; i < itemName.length; i++) h = itemName.charCodeAt(i) + ((h << 5) - h);
+  return CAT_PALETTE[Math.abs(h) % CAT_PALETTE.length];
+}
+
 export default function PricesTab() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -169,16 +180,20 @@ export default function PricesTab() {
         {displayList.map(({ cat, entries }) => {
           const best = bestPrice(entries);
           const isExpanded = expandedItems.has(cat.itemName);
+          const catColor = categoryColor(cat.itemName);
 
           return (
-            <View key={cat.id} style={s.card}>
+            <View key={cat.id} style={[s.card, { borderLeftColor: catColor }]}>
               <TouchableOpacity
                 style={s.cardHeader}
                 onPress={() => toggleExpand(cat.itemName)}
                 activeOpacity={0.7}
               >
                 <View style={s.cardTitleWrap}>
-                  <Text style={s.cardTitle}>{cat.name}</Text>
+                  <View style={s.cardTitleRow}>
+                    <View style={[s.catDot, { backgroundColor: catColor }]} />
+                    <Text style={s.cardTitle}>{cat.name}</Text>
+                  </View>
                   <Text style={s.cardCount}>
                     {entries.length === 0
                       ? 'No entries'
@@ -339,10 +354,12 @@ const s = StyleSheet.create({
 
   card: {
     backgroundColor: '#FFFFFF', borderRadius: 18, marginBottom: 10,
-    overflow: 'hidden', borderLeftWidth: 3, borderLeftColor: theme.accent,
+    overflow: 'hidden', borderLeftWidth: 3,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'space-between' },
   cardTitleWrap: { flex: 1 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  catDot: { width: 8, height: 8, borderRadius: 4 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark },
   cardCount: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },

@@ -63,7 +63,7 @@ exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
 
-  const { pantryItems } = req.body;
+  const { pantryItems, userPrompt } = req.body;
   if (!pantryItems?.length) { res.status(400).json({ error: 'pantryItems required' }); return; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -76,7 +76,13 @@ exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   try {
   const client = new Anthropic({ apiKey });
 
+  const moodLine = userPrompt
+    ? `The user is in the mood for: "${userPrompt}". Lean into this preference while still using their pantry.`
+    : `Surprise them — be creative and pick interesting, unexpected combinations!`;
+
   const prompt = `I have these items in my pantry: ${pantryItems.join(', ')}.
+
+${moodLine}
 
 Suggest 5 delicious recipes I can make, prioritising ones where I have more ingredients. Be creative and encouraging!
 

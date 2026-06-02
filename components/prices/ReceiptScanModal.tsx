@@ -11,6 +11,7 @@ import theme from '../../lib/theme';
 
 interface DetectedItem {
   name: string;
+  originalName: string; // from Claude, never changed — used for deduplication
   price: string;
   size: string;
   unit: Unit;
@@ -89,6 +90,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       const { items: raw } = await res.json();
       const detected: DetectedItem[] = (raw as { name: string; price: string; category: string }[]).map((it) => ({
         name: it.name || '',
+        originalName: it.name || '',
         price: String(parseFloat(it.price) || 0),
         size: '1',
         unit: 'count',
@@ -122,6 +124,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),
       unit: it.unit,
       dateAdded: today(),
+      scannedName: it.originalName.trim(),
     }));
     onAddItems(entries);
   };
