@@ -83,7 +83,12 @@ export async function addPantryItemsFromReceipt(
   let current = items;
   const toWrite: PantryItem[] = [];
   for (const item of newItems) {
-    if (!current.some((i) => i.itemName === item.itemName)) {
+    const alreadyInPantry = current.some(
+      (i) =>
+        i.itemName === item.itemName ||
+        i.displayName.toLowerCase() === item.displayName.toLowerCase(),
+    );
+    if (!alreadyInPantry) {
       const newItem = { ...item, id: `${Date.now()}-${Math.random()}` };
       current = [...current, newItem];
       toWrite.push(newItem);

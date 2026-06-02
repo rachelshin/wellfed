@@ -362,7 +362,7 @@ const s = StyleSheet.create({
   catDot: { width: 8, height: 8, borderRadius: 4 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark },
   cardCount: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
-  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   bestWrap: { alignItems: 'flex-end' },
   bestPrice: { fontSize: 15, fontWeight: '800', color: theme.textDark },
   bestStore: { fontSize: 11, color: theme.textFaint },

@@ -38,16 +38,26 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[]>([]);
   const [storeName, setStoreName] = useState('');
+  const [receiptDate, setReceiptDate] = useState('');
+  const [missingFields, setMissingFields] = useState<('store' | 'date')[]>([]);
   const [step, setStep] = useState<'pick' | 'review'>('pick');
   const [openCategoryIndex, setOpenCategoryIndex] = useState<number | null>(null);
+  const [catSearch, setCatSearch] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
     if (!visible) {
       setImageUri(null); setScanning(false);
-      setItems([]); setStoreName(''); setStep('pick'); setOpenCategoryIndex(null);
+      setItems([]); setStoreName(''); setReceiptDate(''); setMissingFields([]);
+      setStep('pick'); setOpenCategoryIndex(null);
     }
   }, [visible]);
+
+  useEffect(() => { setCatSearch(''); }, [openCategoryIndex]);
+
+  const filteredCats = catSearch.trim()
+    ? existingCategories.filter((c) => c.includes(catSearch.toLowerCase())).slice(0, 6)
+    : existingCategories.slice(0, 6);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -87,17 +97,31 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       });
       if (!res.ok) throw new Error('Server error');
 
-      const { items: raw } = await res.json();
-      const detected: DetectedItem[] = (raw as { name: string; price: string; category: string }[]).map((it) => ({
-        name: it.name || '',
-        originalName: it.name || '',
-        price: String(parseFloat(it.price) || 0),
-        size: '1',
-        unit: 'count',
-        store: '',
-        selected: true,
-        category: (it.category || it.name || '').toLowerCase().trim(),
-      }));
+      const { items: raw, store: scannedStore, date: scannedDate } = await res.json();
+
+      const missing: ('store' | 'date')[] = [];
+      if (scannedStore) { setStoreName(scannedStore); } else { missing.push('store'); }
+      if (scannedDate) { setReceiptDate(scannedDate); } else { missing.push('date'); }
+      setMissingFields(missing);
+
+      const seen = new Set<string>();
+      const detected: DetectedItem[] = (raw as { name: string; price: string; category: string }[])
+        .filter((it) => {
+          const key = (it.name || '').toLowerCase().trim();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .map((it) => ({
+          name: it.name || '',
+          originalName: it.name || '',
+          price: String(parseFloat(it.price) || 0),
+          size: '1',
+          unit: 'count',
+          store: '',
+          selected: true,
+          category: (it.category || it.name || '').toLowerCase().trim(),
+        }));
       setItems(detected);
       setStep('review');
     } catch {
@@ -123,7 +147,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       price: parseFloat(it.price) || 0,
       size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),
       unit: it.unit,
-      dateAdded: today(),
+      dateAdded: receiptDate.trim() || today(),
       scannedName: it.originalName.trim(),
     }));
     onAddItems(entries);
@@ -180,9 +204,32 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                     : 'The receipt was tricky to read — add items from the + button on the Prices tab.'}
                 </Text>
 
+                {missingFields.length > 0 && (
+                  <View style={s.missingBanner}>
+                    <Text style={s.missingBannerText}>
+                      Couldn't read {missingFields.join(' or ')} from the receipt — please fill {missingFields.length === 1 ? 'it' : 'them'} in below.
+                    </Text>
+                  </View>
+                )}
+
                 <Text style={modalSheet.label}>Store Name</Text>
-                <TextInput style={modalSheet.input} value={storeName} onChangeText={setStoreName}
-                  placeholder="e.g. Whole Foods" placeholderTextColor={theme.placeholder} />
+                <TextInput
+                  style={[modalSheet.input, missingFields.includes('store') && !storeName.trim() && s.inputMissing]}
+                  value={storeName}
+                  onChangeText={setStoreName}
+                  placeholder="e.g. Whole Foods"
+                  placeholderTextColor={theme.placeholder}
+                />
+
+                <Text style={modalSheet.label}>Receipt Date</Text>
+                <TextInput
+                  style={[modalSheet.input, missingFields.includes('date') && !receiptDate.trim() && s.inputMissing]}
+                  value={receiptDate}
+                  onChangeText={setReceiptDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={theme.placeholder}
+                  keyboardType="numbers-and-punctuation"
+                />
 
                 {items.length === 0 ? (
                   <View style={s.noItems}>
@@ -254,26 +301,32 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
 
                           {catOpen && (
                             <View style={s.catPicker}>
-                              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catChipRow}>
-                                {existingCategories.map((cat) => (
-                                  <TouchableOpacity
-                                    key={cat}
-                                    style={[s.catChip, item.category === cat && s.catChipActive]}
-                                    onPress={() => { updateItem(i, 'category', cat); setOpenCategoryIndex(null); }}
-                                  >
-                                    <Text style={[s.catChipText, item.category === cat && s.catChipTextActive]}>{cat}</Text>
-                                  </TouchableOpacity>
-                                ))}
-                              </ScrollView>
                               <TextInput
                                 style={s.catInput}
-                                value={item.category}
-                                onChangeText={(v) => updateItem(i, 'category', v.toLowerCase())}
-                                placeholder="or type a new group…"
+                                value={catSearch}
+                                onChangeText={setCatSearch}
+                                placeholder="Search or type a new group…"
                                 placeholderTextColor={theme.placeholder}
                                 returnKeyType="done"
-                                onSubmitEditing={() => setOpenCategoryIndex(null)}
+                                onSubmitEditing={() => {
+                                  const val = catSearch.trim().toLowerCase();
+                                  if (val) updateItem(i, 'category', val);
+                                  setOpenCategoryIndex(null);
+                                }}
                               />
+                              {filteredCats.length > 0 && (
+                                <View style={s.catChipRow}>
+                                  {filteredCats.map((cat) => (
+                                    <TouchableOpacity
+                                      key={cat}
+                                      style={[s.catChip, item.category === cat && s.catChipActive]}
+                                      onPress={() => { updateItem(i, 'category', cat); setOpenCategoryIndex(null); }}
+                                    >
+                                      <Text style={[s.catChipText, item.category === cat && s.catChipTextActive]}>{cat}</Text>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              )}
                             </View>
                           )}
 
@@ -366,7 +419,7 @@ const s = StyleSheet.create({
   catBadgeArrow: { fontSize: 10, color: theme.primary },
 
   catPicker: { marginTop: 8 },
-  catChipRow: { gap: 6, paddingBottom: 8, flexDirection: 'row' },
+  catChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 4 },
   catChip: {
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
     borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bg,
@@ -379,4 +432,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6, color: theme.textDark,
     backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0, outlineStyle: 'none',
   },
+
+  missingBanner: {
+    backgroundColor: '#FEF3CD', borderRadius: 12, padding: 12, marginBottom: 16,
+    borderLeftWidth: 3, borderLeftColor: theme.warning,
+  },
+  missingBannerText: { fontSize: 13, color: '#92620A', fontWeight: '600', lineHeight: 18 },
+  inputMissing: { borderColor: theme.warning, borderWidth: 2 },
 });

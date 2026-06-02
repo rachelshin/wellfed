@@ -33,7 +33,7 @@ exports.scanReceipt = functions.https.onRequest(async (req, res) => {
           },
           {
             type: 'text',
-            text: `You are cataloguing a grocery receipt.\n\n${categoriesStr}\n\nExtract every food/grocery line item. For each item return:\n- "name": the display name as printed on the receipt\n- "price": price as a decimal string\n- "category": a short normalised food name used for grouping (1–3 words, lowercase). Use an existing category if it clearly fits. Otherwise create a clean new one (e.g. "Kirkland Organic Firm Tofu 14oz" → "tofu", "2% Reduced Fat Milk 1 Gal" → "milk", "Nature Valley Oats & Honey Bar" → "granola bars").\n\nReturn ONLY a raw JSON array, no markdown, no explanation:\n[{"name":"...","price":"...","category":"..."}]\nOmit totals, subtotals, taxes, discounts, and non-food lines.`,
+            text: `You are cataloguing a grocery receipt.\n\n${categoriesStr}\n\nExtract the following from the receipt:\n1. "store": the store name as printed (e.g. "Whole Foods", "Trader Joe's"). Return null if not visible.\n2. "date": the receipt date in YYYY-MM-DD format. Return null if not visible.\n3. "items": every food/grocery line item. For each item return:\n   - "name": the display name as printed on the receipt\n   - "price": price as a decimal string\n   - "category": a short normalised food name used for grouping (1–3 words, lowercase). Use an existing category if it clearly fits. Otherwise create a clean new one (e.g. "Kirkland Organic Firm Tofu 14oz" → "tofu", "2% Reduced Fat Milk 1 Gal" → "milk", "Nature Valley Oats & Honey Bar" → "granola bars").\n\nReturn ONLY raw JSON, no markdown, no explanation:\n{"store":"...","date":"...","items":[{"name":"...","price":"...","category":"..."}]}\nOmit totals, subtotals, taxes, discounts, and non-food lines.`,
           },
         ],
       }],
@@ -41,14 +41,17 @@ exports.scanReceipt = functions.https.onRequest(async (req, res) => {
 
     const raw = message.content[0].text.trim();
     const clean = raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-    let items = [];
+    let parsed = {};
     try {
-      items = JSON.parse(clean);
+      parsed = JSON.parse(clean);
     } catch {
-      const match = raw.match(/\[[\s\S]*\]/);
-      if (match) items = JSON.parse(match[0]);
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
     }
-    res.json({ items });
+    const items = Array.isArray(parsed.items) ? parsed.items : [];
+    const store = typeof parsed.store === 'string' ? parsed.store : null;
+    const date = typeof parsed.date === 'string' ? parsed.date : null;
+    res.json({ items, store, date });
   } catch (e) {
     console.error('scanReceipt error:', e.message);
     res.status(500).json({ error: e.message });
