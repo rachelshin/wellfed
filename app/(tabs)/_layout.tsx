@@ -1,16 +1,15 @@
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
 
-const PLUM  = '#2B2040';
-const BLUSH = '#F7A8C4';
+const PLUM = '#2B2040';
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  return <Text style={[s.icon, focused && s.iconFocused]}>{label}</Text>;
+function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
+  return <Text style={[s.icon, focused && s.iconFocused]}>{emoji}</Text>;
 }
 
 const s = StyleSheet.create({
-  icon: { fontSize: 18, fontWeight: '700', color: PLUM, opacity: 0.3 },
-  iconFocused: { opacity: 1, color: PLUM },
+  icon: { fontSize: 24, opacity: 0.35 },
+  iconFocused: { opacity: 1 },
 });
 
 export default function TabLayout() {
@@ -24,8 +23,9 @@ export default function TabLayout() {
           backgroundColor: '#FFFFFF',
           borderTopColor: 'rgba(43,32,64,0.08)',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 88,
+          paddingBottom: 28,
+          paddingTop: 10,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -37,21 +37,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Budget',
-          tabBarIcon: ({ focused }) => <TabIcon label="$" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="prices"
         options={{
           title: 'Prices',
-          tabBarIcon: ({ focused }) => <TabIcon label="≈" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏷️" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="recipes"
         options={{
           title: 'Recipes',
-          tabBarIcon: ({ focused }) => <TabIcon label="✦" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🍳" focused={focused} />,
         }}
       />
       <Tabs.Screen

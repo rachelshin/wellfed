@@ -133,7 +133,7 @@ export default function BudgetTab() {
       <HeroHeader
         eyebrow={formatDate(todayStr)}
         title="Well Fed ✨"
-        cardColor="#F4CF6E"
+        cardColor="#A78BDB"
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
@@ -363,8 +363,8 @@ const s = StyleSheet.create({
     backgroundColor: theme.accentLight, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
   },
-  rolloverText: { fontSize: 12, color: theme.primary, fontWeight: '700' },
-  rolloverTextNeg: { fontSize: 12, color: theme.negative, fontWeight: '700' },
+  rolloverText: { fontSize: 12, color: theme.textDark, fontWeight: '700' },
+  rolloverTextNeg: { fontSize: 12, color: theme.textDark, fontWeight: '700' },
 
   // Progress
   progressTrack: {
