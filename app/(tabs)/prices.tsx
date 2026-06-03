@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl,
@@ -48,6 +48,7 @@ export default function PricesTab() {
   const [editingCategory, setEditingCategory] = useState<PriceCategory | null>(null);
   const [editing, setEditing] = useState<PriceEntry | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const loadGen = useRef(0);
 
   const applyLoaded = async (p: PriceEntry[], c: PriceCategory[]) => {
     const categoryItemNames = new Set(c.map((cat) => cat.itemName));
@@ -64,16 +65,20 @@ export default function PricesTab() {
   };
 
   const load = async () => {
-    // Show cached data instantly, then update from server in background
+    const gen = ++loadGen.current;
+
     const [cachedP, cachedC] = await Promise.all([
       loadPricesFromCache(user?.uid),
       loadCategoriesFromCache(user?.uid),
     ]);
+    if (gen !== loadGen.current) return;
     if (cachedP.length > 0 || cachedC.length > 0) {
       setPrices(cachedP);
       setCategories(cachedC);
     }
+
     const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
+    if (gen !== loadGen.current) return;
     await applyLoaded(p, c);
   };
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -88,16 +93,19 @@ export default function PricesTab() {
   };
 
   const handleUpdateEntry = async (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => {
+    loadGen.current++;
     setPrices(await updatePrice(prices, id, updates, user?.uid));
     setEditing(null);
   };
 
   const handleDeleteEntry = async (id: string) => {
+    loadGen.current++;
     setPrices(await deletePrice(prices, id, user?.uid));
     setEditing(null);
   };
 
   const handleAddCategory = async (name: string) => {
+    loadGen.current++;
     const itemName = name.toLowerCase().trim();
     setCategories(await saveCategory(categories, { name, itemName }, user?.uid));
     setShowAddCategory(false);
@@ -105,12 +113,14 @@ export default function PricesTab() {
 
   const handleUpdateCategory = async (name: string) => {
     if (!editingCategory) return;
+    loadGen.current++;
     setCategories(await updateCategory(categories, editingCategory.id, name, user?.uid));
     setEditingCategory(null);
   };
 
   const handleDeleteCategory = async () => {
     if (!editingCategory) return;
+    loadGen.current++;
     setCategories(await deleteCategory(categories, editingCategory.id, user?.uid));
     setEditingCategory(null);
   };
@@ -312,6 +322,7 @@ export default function PricesTab() {
         onClose={() => setShowAdd(false)}
         existingCategories={categoryNames}
         onAdd={async (entry) => {
+          loadGen.current++;
           const updatedPrices = await addPrice(prices, entry, user?.uid);
           const updatedCategories = await ensureCategory(categories, entry.itemName, entry.displayName);
           setPrices(updatedPrices);
@@ -324,6 +335,7 @@ export default function PricesTab() {
         onClose={() => setShowScan(false)}
         existingCategories={categoryNames}
         onAddItems={async (newItems) => {
+          loadGen.current++;
           let currentPrices = prices;
           let currentCategories = categories;
           for (const item of newItems) {
