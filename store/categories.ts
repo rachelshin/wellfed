@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDocsFromCache, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export interface PriceCategory {
@@ -12,6 +12,16 @@ const KEY = '@price_categories';
 
 function col(uid: string) {
   return collection(db, 'users', uid, 'priceCategories');
+}
+
+export async function loadCategoriesFromCache(uid?: string | null): Promise<PriceCategory[]> {
+  if (!uid) return [];
+  try {
+    const snap = await getDocsFromCache(col(uid));
+    return snap.docs.map((d) => d.data() as PriceCategory);
+  } catch {
+    return [];
+  }
 }
 
 export async function loadCategories(uid?: string | null): Promise<PriceCategory[]> {

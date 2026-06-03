@@ -1,9 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
-// Go to https://console.firebase.google.com → your project → Project Settings → Web app
-// and paste your config values here.
 const firebaseConfig = {
   apiKey: 'AIzaSyDszF8NIdDUL3uUF4Q-VxejvrsNsqTfMAM',
   authDomain: 'well-fed-66136.firebaseapp.com',
@@ -15,4 +13,6 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+});

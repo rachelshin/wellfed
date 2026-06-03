@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDocsFromCache, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export type Unit = 'oz' | 'lb' | 'g' | 'kg' | 'ml' | 'L' | 'fl oz' | 'count';
@@ -23,6 +23,16 @@ export const UNITS: Unit[] = ['oz', 'lb', 'g', 'kg', 'ml', 'L', 'fl oz', 'count'
 
 function pricesCol(uid: string) {
   return collection(db, 'users', uid, 'prices');
+}
+
+export async function loadPricesFromCache(uid?: string | null): Promise<PriceEntry[]> {
+  if (!uid) return [];
+  try {
+    const snap = await getDocsFromCache(pricesCol(uid));
+    return snap.docs.map((d) => d.data() as PriceEntry);
+  } catch {
+    return [];
+  }
 }
 
 export async function loadPrices(uid?: string | null): Promise<PriceEntry[]> {

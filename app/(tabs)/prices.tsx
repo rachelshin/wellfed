@@ -6,12 +6,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
-  loadPrices, addPrice, updatePrice, deletePrice,
+  loadPrices, loadPricesFromCache, addPrice, updatePrice, deletePrice,
   pricePerUnit, formatPricePerUnit, bestPrice,
   PriceEntry,
 } from '../../store/prices';
 import {
-  loadCategories, saveCategory, updateCategory, deleteCategory,
+  loadCategories, loadCategoriesFromCache, saveCategory, updateCategory, deleteCategory,
   PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
@@ -49,9 +49,7 @@ export default function PricesTab() {
   const [editing, setEditing] = useState<PriceEntry | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
-    const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
-    // Auto-create categories for any price entries that don't have one yet
+  const applyLoaded = async (p: PriceEntry[], c: PriceCategory[]) => {
     const categoryItemNames = new Set(c.map((cat) => cat.itemName));
     let current = c;
     for (const itemName of new Set(p.map((e) => e.itemName))) {
@@ -63,6 +61,20 @@ export default function PricesTab() {
     }
     setPrices(p);
     setCategories(current);
+  };
+
+  const load = async () => {
+    // Show cached data instantly, then update from server in background
+    const [cachedP, cachedC] = await Promise.all([
+      loadPricesFromCache(user?.uid),
+      loadCategoriesFromCache(user?.uid),
+    ]);
+    if (cachedP.length > 0 || cachedC.length > 0) {
+      setPrices(cachedP);
+      setCategories(cachedC);
+    }
+    const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
+    await applyLoaded(p, c);
   };
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
