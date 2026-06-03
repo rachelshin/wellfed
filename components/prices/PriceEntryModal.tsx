@@ -9,14 +9,20 @@ import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
 
 interface Props {
-  entry: PriceEntry | null;
+  visible: boolean;
+  entry?: PriceEntry | null;
+  prefill?: Partial<PriceEntry>;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => void;
-  onDelete: (id: string) => void;
-  existingCategories: string[];
+  onSave: (data: Omit<PriceEntry, 'id'>, id?: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export default function EditPriceModal({ entry, onClose, onSave, onDelete, existingCategories }: Props) {
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export default function PriceEntryModal({ visible, entry, prefill, onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [group, setGroup] = useState('');
@@ -28,6 +34,11 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete, exist
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
+    if (!visible) {
+      setDisplayName(''); setGroup(''); setStore('');
+      setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false);
+      return;
+    }
     if (entry) {
       setDisplayName(entry.displayName);
       setGroup(entry.itemName);
@@ -35,15 +46,15 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete, exist
       setPrice(String(entry.price));
       setSize(String(entry.size));
       setUnit(entry.unit);
+    } else if (prefill) {
+      setDisplayName(prefill.displayName ?? '');
+      setGroup(prefill.itemName ?? '');
+      setStore(prefill.store ?? '');
+      setPrice(prefill.price ? String(prefill.price) : '');
+      setSize(prefill.size ? String(prefill.size) : '');
+      setUnit(prefill.unit ?? 'oz');
     }
-  }, [entry]);
-
-  useEffect(() => {
-    if (!entry) {
-      setDisplayName(''); setGroup(''); setStore(''); setPrice('');
-      setSize(''); setUnit('oz'); setShowUnitPicker(false);
-    }
-  }, [entry]);
+  }, [visible, entry, prefill]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -57,51 +68,44 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete, exist
   const handleSave = () => {
     const priceVal = parseFloat(price);
     const sizeVal = parseFloat(size);
-    if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0 || !entry) return;
+    if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0) return;
     const resolvedGroup = group.trim().toLowerCase() || displayName.trim().toLowerCase();
-    onSave(entry.id, {
-      displayName: displayName.trim(),
-      itemName: resolvedGroup,
-      store: store.trim(),
-      price: priceVal,
-      size: isNaN(sizeVal) ? 1 : sizeVal,
-      unit,
-    });
+    onSave(
+      {
+        itemName: resolvedGroup,
+        displayName: displayName.trim(),
+        store: store.trim(),
+        price: priceVal,
+        size: isNaN(sizeVal) ? 1 : sizeVal,
+        unit,
+        dateAdded: entry?.dateAdded ?? today(),
+      },
+      entry?.id,
+    );
   };
 
+  const isEdit = !!entry;
+
   return (
-    <Modal visible={!!entry} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
-            <Text style={modalSheet.title}>Edit Price</Text>
+            <Text style={modalSheet.title}>{isEdit ? 'Edit price' : 'Track a price'}</Text>
 
-            <Text style={modalSheet.label}>Item Name</Text>
+            <Text style={modalSheet.label}>Item Name *</Text>
             <TextInput style={modalSheet.input} value={displayName} onChangeText={setDisplayName}
-              placeholder="e.g. Organic Firm Tofu" placeholderTextColor={theme.placeholder} autoFocus />
+              placeholder="e.g. Organic Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
 
-            <Text style={modalSheet.label}>Group</Text>
+            <Text style={modalSheet.label}>Group *</Text>
             <TextInput style={modalSheet.input} value={group} onChangeText={(v) => setGroup(v.toLowerCase())}
-              placeholder="e.g. tofu" placeholderTextColor={theme.placeholder} />
-            {existingCategories.length > 0 && (
-              <View style={s.catChipRow}>
-                {existingCategories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[s.catChip, group === cat && s.catChipActive]}
-                    onPress={() => setGroup(cat)}
-                  >
-                    <Text style={[s.catChipText, group === cat && s.catChipTextActive]}>{cat}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+              placeholder="e.g. milk" placeholderTextColor={theme.placeholder} />
 
-            <Text style={modalSheet.label}>Store</Text>
+            <Text style={modalSheet.label}>Store *</Text>
             <TextInput style={modalSheet.input} value={store} onChangeText={setStore}
               placeholder="e.g. Trader Joe's" placeholderTextColor={theme.placeholder} />
 
-            <Text style={modalSheet.label}>Price ($)</Text>
+            <Text style={modalSheet.label}>Price ($) *</Text>
             <TextInput style={modalSheet.input} value={price} onChangeText={setPrice}
               keyboardType="decimal-pad" placeholder="e.g. 4.99" placeholderTextColor={theme.placeholder} />
 
@@ -132,9 +136,11 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete, exist
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
               <Text style={modalSheet.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.deleteBtn} onPress={() => entry && onDelete(entry.id)}>
-              <Text style={s.deleteBtnText}>Remove this price</Text>
-            </TouchableOpacity>
+            {isEdit && onDelete && (
+              <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(entry!.id)}>
+                <Text style={s.deleteBtnText}>Remove this price</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -143,14 +149,6 @@ export default function EditPriceModal({ entry, onClose, onSave, onDelete, exist
 }
 
 const s = StyleSheet.create({
-  catChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16, marginTop: -8 },
-  catChip: {
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-    borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bgTint,
-  },
-  catChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
-  catChipText: { fontSize: 13, color: theme.textFaint, fontWeight: '600' },
-  catChipTextActive: { color: theme.primary, fontWeight: '800' },
   sizeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   sizeInput: { flex: 1, marginBottom: 0 },
   unitBtn: {

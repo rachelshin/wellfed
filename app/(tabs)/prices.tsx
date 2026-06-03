@@ -15,8 +15,7 @@ import {
   PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
-import AddPriceModal from '../../components/prices/AddPriceModal';
-import EditPriceModal from '../../components/prices/EditPriceModal';
+import PriceEntryModal from '../../components/prices/PriceEntryModal';
 import CategoryModal from '../../components/prices/CategoryModal';
 import ReceiptScanModal from '../../components/prices/ReceiptScanModal';
 import HeroHeader from '../../components/HeroHeader';
@@ -92,10 +91,18 @@ export default function PricesTab() {
     });
   };
 
-  const handleUpdateEntry = async (id: string, updates: Partial<Omit<PriceEntry, 'id'>>) => {
+  const handleSaveEntry = async (data: Omit<PriceEntry, 'id'>, id?: string) => {
     loadGen.current++;
-    setPrices(await updatePrice(prices, id, updates, user?.uid));
-    setEditing(null);
+    if (id) {
+      setPrices(await updatePrice(prices, id, data, user?.uid));
+      setEditing(null);
+    } else {
+      const updatedPrices = await addPrice(prices, data, user?.uid);
+      const updatedCategories = await ensureCategory(categories, data.itemName, data.displayName);
+      setPrices(updatedPrices);
+      setCategories(updatedCategories);
+      setShowAdd(false);
+    }
   };
 
   const handleDeleteEntry = async (id: string) => {
@@ -310,25 +317,12 @@ export default function PricesTab() {
         onDelete={handleDeleteCategory}
         initialName={editingCategory?.name}
       />
-      <EditPriceModal
+      <PriceEntryModal
+        visible={showAdd || !!editing}
         entry={editing}
-        onClose={() => setEditing(null)}
-        onSave={handleUpdateEntry}
+        onClose={() => { setShowAdd(false); setEditing(null); }}
+        onSave={handleSaveEntry}
         onDelete={handleDeleteEntry}
-        existingCategories={categoryNames}
-      />
-      <AddPriceModal
-        visible={showAdd}
-        onClose={() => setShowAdd(false)}
-        existingCategories={categoryNames}
-        onAdd={async (entry) => {
-          loadGen.current++;
-          const updatedPrices = await addPrice(prices, entry, user?.uid);
-          const updatedCategories = await ensureCategory(categories, entry.itemName, entry.displayName);
-          setPrices(updatedPrices);
-          setCategories(updatedCategories);
-          setShowAdd(false);
-        }}
       />
       <ReceiptScanModal
         visible={showScan}
