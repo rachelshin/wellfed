@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   StyleSheet, Platform, ScrollView,
@@ -12,6 +12,7 @@ interface Props {
   visible: boolean;
   entry?: PriceEntry | null;
   prefill?: Partial<PriceEntry>;
+  existingGroups?: string[];
   onClose: () => void;
   onSave: (data: Omit<PriceEntry, 'id'>, id?: string) => void;
   onDelete?: (id: string) => void;
@@ -22,7 +23,7 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function PriceEntryModal({ visible, entry, prefill, onClose, onSave, onDelete }: Props) {
+export default function PriceEntryModal({ visible, entry, prefill, existingGroups = [], onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [group, setGroup] = useState('');
@@ -31,12 +32,14 @@ export default function PriceEntryModal({ visible, entry, prefill, onClose, onSa
   const [size, setSize] = useState('');
   const [unit, setUnit] = useState<Unit>('oz');
   const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [groupFocused, setGroupFocused] = useState(false);
+  const groupSugPressed = useRef(false);
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
     if (!visible) {
       setDisplayName(''); setGroup(''); setStore('');
-      setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false);
+      setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false); setGroupFocused(false); groupSugPressed.current = false;
       return;
     }
     if (entry) {
@@ -64,6 +67,10 @@ export default function PriceEntryModal({ visible, entry, prefill, onClose, onSa
     window.visualViewport.addEventListener('resize', onResize);
     return () => window.visualViewport!.removeEventListener('resize', onResize);
   }, []);
+
+  const filteredGroups = group.trim()
+    ? existingGroups.filter((g) => g.includes(group.trim())).slice(0, 6)
+    : existingGroups.slice(0, 6);
 
   const handleSave = () => {
     const priceVal = parseFloat(price);
@@ -98,8 +105,29 @@ export default function PriceEntryModal({ visible, entry, prefill, onClose, onSa
               placeholder="e.g. Organic Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
 
             <Text style={modalSheet.label}>Group *</Text>
-            <TextInput style={modalSheet.input} value={group} onChangeText={(v) => setGroup(v.toLowerCase())}
-              placeholder="e.g. milk" placeholderTextColor={theme.placeholder} />
+            <TextInput
+              style={modalSheet.input}
+              value={group}
+              onChangeText={(v) => setGroup(v.toLowerCase())}
+              placeholder="e.g. milk"
+              placeholderTextColor={theme.placeholder}
+              onFocus={() => setGroupFocused(true)}
+              onBlur={() => { if (!groupSugPressed.current) setGroupFocused(false); }}
+            />
+            {groupFocused && filteredGroups.length > 0 && (
+              <View style={s.groupSugRow}>
+                {filteredGroups.map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[s.groupChip, group === g && s.groupChipActive]}
+                    onPressIn={() => { groupSugPressed.current = true; }}
+                    onPress={() => { setGroup(g); setGroupFocused(false); groupSugPressed.current = false; }}
+                  >
+                    <Text style={[s.groupChipText, group === g && s.groupChipTextActive]}>{g}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <Text style={modalSheet.label}>Store *</Text>
             <TextInput style={modalSheet.input} value={store} onChangeText={setStore}
@@ -166,4 +194,12 @@ const s = StyleSheet.create({
   unitChipTextActive: { color: theme.primary, fontWeight: '800' },
   deleteBtn: { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
   deleteBtnText: { fontSize: 15, color: theme.negative, fontWeight: '600' },
+  groupSugRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -8, marginBottom: 16 },
+  groupChip: {
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bgTint,
+  },
+  groupChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  groupChipText: { fontSize: 12, color: theme.textFaint, fontWeight: '600' },
+  groupChipTextActive: { color: theme.primary, fontWeight: '800' },
 });

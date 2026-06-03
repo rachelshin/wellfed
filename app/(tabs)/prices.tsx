@@ -320,6 +320,7 @@ export default function PricesTab() {
       <PriceEntryModal
         visible={showAdd || !!editing}
         entry={editing}
+        existingGroups={categoryNames}
         onClose={() => { setShowAdd(false); setEditing(null); }}
         onSave={handleSaveEntry}
         onDelete={handleDeleteEntry}

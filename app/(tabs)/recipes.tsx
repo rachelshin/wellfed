@@ -369,7 +369,7 @@ export default function RecipesTab() {
         {selected && (
           <View style={s.modalBackdrop}>
             <View style={[s.detailSheet, { paddingBottom: insets.bottom + 24 }]}>
-              <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+              <ScrollView key={selected.name} bounces={false} keyboardShouldPersistTaps="handled">
                 <View style={[s.detailCatChip, { backgroundColor: categoryColor(selected.category) + '20' }]}>
                   <Text style={[s.detailCatText, { color: categoryColor(selected.category) }]}>{selected.category}</Text>
                 </View>
