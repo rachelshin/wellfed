@@ -142,7 +142,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
     const entries: Omit<PriceEntry, 'id'>[] = selected.map((it) => ({
       displayName: it.name.trim(),
       itemName: it.category.trim() || it.name.trim().toLowerCase(),
-      brand: '',
+
       store: storeName.trim() || it.store.trim(),
       price: parseFloat(it.price) || 0,
       size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),

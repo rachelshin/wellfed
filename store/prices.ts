@@ -8,7 +8,7 @@ export interface PriceEntry {
   id: string;
   itemName: string;    // lowercase for grouping/search
   displayName: string; // original case for display
-  brand: string;
+
   store: string;
   price: number;       // total price paid
   size: number;        // quantity (e.g. 16 for 16 oz)

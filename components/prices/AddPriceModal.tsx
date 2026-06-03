@@ -13,6 +13,7 @@ interface Props {
   onClose: () => void;
   onAdd: (entry: Omit<PriceEntry, 'id'>) => void;
   prefill?: Partial<PriceEntry>;
+  existingCategories?: string[];
 }
 
 function today() {
@@ -20,10 +21,11 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Props) {
+export default function AddPriceModal({ visible, onClose, onAdd, prefill, existingCategories = [] }: Props) {
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
-  const [brand, setBrand] = useState('');
+  const [group, setGroup] = useState('');
+
   const [store, setStore] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
@@ -34,14 +36,15 @@ export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Prop
   useEffect(() => {
     if (visible && prefill) {
       setDisplayName(prefill.displayName ?? '');
-      setBrand(prefill.brand ?? '');
+      setGroup(prefill.itemName ?? '');
+
       setStore(prefill.store ?? '');
       setPrice(prefill.price ? String(prefill.price) : '');
       setSize(prefill.size ? String(prefill.size) : '');
       setUnit(prefill.unit ?? 'oz');
     }
     if (!visible) {
-      setDisplayName(''); setBrand(''); setStore('');
+      setDisplayName(''); setGroup(''); setStore('');
       setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false);
     }
   }, [visible, prefill]);
@@ -59,10 +62,11 @@ export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Prop
     const priceVal = parseFloat(price);
     const sizeVal = parseFloat(size);
     if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0) return;
+    const resolvedGroup = group.trim().toLowerCase() || displayName.trim().toLowerCase();
     onAdd({
-      itemName: displayName.trim().toLowerCase(),
+      itemName: resolvedGroup,
       displayName: displayName.trim(),
-      brand: brand.trim(),
+
       store: store.trim(),
       price: priceVal,
       size: isNaN(sizeVal) ? 1 : sizeVal,
@@ -82,9 +86,22 @@ export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Prop
             <TextInput style={modalSheet.input} value={displayName} onChangeText={setDisplayName}
               placeholder="e.g. Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
 
-            <Text style={modalSheet.label}>Brand</Text>
-            <TextInput style={modalSheet.input} value={brand} onChangeText={setBrand}
-              placeholder="e.g. Organic Valley" placeholderTextColor={theme.placeholder} />
+            <Text style={modalSheet.label}>Group *</Text>
+            <TextInput style={modalSheet.input} value={group} onChangeText={(v) => setGroup(v.toLowerCase())}
+              placeholder="e.g. milk" placeholderTextColor={theme.placeholder} />
+            {existingCategories.length > 0 && (
+              <View style={s.catChipRow}>
+                {existingCategories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[s.catChip, group === cat && s.catChipActive]}
+                    onPress={() => setGroup(cat)}
+                  >
+                    <Text style={[s.catChipText, group === cat && s.catChipTextActive]}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <Text style={modalSheet.label}>Store *</Text>
             <TextInput style={modalSheet.input} value={store} onChangeText={setStore}
@@ -129,6 +146,14 @@ export default function AddPriceModal({ visible, onClose, onAdd, prefill }: Prop
 }
 
 const s = StyleSheet.create({
+  catChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16, marginTop: -8 },
+  catChip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bgTint,
+  },
+  catChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  catChipText: { fontSize: 13, color: theme.textFaint, fontWeight: '600' },
+  catChipTextActive: { color: theme.primary, fontWeight: '800' },
   sizeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   sizeInput: { flex: 1, marginBottom: 0 },
   unitBtn: {

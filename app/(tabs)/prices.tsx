@@ -298,6 +298,7 @@ export default function PricesTab() {
       <AddPriceModal
         visible={showAdd}
         onClose={() => setShowAdd(false)}
+        existingCategories={categoryNames}
         onAdd={async (entry) => {
           const updatedPrices = await addPrice(prices, entry, user?.uid);
           const updatedCategories = await ensureCategory(categories, entry.itemName, entry.displayName);
