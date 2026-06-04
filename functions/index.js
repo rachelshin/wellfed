@@ -111,16 +111,42 @@ Return ONLY this JSON (no markdown, no extra text):
   "prepSessions": [
     {
       "day": "Sunday",
-      "dishes": ["Batch Brown Rice", "Teriyaki Chicken", "Roasted Vegetables"],
-      "estimatedTime": "2 hours"
+      "estimatedTime": "2 hours",
+      "dishes": [
+        {
+          "name": "Teriyaki Chicken",
+          "ingredients": [{"item": "chicken breast", "amount": "3 lbs"}, {"item": "soy sauce", "amount": "1/4 cup"}, {"item": "honey", "amount": "2 tbsp"}],
+          "steps": ["Cut chicken into 1-inch cubes.", "Whisk together soy sauce, honey, and garlic.", "Cook chicken in batches over medium-high heat, 4–5 min per side.", "Pour sauce over chicken, toss to coat, and cook 2 more min.", "Cool and divide into airtight containers."]
+        },
+        {
+          "name": "Batch Brown Rice",
+          "ingredients": [{"item": "brown rice", "amount": "3 cups"}, {"item": "water", "amount": "6 cups"}],
+          "steps": ["Rinse rice under cold water.", "Combine rice and water in a large pot.", "Bring to a boil, then reduce heat and cover.", "Simmer 45 min until water is absorbed.", "Fluff with fork and portion into containers."]
+        }
+      ]
     }
   ],
   "days": [
     {
       "day": "Monday",
-      "breakfast": { "name": "Overnight Oats", "description": "Prep the night before — grab and go." },
-      "lunch": { "name": "Leftover Teriyaki Chicken", "description": "Reheated from Sunday's batch cook." },
-      "dinner": { "name": "Teriyaki Chicken Bowl", "description": "Brown rice topped with teriyaki chicken and roasted veg." }
+      "breakfast": {
+        "name": "Overnight Oats",
+        "description": "Prep the night before — grab and go.",
+        "ingredients": [{"item": "rolled oats", "amount": "1/2 cup"}, {"item": "milk", "amount": "1/2 cup"}, {"item": "honey", "amount": "1 tsp"}],
+        "steps": ["Combine oats and milk in a jar or bowl.", "Stir in honey.", "Cover and refrigerate overnight.", "Grab cold in the morning. Add fresh fruit if desired."]
+      },
+      "lunch": {
+        "name": "Leftover Teriyaki Chicken",
+        "description": "Reheated from Sunday's batch cook.",
+        "ingredients": [{"item": "teriyaki chicken (batch)", "amount": "1 portion"}, {"item": "brown rice (batch)", "amount": "1/2 cup"}],
+        "steps": ["Scoop rice and chicken into a bowl.", "Microwave on high for 1–2 min until hot.", "Stir and serve."]
+      },
+      "dinner": {
+        "name": "Teriyaki Chicken Bowl",
+        "description": "Brown rice topped with teriyaki chicken and roasted veg.",
+        "ingredients": [{"item": "teriyaki chicken (batch)", "amount": "1 portion"}, {"item": "brown rice (batch)", "amount": "3/4 cup"}, {"item": "roasted vegetables (batch)", "amount": "1/2 cup"}],
+        "steps": ["Reheat rice in microwave 1–2 min.", "Reheat chicken 1–2 min.", "Arrange over rice, top with veg and sesame seeds."]
+      }
     }
   ],
   "groceryList": [
@@ -134,7 +160,7 @@ Return ONLY this JSON (no markdown, no extra text):
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: 'claude-opus-4-8',
-      max_tokens: 5000,
+      max_tokens: 7000,
       system: 'You are a helpful meal planning assistant. You respond only with valid JSON.',
       messages: [{ role: 'user', content: prompt }],
     });

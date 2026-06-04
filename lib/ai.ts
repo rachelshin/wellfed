@@ -12,6 +12,8 @@ const MEAL_PLAN_FUNCTION_URL =
 export interface MealPlanMeal {
   name: string;
   description: string;
+  ingredients?: { item: string; amount: string }[];
+  steps?: string[];
 }
 
 export interface MealPlanDay {
@@ -28,9 +30,15 @@ export interface GroceryListItem {
   inPantry: boolean;
 }
 
+export interface PrepDish {
+  name: string;
+  ingredients?: { item: string; amount: string }[];
+  steps?: string[];
+}
+
 export interface PrepSession {
   day: string;
-  dishes: string[];
+  dishes: (PrepDish | string)[];
   estimatedTime: string;
 }
 

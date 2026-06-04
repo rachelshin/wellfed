@@ -7,12 +7,12 @@ import {
 import AppModal from '../../components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { loadPantry, PantryItem } from '../../store/pantry';
+import { loadPantry, addPantryItem, todayDate, PantryItem } from '../../store/pantry';
 import { loadPrices, groupByItem, bestPrice } from '../../store/prices';
 import {
   generateRecipes, loadCachedRecipes, getCachedPantryHash, hashItems,
   generateMealPlan, loadCachedMealPlan,
-  AIRecipe, MealPlan, MealPlanOptions, PrepSession,
+  AIRecipe, MealPlan, MealPlanMeal, MealPlanOptions, PrepSession, PrepDish, GroceryListItem,
 } from '../../lib/ai';
 import {
   loadSavedRecipes, saveRecipe, updateSavedRecipe, deleteSavedRecipe,
@@ -64,6 +64,11 @@ export default function RecipesTab() {
   const [showMealPlanPrompt, setShowMealPlanPrompt] = useState(false);
   const [savedMealPlans, setSavedMealPlans] = useState<SavedMealPlan[]>([]);
   const [planSaving, setPlanSaving] = useState(false);
+
+  const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
+  const [expandedPrepDishes, setExpandedPrepDishes] = useState<Set<string>>(new Set());
+  const [addedToPantrySet, setAddedToPantrySet] = useState<Set<string>>(new Set());
+  const [addedFromPantrySet, setAddedFromPantrySet] = useState<Set<string>>(new Set());
 
   const hasApiKey = true;
 
@@ -182,6 +187,51 @@ export default function RecipesTab() {
       setSavedMealPlans(await saveMealPlan(savedMealPlans, mealPlan, title, user?.uid));
     } finally {
       setPlanSaving(false);
+    }
+  };
+
+  const toggleMeal = (key: string) =>
+    setExpandedMeals((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const togglePrepDish = (key: string) =>
+    setExpandedPrepDishes((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const handleAddToPantry = async (item: GroceryListItem) => {
+    const updated = await addPantryItem(pantryItems, {
+      displayName: item.item,
+      itemName: item.item.toLowerCase(),
+      addedDate: todayDate(),
+      source: 'manual',
+    }, user?.uid);
+    setPantryItems(updated);
+    setAddedToPantrySet((prev) => new Set([...prev, item.item]));
+  };
+
+  const handleAddFromPantryToGrocery = (itemName: string) =>
+    setAddedFromPantrySet((prev) => new Set([...prev, itemName]));
+
+  const handleShareGroceryList = async () => {
+    if (!mealPlan) return;
+    const toBuy = mealPlan.groceryList
+      .filter((i) => !i.inPantry || addedFromPantrySet.has(i.item));
+    const text = toBuy
+      .map((i) => `• ${i.item} — ${i.amount}${i.estimatedCost ? ` (~$${i.estimatedCost.toFixed(2)})` : ''}`)
+      .join('\n');
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: 'Grocery List', text }); } catch {}
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      Alert.alert('Copied!', 'Grocery list copied to your clipboard.');
+    } else {
+      Alert.alert('Grocery List', text);
     }
   };
 
@@ -450,69 +500,178 @@ export default function RecipesTab() {
                           <Text style={s.prepCardDay}>{session.day} — batch cook</Text>
                           <Text style={s.prepCardTime}>{session.estimatedTime}</Text>
                         </View>
-                        {session.dishes.map((dish: string, j: number) => (
-                          <Text key={j} style={s.prepCardDish}>· {dish}</Text>
-                        ))}
+                        {session.dishes.map((dish: PrepDish | string, j: number) => {
+                          const dishName = typeof dish === 'string' ? dish : dish.name;
+                          const ings = typeof dish === 'string' ? [] : (dish.ingredients ?? []);
+                          const steps = typeof dish === 'string' ? [] : (dish.steps ?? []);
+                          const hasDetail = ings.length > 0 || steps.length > 0;
+                          const dishKey = `${i}-${j}`;
+                          const isExpanded = expandedPrepDishes.has(dishKey);
+                          return (
+                            <View key={j}>
+                              <TouchableOpacity
+                                style={s.prepDishRow}
+                                onPress={() => hasDetail && togglePrepDish(dishKey)}
+                                activeOpacity={hasDetail ? 0.7 : 1}
+                              >
+                                <Text style={s.prepCardDish}>· {dishName}</Text>
+                                {hasDetail && (
+                                  <Text style={s.expandChevron}>{isExpanded ? '▲' : '▾'}</Text>
+                                )}
+                              </TouchableOpacity>
+                              {isExpanded && (
+                                <View style={s.expandBody}>
+                                  {ings.length > 0 && (
+                                    <>
+                                      <Text style={s.expandLabel}>Ingredients</Text>
+                                      {ings.map((ing, k) => (
+                                        <Text key={k} style={s.expandIngLine}>· {ing.item} — {ing.amount}</Text>
+                                      ))}
+                                    </>
+                                  )}
+                                  {steps.length > 0 && (
+                                    <>
+                                      <Text style={[s.expandLabel, { marginTop: 10 }]}>Steps</Text>
+                                      {steps.map((step, k) => (
+                                        <View key={k} style={s.expandStepRow}>
+                                          <View style={s.expandStepNum}>
+                                            <Text style={s.expandStepNumText}>{k + 1}</Text>
+                                          </View>
+                                          <Text style={s.expandStepText}>{step}</Text>
+                                        </View>
+                                      ))}
+                                    </>
+                                  )}
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })}
                       </View>
                     ))}
                   </>
                 )}
 
-                {mealPlan.days.map((day) => (
-                  <View key={day.day} style={s.dayCard}>
-                    <Text style={s.dayName}>{day.day}</Text>
-                    <View style={s.mealRow}>
-                      <Text style={s.mealEmoji}>🌅</Text>
-                      <View style={s.mealInfo}>
-                        <Text style={s.mealName}>{day.breakfast.name}</Text>
-                        <Text style={s.mealDesc} numberOfLines={2}>{day.breakfast.description}</Text>
+                {mealPlan.days.map((day) => {
+                  const renderMealRow = (meal: MealPlanMeal, emoji: string, mealType: string, showDivider: boolean) => {
+                    const key = `${day.day}-${mealType}`;
+                    const hasDetail = (meal.ingredients?.length ?? 0) > 0 || (meal.steps?.length ?? 0) > 0;
+                    const isOpen = expandedMeals.has(key);
+                    return (
+                      <View key={mealType}>
+                        {showDivider && <View style={s.mealDivider} />}
+                        <TouchableOpacity
+                          style={s.mealRow}
+                          onPress={() => hasDetail && toggleMeal(key)}
+                          activeOpacity={hasDetail ? 0.7 : 1}
+                        >
+                          <Text style={s.mealEmoji}>{emoji}</Text>
+                          <View style={s.mealInfo}>
+                            <Text style={s.mealName}>{meal.name}</Text>
+                            <Text style={s.mealDesc} numberOfLines={isOpen ? undefined : 2}>{meal.description}</Text>
+                          </View>
+                          {hasDetail && <Text style={s.expandChevron}>{isOpen ? '▲' : '▾'}</Text>}
+                        </TouchableOpacity>
+                        {isOpen && (
+                          <View style={s.expandBody}>
+                            {(meal.ingredients?.length ?? 0) > 0 && (
+                              <>
+                                <Text style={s.expandLabel}>Ingredients</Text>
+                                {meal.ingredients!.map((ing, k) => (
+                                  <Text key={k} style={s.expandIngLine}>· {ing.item} — {ing.amount}</Text>
+                                ))}
+                              </>
+                            )}
+                            {(meal.steps?.length ?? 0) > 0 && (
+                              <>
+                                <Text style={[s.expandLabel, { marginTop: 10 }]}>Steps</Text>
+                                {meal.steps!.map((step, k) => (
+                                  <View key={k} style={s.expandStepRow}>
+                                    <View style={s.expandStepNum}>
+                                      <Text style={s.expandStepNumText}>{k + 1}</Text>
+                                    </View>
+                                    <Text style={s.expandStepText}>{step}</Text>
+                                  </View>
+                                ))}
+                              </>
+                            )}
+                          </View>
+                        )}
                       </View>
+                    );
+                  };
+                  return (
+                    <View key={day.day} style={s.dayCard}>
+                      <Text style={s.dayName}>{day.day}</Text>
+                      {renderMealRow(day.breakfast, '🌅', 'breakfast', false)}
+                      {renderMealRow(day.lunch, '☀️', 'lunch', true)}
+                      {renderMealRow(day.dinner, '🌙', 'dinner', true)}
                     </View>
-                    <View style={s.mealDivider} />
-                    <View style={s.mealRow}>
-                      <Text style={s.mealEmoji}>☀️</Text>
-                      <View style={s.mealInfo}>
-                        <Text style={s.mealName}>{day.lunch.name}</Text>
-                        <Text style={s.mealDesc} numberOfLines={2}>{day.lunch.description}</Text>
-                      </View>
-                    </View>
-                    <View style={s.mealDivider} />
-                    <View style={s.mealRow}>
-                      <Text style={s.mealEmoji}>🌙</Text>
-                      <View style={s.mealInfo}>
-                        <Text style={s.mealName}>{day.dinner.name}</Text>
-                        <Text style={s.mealDesc} numberOfLines={2}>{day.dinner.description}</Text>
-                      </View>
-                    </View>
-                  </View>
-                ))}
+                  );
+                })}
 
-                <Text style={s.planSectionTitle}>Grocery List</Text>
+                <View style={s.groceryHeader}>
+                  <Text style={s.planSectionTitle}>Grocery List</Text>
+                  <TouchableOpacity style={s.shareBtn} onPress={handleShareGroceryList} activeOpacity={0.8}>
+                    <Text style={s.shareBtnText}>🔔 Add to Reminders</Text>
+                  </TouchableOpacity>
+                </View>
 
-                {mealPlan.groceryList.filter((i) => !i.inPantry).map((item, idx) => (
-                  <View key={idx} style={s.groceryRow}>
-                    <View style={s.groceryItemInfo}>
-                      <Text style={s.groceryItemName}>{item.item}</Text>
-                      <Text style={s.groceryItemAmount}>{item.amount}</Text>
-                    </View>
-                    {item.estimatedCost != null && (
-                      <Text style={s.groceryItemCost}>~${item.estimatedCost.toFixed(2)}</Text>
-                    )}
-                  </View>
-                ))}
-
-                {mealPlan.groceryList.filter((i) => i.inPantry).length > 0 && (
-                  <>
-                    <Text style={s.planSubtitle}>Already in your pantry ✓</Text>
-                    {mealPlan.groceryList.filter((i) => i.inPantry).map((item, idx) => (
-                      <View key={idx} style={[s.groceryRow, s.groceryRowHave]}>
-                        <Text style={s.groceryCheck}>✓</Text>
+                {mealPlan.groceryList
+                  .filter((i) => !i.inPantry || addedFromPantrySet.has(i.item))
+                  .map((item, idx) => {
+                    const inPantry = addedToPantrySet.has(item.item);
+                    return (
+                      <View key={idx} style={s.groceryRow}>
+                        {addedFromPantrySet.has(item.item) && (
+                          <View style={s.fromPantryTag}>
+                            <Text style={s.fromPantryTagText}>pantry</Text>
+                          </View>
+                        )}
                         <View style={s.groceryItemInfo}>
-                          <Text style={[s.groceryItemName, s.groceryItemNameHave]}>{item.item}</Text>
+                          <Text style={s.groceryItemName}>{item.item}</Text>
                           <Text style={s.groceryItemAmount}>{item.amount}</Text>
                         </View>
+                        {item.estimatedCost != null && (
+                          <Text style={s.groceryItemCost}>~${item.estimatedCost.toFixed(2)}</Text>
+                        )}
+                        <TouchableOpacity
+                          style={[s.addPantryBtn, inPantry && s.addPantryBtnDone]}
+                          onPress={() => !inPantry && handleAddToPantry(item)}
+                          activeOpacity={inPantry ? 1 : 0.75}
+                        >
+                          <Text style={[s.addPantryBtnText, inPantry && s.addPantryBtnTextDone]}>
+                            {inPantry ? '✓' : '+ Pantry'}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
-                    ))}
+                    );
+                  })}
+
+                {mealPlan.groceryList.filter((i) => i.inPantry && !addedFromPantrySet.has(i.item)).length > 0 && (
+                  <>
+                    <Text style={s.planSubtitle}>Already in your pantry — needed this week</Text>
+                    {mealPlan.groceryList
+                      .filter((i) => i.inPantry && !addedFromPantrySet.has(i.item))
+                      .map((item, idx) => {
+                        const alreadyAdded = addedFromPantrySet.has(item.item);
+                        return (
+                          <View key={idx} style={[s.groceryRow, s.groceryRowHave]}>
+                            <Text style={s.groceryCheck}>✓</Text>
+                            <View style={s.groceryItemInfo}>
+                              <Text style={[s.groceryItemName, s.groceryItemNameHave]}>{item.item}</Text>
+                              <Text style={s.groceryItemAmount}>Need: {item.amount}</Text>
+                            </View>
+                            <TouchableOpacity
+                              style={s.addListBtn}
+                              onPress={() => !alreadyAdded && handleAddFromPantryToGrocery(item.item)}
+                              activeOpacity={alreadyAdded ? 1 : 0.75}
+                            >
+                              <Text style={s.addListBtnText}>{alreadyAdded ? '✓' : '+ List'}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
                   </>
                 )}
 
@@ -904,4 +1063,60 @@ const s = StyleSheet.create({
   savedPlanTitle: { fontSize: 15, fontWeight: '700', color: theme.textDark },
   savedPlanMeta: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
   savedPlanDelete: { fontSize: 14, color: theme.textFaint, fontWeight: '700', padding: 4 },
+
+  // Expandable prep dish rows
+  prepDishRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  expandChevron: { fontSize: 11, color: theme.primary, fontWeight: '700', marginLeft: 8 },
+  expandBody: {
+    backgroundColor: 'rgba(167,139,219,0.07)', borderRadius: 12,
+    padding: 12, marginTop: 8, marginBottom: 4,
+  },
+  expandLabel: {
+    fontSize: 10, fontWeight: '800', color: theme.textFaint,
+    textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6,
+  },
+  expandIngLine: { fontSize: 13, color: theme.textDark, marginBottom: 3, lineHeight: 18 },
+  expandStepRow: { flexDirection: 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' },
+  expandStepNum: {
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, marginTop: 1,
+  },
+  expandStepNumText: { fontSize: 10, fontWeight: '800', color: theme.primary },
+  expandStepText: { flex: 1, fontSize: 13, color: theme.textDark, lineHeight: 19 },
+
+  // Grocery list header row
+  groceryHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 8, marginBottom: 10,
+  },
+  shareBtn: {
+    backgroundColor: theme.accentLight, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 7,
+  },
+  shareBtnText: { fontSize: 12, fontWeight: '800', color: theme.textDark },
+
+  // "From pantry" tag on grocery rows
+  fromPantryTag: {
+    backgroundColor: theme.primaryLight, borderRadius: 10,
+    paddingHorizontal: 6, paddingVertical: 2, marginRight: 8, alignSelf: 'center',
+  },
+  fromPantryTagText: { fontSize: 10, fontWeight: '700', color: theme.primary },
+
+  // Add to pantry / add to list inline buttons
+  addPantryBtn: {
+    borderWidth: 1.5, borderColor: theme.border, borderRadius: 12,
+    paddingHorizontal: 8, paddingVertical: 5, marginLeft: 8,
+  },
+  addPantryBtnDone: { borderColor: theme.accent, backgroundColor: theme.accentLight },
+  addPantryBtnText: { fontSize: 11, fontWeight: '700', color: theme.textFaint },
+  addPantryBtnTextDone: { color: theme.textDark },
+  addListBtn: {
+    borderWidth: 1.5, borderColor: theme.primary, borderRadius: 12,
+    paddingHorizontal: 8, paddingVertical: 5, marginLeft: 8,
+  },
+  addListBtnText: { fontSize: 11, fontWeight: '700', color: theme.primary },
 });
