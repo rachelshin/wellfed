@@ -6,13 +6,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
-  loadPrices, loadPricesFromCache, addPrice, updatePrice, deletePrice,
+  loadPrices, loadPricesFromCache, saveNewPrices, addPrice, updatePrice, deletePrice,
   pricePerUnit, formatPricePerUnit, bestPrice,
   PriceEntry,
 } from '../../store/prices';
 import {
   loadCategories, loadCategoriesFromCache, seedDefaultCategories,
-  saveCategory, updateCategory, deleteCategory,
+  saveCategory, saveNewCategories, updateCategory, deleteCategory,
   PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
@@ -226,7 +226,7 @@ export default function PricesTab() {
           </View>
         )}
 
-        {categories.length > 0 && displayList.length === 0 && (
+        {search.trim().length > 0 && displayList.length === 0 && (
           <View style={s.empty}>
             <Text style={s.emptyText}>No categories match "{search}"</Text>
           </View>
@@ -363,28 +363,47 @@ export default function PricesTab() {
           const priceItems = taggedItems.filter((i) => i.addToPrice);
           const pantryItems = taggedItems.filter((i) => i.addToPantry);
 
-          // Pass 1: create any new categories first so prices land in the right place
-          let currentCategories = categories;
-          const uniqueCategories = [...new Set(taggedItems.map((i) => i.entry.category))];
-          for (const cat of uniqueCategories) {
-            currentCategories = await ensureCategory(currentCategories, cat);
-          }
-          setCategories(currentCategories);
+          // Build all new state locally — no I/O, just JS
+          const existingCatKeys = new Set(categories.map((c) => c.category));
+          const uniqueCats = [...new Set(taggedItems.map((i) => i.entry.category))];
+          const newCats: PriceCategory[] = uniqueCats
+            .filter((cat) => !existingCatKeys.has(cat))
+            .map((cat) => ({
+              id: `${Date.now()}-${Math.random()}`,
+              name: cat.charAt(0).toUpperCase() + cat.slice(1),
+              category: cat,
+            }));
+          const allCategories = [...categories, ...newCats];
 
-          // Pass 2: add price entries
-          let currentPrices = prices;
+          const newPriceEntries: PriceEntry[] = [];
           for (const { entry } of priceItems) {
-            currentPrices = await addPrice(currentPrices, entry, user?.uid);
+            const isDup = !!entry.scannedName && prices.some(
+              (p) => p.scannedName === entry.scannedName &&
+                Math.abs(p.price - entry.price) < 0.001 &&
+                p.store.toLowerCase() === entry.store.toLowerCase(),
+            );
+            if (!isDup) newPriceEntries.push({ ...entry, id: `${Date.now()}-${Math.random()}` });
           }
-          setPrices(currentPrices);
+          const allPrices = [...prices, ...newPriceEntries];
 
-          // Pass 3: add pantry items
+          // Update UI and close modal immediately
+          setCategories(allCategories);
+          setPrices(allPrices);
+          setShowScan(false);
+
+          // Persist everything in parallel — user doesn't wait for this
+          await Promise.all([
+            saveNewCategories(newCats, allCategories, user?.uid),
+            saveNewPrices(newPriceEntries, allPrices, user?.uid),
+          ]);
+
+          // Pantry writes — also after modal is already closed
           if (pantryItems.length > 0) {
             const pantry = await loadPantry(user?.uid);
             await addPantryItemsFromReceipt(
               pantry,
               pantryItems.map(({ entry }) => {
-                const cat = currentCategories.find((c) => c.category === entry.category);
+                const cat = allCategories.find((c) => c.category === entry.category);
                 const catName = cat?.name ?? (entry.category.charAt(0).toUpperCase() + entry.category.slice(1));
                 return {
                   displayName: catName,
@@ -396,7 +415,6 @@ export default function PricesTab() {
               user?.uid,
             );
           }
-          setShowScan(false);
         }}
       />
     </View>

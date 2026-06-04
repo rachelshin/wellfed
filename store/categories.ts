@@ -79,6 +79,19 @@ export async function updateCategory(
   return updated;
 }
 
+export async function saveNewCategories(
+  newCats: PriceCategory[],
+  allCats: PriceCategory[],
+  uid?: string | null,
+): Promise<void> {
+  if (!newCats.length) return;
+  if (uid) {
+    await Promise.all(newCats.map((c) => setDoc(doc(col(uid), c.id), c)));
+  } else {
+    await AsyncStorage.setItem(KEY, JSON.stringify(allCats));
+  }
+}
+
 export async function deleteCategory(
   categories: PriceCategory[],
   id: string,

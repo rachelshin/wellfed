@@ -66,6 +66,19 @@ export async function addPrice(
   return [...prices, newPrice];
 }
 
+export async function saveNewPrices(
+  newPrices: PriceEntry[],
+  allPrices: PriceEntry[],
+  uid?: string | null,
+): Promise<void> {
+  if (!newPrices.length) return;
+  if (uid) {
+    await Promise.all(newPrices.map((p) => setDoc(doc(pricesCol(uid), p.id), p)));
+  } else {
+    await AsyncStorage.setItem(PRICES_KEY, JSON.stringify(allPrices));
+  }
+}
+
 export async function updatePrice(
   prices: PriceEntry[],
   id: string,
