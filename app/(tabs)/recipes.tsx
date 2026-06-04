@@ -11,7 +11,7 @@ import { loadPrices, groupByItem, bestPrice } from '../../store/prices';
 import {
   generateRecipes, loadCachedRecipes, getCachedPantryHash, hashItems,
   generateMealPlan, loadCachedMealPlan,
-  AIRecipe, MealPlan, MealPlanOptions,
+  AIRecipe, MealPlan, MealPlanOptions, PrepSession,
 } from '../../lib/ai';
 import {
   loadSavedRecipes, saveRecipe, updateSavedRecipe, deleteSavedRecipe,
@@ -177,7 +177,7 @@ export default function RecipesTab() {
     setPlanSaving(true);
     try {
       const now = new Date();
-      const title = `Plan – ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      const title = `Prep – ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
       setSavedMealPlans(await saveMealPlan(savedMealPlans, mealPlan, title, user?.uid));
     } finally {
       setPlanSaving(false);
@@ -214,7 +214,7 @@ export default function RecipesTab() {
           onPress={() => setSegment('plan')}
           activeOpacity={0.7}
         >
-          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Plan 📅</Text>
+          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep 🥘</Text>
         </TouchableOpacity>
       </View>
 
@@ -225,10 +225,6 @@ export default function RecipesTab() {
       >
         {segment === 'ideas' && (
           <>
-            <TouchableOpacity style={s.pantryStrip} onPress={() => router.push('/(tabs)/pantry')} activeOpacity={0.7}>
-              <Text style={s.pantryStripText}>Pantry · {pantryCount} item{pantryCount !== 1 ? 's' : ''}</Text>
-              <Text style={s.pantryStripArrow}>Manage →</Text>
-            </TouchableOpacity>
 
             {!hasApiKey && (
               <View style={s.infoCard}>
@@ -422,7 +418,7 @@ export default function RecipesTab() {
                 </View>
               ) : (
                 <Text style={s.generateBtnText}>
-                  {mealPlan ? 'Regenerate plan 📅' : 'Create meal plan 📅'}
+                  {mealPlan ? 'Regenerate prep plan 🥘' : 'Create meal prep plan 🥘'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -435,15 +431,32 @@ export default function RecipesTab() {
 
             {!mealPlanLoading && !mealPlan && !mealPlanError && (
               <View style={s.empty}>
-                <Text style={s.emptyTitle}>Plan your week 📅</Text>
+                <Text style={s.emptyTitle}>Prep your week 🥘</Text>
                 <Text style={s.emptySub}>
-                  Claude will build a 7-day meal plan around your pantry, then give you a grocery list for anything else you need.
+                  Claude will batch cook a week of meals around your pantry — with leftovers built in — and give you a grocery list for the rest.
                 </Text>
               </View>
             )}
 
             {mealPlan && !mealPlanLoading && (
               <>
+                {mealPlan.prepSessions && mealPlan.prepSessions.length > 0 && (
+                  <>
+                    <Text style={s.planSectionTitle}>Prep Sessions 🥘</Text>
+                    {mealPlan.prepSessions.map((session: PrepSession, i: number) => (
+                      <View key={i} style={s.prepCard}>
+                        <View style={s.prepCardHeader}>
+                          <Text style={s.prepCardDay}>{session.day} — batch cook</Text>
+                          <Text style={s.prepCardTime}>{session.estimatedTime}</Text>
+                        </View>
+                        {session.dishes.map((dish: string, j: number) => (
+                          <Text key={j} style={s.prepCardDish}>· {dish}</Text>
+                        ))}
+                      </View>
+                    ))}
+                  </>
+                )}
+
                 {mealPlan.days.map((day) => (
                   <View key={day.day} style={s.dayCard}>
                     <Text style={s.dayName}>{day.day}</Text>
@@ -681,14 +694,6 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
 
-  pantryStrip: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#FFFFFF', borderRadius: 14,
-    paddingHorizontal: 16, paddingVertical: 12, marginBottom: 14,
-    borderLeftWidth: 3, borderLeftColor: theme.accent,
-  },
-  pantryStripText: { fontSize: 14, color: theme.textDark, fontWeight: '600' },
-  pantryStripArrow: { fontSize: 13, color: theme.primary, fontWeight: '700' },
 
   infoCard: {
     backgroundColor: '#FFFFFF', borderRadius: 14, padding: 20, marginBottom: 16,
@@ -859,6 +864,17 @@ const s = StyleSheet.create({
     backgroundColor: theme.bgTint, borderRadius: 14, padding: 14, marginTop: 8,
   },
   planNotesText: { fontSize: 13, color: theme.textFaint, lineHeight: 20, fontStyle: 'italic' },
+
+  prepCard: {
+    backgroundColor: theme.primaryLight, borderRadius: 16, padding: 16, marginBottom: 10,
+    borderLeftWidth: 3, borderLeftColor: theme.primary,
+  },
+  prepCardHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10,
+  },
+  prepCardDay: { fontSize: 14, fontWeight: '800', color: theme.primary },
+  prepCardTime: { fontSize: 12, fontWeight: '600', color: theme.primary },
+  prepCardDish: { fontSize: 14, color: theme.textDark, fontWeight: '600', marginBottom: 4 },
 
   savePlanBtn: {
     backgroundColor: theme.primary, borderRadius: 16, padding: 16,

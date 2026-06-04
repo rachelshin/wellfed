@@ -28,7 +28,14 @@ export interface GroceryListItem {
   inPantry: boolean;
 }
 
+export interface PrepSession {
+  day: string;
+  dishes: string[];
+  estimatedTime: string;
+}
+
 export interface MealPlan {
+  prepSessions?: PrepSession[];
   days: MealPlanDay[];
   groceryList: GroceryListItem[];
   totalEstimatedCost: number | null;
@@ -36,7 +43,7 @@ export interface MealPlan {
 }
 
 export interface MealPlanOptions {
-  servings: number;
+  people: number;
   dietaryRestrictions: string;
   weeklyBudget: number | null;
   notes: string;

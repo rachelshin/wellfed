@@ -15,7 +15,7 @@ interface Props {
 
 export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   const insets = useSafeAreaInsets();
-  const [servings, setServings] = useState('2');
+  const [people, setPeople] = useState('2');
   const [dietary, setDietary] = useState('');
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,10 +31,10 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   }, []);
 
   const handleGenerate = () => {
-    const sv = parseInt(servings, 10);
+    const p = parseInt(people, 10);
     const bg = parseFloat(budget);
     onGenerate({
-      servings: isNaN(sv) || sv < 1 ? 2 : sv,
+      people: isNaN(p) || p < 1 ? 2 : p,
       dietaryRestrictions: dietary.trim(),
       weeklyBudget: !isNaN(bg) && bg > 0 ? bg : null,
       notes: notes.trim(),
@@ -46,13 +46,13 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
-            <Text style={modalSheet.title}>Plan your week 📅</Text>
+            <Text style={modalSheet.title}>Prep your week 🥘</Text>
 
-            <Text style={modalSheet.label}>Servings per meal</Text>
+            <Text style={modalSheet.label}>How many people is this for?</Text>
             <TextInput
               style={modalSheet.input}
-              value={servings}
-              onChangeText={setServings}
+              value={people}
+              onChangeText={setPeople}
               keyboardType="number-pad"
               placeholder="2"
               placeholderTextColor={theme.placeholder}
@@ -85,7 +85,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
               style={modalSheet.input}
               value={notes}
               onChangeText={setNotes}
-              placeholder="e.g. quick lunches, mostly Asian food, use up the chicken"
+              placeholder="e.g. no fish, love spicy food, use up the chicken"
               placeholderTextColor={theme.placeholder}
               returnKeyType="done"
               onSubmitEditing={handleGenerate}
@@ -93,7 +93,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
           </ScrollView>
 
           <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleGenerate}>
-            <Text style={modalSheet.primaryBtnText}>Generate meal plan ✨</Text>
+            <Text style={modalSheet.primaryBtnText}>Generate meal prep ✨</Text>
           </TouchableOpacity>
           <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
             <Text style={modalSheet.cancelText}>Cancel</Text>

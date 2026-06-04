@@ -66,12 +66,12 @@ exports.generateMealPlan = functions.https.onRequest(async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
 
-  const { pantryItems, priceData, servings, dietaryRestrictions, weeklyBudget, notes } = req.body;
+  const { pantryItems, priceData, people, dietaryRestrictions, weeklyBudget, notes } = req.body;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
 
-  const sv = Math.max(1, parseInt(servings, 10) || 2);
+  const numPeople = Math.max(1, parseInt(people, 10) || 2);
 
   const pantryLine = pantryItems?.length
     ? `Pantry items the user already has: ${pantryItems.join(', ')}.`
@@ -85,7 +85,7 @@ exports.generateMealPlan = functions.https.onRequest(async (req, res) => {
     ? `Real price data the user has tracked (use for cost estimates):\n${priceData.map((p) => `  ${p.name}: $${p.price.toFixed(2)} for ${p.size}${p.unit}`).join('\n')}`
     : '';
 
-  const prompt = `Create a 7-day weekly meal plan for ${sv} serving${sv !== 1 ? 's' : ''} per meal.
+  const prompt = `Create a 7-day meal prep plan for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}.
 
 ${pantryLine}
 ${dietLine}
@@ -93,28 +93,38 @@ ${budgetLine}
 ${priceLine}
 ${notesLine}
 
-Guidelines:
-- Maximise use of pantry items across the week to reduce grocery spend
-- Vary cuisines and flavours — no cuisine twice in a row for dinner
-- Breakfasts: quick and practical (under 20 min)
-- Lunches: can be leftovers or simple assembly meals
-- Dinners: satisfying complete meals
-- Grocery list should only include items NOT in the pantry; mark inPantry: true only if the item clearly matches something in the pantry list
-- Estimate grocery costs using the provided price data where possible, or typical US grocery prices otherwise
-${weeklyBudget ? `- Total grocery cost should stay under $${weeklyBudget}` : ''}
+This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on one or two days so the rest of the week practically runs itself:
+- Designate Sunday as the main prep day: cook 3–4 dishes in large batches.
+- Add a Wednesday refresh session if useful for mid-week variety.
+- Breakfasts: simple, repeating, no cooking required (overnight oats, yogurt + fruit, toast). Use the same 2–3 options across the week.
+- Lunches: leftovers from batch-cooked dinners. Always name them "Leftover [dish name]".
+- Dinners on non-prep days: reheat batch-cooked dishes or assemble in under 15 min. No from-scratch cooking.
+- Aim for only 4–6 unique recipes for the entire week.
+- Scale grocery quantities for ${numPeople * 2}–${numPeople * 3} servings per dish so leftovers cover multiple meals.
+- Maximise use of pantry items to reduce grocery spend.
+- Grocery list: only items NOT in the pantry. Mark inPantry: true only if it clearly matches the pantry list.
+- Estimate costs from the provided price data where possible, otherwise use typical US grocery prices.
+${weeklyBudget ? `- Total grocery cost must stay under $${weeklyBudget}.` : ''}
 
 Return ONLY this JSON (no markdown, no extra text):
 {
+  "prepSessions": [
+    {
+      "day": "Sunday",
+      "dishes": ["Batch Brown Rice", "Teriyaki Chicken", "Roasted Vegetables"],
+      "estimatedTime": "2 hours"
+    }
+  ],
   "days": [
     {
       "day": "Monday",
-      "breakfast": { "name": "Oatmeal with Berries", "description": "Quick and filling to start the day." },
-      "lunch": { "name": "Leftovers", "description": "Last night's dinner reheated." },
-      "dinner": { "name": "Garlic Butter Chicken", "description": "Juicy chicken with roasted vegetables." }
+      "breakfast": { "name": "Overnight Oats", "description": "Prep the night before — grab and go." },
+      "lunch": { "name": "Leftover Teriyaki Chicken", "description": "Reheated from Sunday's batch cook." },
+      "dinner": { "name": "Teriyaki Chicken Bowl", "description": "Brown rice topped with teriyaki chicken and roasted veg." }
     }
   ],
   "groceryList": [
-    { "item": "chicken breast", "amount": "2 lbs", "estimatedCost": 8.00, "inPantry": false }
+    { "item": "chicken breast", "amount": "3 lbs", "estimatedCost": 12.00, "inPantry": false }
   ],
   "totalEstimatedCost": 75.00,
   "notes": "Optional tip about the plan."
