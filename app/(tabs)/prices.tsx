@@ -17,7 +17,7 @@ import {
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
 import PriceEntryModal from '../../components/prices/PriceEntryModal';
 import CategoryModal from '../../components/prices/CategoryModal';
-import ReceiptScanModal from '../../components/prices/ReceiptScanModal';
+import ReceiptScanModal, { ScannedItem } from '../../components/prices/ReceiptScanModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
@@ -336,31 +336,35 @@ export default function PricesTab() {
         visible={showScan}
         onClose={() => setShowScan(false)}
         existingCategories={categoryNames}
-        onAddItems={async (newItems) => {
+        onAddItems={async (taggedItems: ScannedItem[]) => {
           loadGen.current++;
           let currentPrices = prices;
           let currentCategories = categories;
-          for (const item of newItems) {
-            currentPrices = await addPrice(currentPrices, item, user?.uid);
-            currentCategories = await ensureCategory(currentCategories, item.category, item.itemName);
+          for (const { entry, addToPrice } of taggedItems) {
+            if (!addToPrice) continue;
+            currentPrices = await addPrice(currentPrices, entry, user?.uid);
+            currentCategories = await ensureCategory(currentCategories, entry.category, entry.itemName);
           }
           setPrices(currentPrices);
           setCategories(currentCategories);
-          const pantry = await loadPantry(user?.uid);
-          await addPantryItemsFromReceipt(
-            pantry,
-            newItems.map((item) => {
-              const cat = currentCategories.find((c) => c.category === item.category);
-              const catName = cat?.name ?? (item.category.charAt(0).toUpperCase() + item.category.slice(1));
-              return {
-                displayName: catName,
-                itemName: item.category,
-                addedDate: todayDate(),
-                source: 'receipt' as const,
-              };
-            }),
-            user?.uid,
-          );
+          const pantryItems = taggedItems.filter((i) => i.addToPantry);
+          if (pantryItems.length > 0) {
+            const pantry = await loadPantry(user?.uid);
+            await addPantryItemsFromReceipt(
+              pantry,
+              pantryItems.map(({ entry }) => {
+                const cat = currentCategories.find((c) => c.category === entry.category);
+                const catName = cat?.name ?? (entry.category.charAt(0).toUpperCase() + entry.category.slice(1));
+                return {
+                  displayName: catName,
+                  itemName: entry.category,
+                  addedDate: todayDate(),
+                  source: 'receipt' as const,
+                };
+              }),
+              user?.uid,
+            );
+          }
           setShowScan(false);
         }}
       />

@@ -4,6 +4,7 @@ import {
   StyleSheet, Platform, ScrollView, Image, ActivityIndicator, Alert,
 } from 'react-native';
 import AppModal from '../AppModal';
+import DatePicker from '../DatePicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { PriceEntry, Unit } from '../../store/prices';
@@ -12,20 +13,28 @@ import theme from '../../lib/theme';
 
 interface DetectedItem {
   name: string;
-  originalName: string; // from Claude, never changed — used for deduplication
+  originalName: string;
   price: string;
   size: string;
   unit: Unit;
   store: string;
   selected: boolean;
-  category: string;
+  category: string;     // lowercase key
+  addToPrice: boolean;
+  addToPantry: boolean;
+}
+
+export interface ScannedItem {
+  entry: Omit<PriceEntry, 'id'>;
+  addToPrice: boolean;
+  addToPantry: boolean;
 }
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onAddItems: (items: Omit<PriceEntry, 'id'>[]) => void;
-  existingCategories: string[];
+  onAddItems: (items: ScannedItem[]) => void;
+  existingCategories: string[];   // display names
 }
 
 function today() {
@@ -39,7 +48,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[]>([]);
   const [storeName, setStoreName] = useState('');
-  const [receiptDate, setReceiptDate] = useState('');
+  const [receiptDate, setReceiptDate] = useState(today());
   const [missingFields, setMissingFields] = useState<('store' | 'date')[]>([]);
   const [step, setStep] = useState<'pick' | 'review'>('pick');
   const [openCategoryIndex, setOpenCategoryIndex] = useState<number | null>(null);
@@ -49,7 +58,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   useEffect(() => {
     if (!visible) {
       setImageUri(null); setScanning(false);
-      setItems([]); setStoreName(''); setReceiptDate(''); setMissingFields([]);
+      setItems([]); setStoreName(''); setReceiptDate(today()); setMissingFields([]);
       setStep('pick'); setOpenCategoryIndex(null);
     }
   }, [visible]);
@@ -122,6 +131,8 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
           store: '',
           selected: true,
           category: (it.category || it.name || '').toLowerCase().trim(),
+          addToPrice: true,
+          addToPantry: true,
         }));
       setItems(detected);
       setStep('review');
@@ -138,23 +149,27 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   };
 
   const handleConfirm = () => {
-    const selected = items.filter((it) => it.selected);
-    if (selected.length === 0) { onClose(); return; }
-    const entries: Omit<PriceEntry, 'id'>[] = selected.map((it) => ({
-      itemName: it.name.trim(),
-      category: it.category.trim() || it.name.trim().toLowerCase(),
-
-      store: storeName.trim() || it.store.trim(),
-      price: parseFloat(it.price) || 0,
-      size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),
-      unit: it.unit,
-      dateAdded: receiptDate.trim() || today(),
-      scannedName: it.originalName.trim(),
-    }));
-    onAddItems(entries);
+    const active = items.filter((it) => it.selected && (it.addToPrice || it.addToPantry));
+    if (active.length === 0) { onClose(); return; }
+    onAddItems(active.map((it) => ({
+      entry: {
+        itemName: it.name.trim(),
+        category: it.category.trim().toLowerCase() || it.name.trim().toLowerCase(),
+        store: storeName.trim() || it.store.trim(),
+        price: parseFloat(it.price) || 0,
+        size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),
+        unit: it.unit,
+        dateAdded: receiptDate,
+        scannedName: it.originalName.trim(),
+      },
+      addToPrice: it.addToPrice,
+      addToPantry: it.addToPantry,
+    })));
   };
 
-  const selectedCount = items.filter((i) => i.selected).length;
+  const activeCount = items.filter((i) => i.selected && (i.addToPrice || i.addToPantry)).length;
+  const priceCount = items.filter((i) => i.selected && i.addToPrice).length;
+  const pantryCount = items.filter((i) => i.selected && i.addToPantry).length;
 
   return (
     <AppModal visible={visible} animationType="slide" transparent>
@@ -201,14 +216,14 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                 </Text>
                 <Text style={s.sub}>
                   {items.length > 0
-                    ? 'Review names, prices, and categories. Deselect anything you don\'t want to save.'
+                    ? 'Review details and choose where to save each item.'
                     : 'The receipt was tricky to read — add items from the + button on the Prices tab.'}
                 </Text>
 
                 {missingFields.length > 0 && (
                   <View style={s.missingBanner}>
                     <Text style={s.missingBannerText}>
-                      Couldn't read {missingFields.join(' or ')} from the receipt — please fill {missingFields.length === 1 ? 'it' : 'them'} in below.
+                      Couldn't read {missingFields.join(' or ')} from the receipt — please check below.
                     </Text>
                   </View>
                 )}
@@ -223,14 +238,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                 />
 
                 <Text style={modalSheet.label}>Receipt Date</Text>
-                <TextInput
-                  style={[modalSheet.input, missingFields.includes('date') && !receiptDate.trim() && s.inputMissing]}
-                  value={receiptDate}
-                  onChangeText={setReceiptDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={theme.placeholder}
-                  keyboardType="numbers-and-punctuation"
-                />
+                <DatePicker value={receiptDate} onChange={setReceiptDate} />
 
                 {items.length === 0 ? (
                   <View style={s.noItems}>
@@ -240,6 +248,9 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                   items.map((item, i) => {
                     const sizeNA = item.size === 'n/a';
                     const catOpen = openCategoryIndex === i;
+                    const catDisplay = item.category
+                      ? item.category.charAt(0).toUpperCase() + item.category.slice(1)
+                      : '';
                     return (
                       <View key={i} style={[s.itemRow, !item.selected && s.itemRowDimmed]}>
                         <TouchableOpacity onPress={() => updateItem(i, 'selected', !item.selected)}>
@@ -296,7 +307,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                             onPress={() => setOpenCategoryIndex(catOpen ? null : i)}
                             activeOpacity={0.7}
                           >
-                            <Text style={s.catBadgeText}>{item.category || 'set category…'}</Text>
+                            <Text style={s.catBadgeText}>{catDisplay || 'set category…'}</Text>
                             <Text style={s.catBadgeArrow}>{catOpen ? '▲' : '▾'}</Text>
                           </TouchableOpacity>
 
@@ -320,14 +331,37 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                                   {filteredCats.map((cat) => (
                                     <TouchableOpacity
                                       key={cat}
-                                      style={[s.catChip, item.category === cat && s.catChipActive]}
-                                      onPress={() => { updateItem(i, 'category', cat); setOpenCategoryIndex(null); }}
+                                      style={[s.catChip, item.category === cat.toLowerCase() && s.catChipActive]}
+                                      onPress={() => { updateItem(i, 'category', cat.toLowerCase()); setOpenCategoryIndex(null); }}
                                     >
-                                      <Text style={[s.catChipText, item.category === cat && s.catChipTextActive]}>{cat}</Text>
+                                      <Text style={[s.catChipText, item.category === cat.toLowerCase() && s.catChipTextActive]}>{cat}</Text>
                                     </TouchableOpacity>
                                   ))}
                                 </View>
                               )}
+                            </View>
+                          )}
+
+                          {/* Destination toggles — only when item is selected */}
+                          {item.selected && (
+                            <View style={s.destRow}>
+                              <Text style={s.destLabel}>Save to:</Text>
+                              <TouchableOpacity
+                                style={[s.destChip, item.addToPrice && s.destChipActive]}
+                                onPress={() => updateItem(i, 'addToPrice', !item.addToPrice)}
+                              >
+                                <Text style={[s.destChipText, item.addToPrice && s.destChipTextActive]}>
+                                  {item.addToPrice ? '✓ ' : ''}Prices
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[s.destChip, item.addToPantry && s.destChipActive]}
+                                onPress={() => updateItem(i, 'addToPantry', !item.addToPantry)}
+                              >
+                                <Text style={[s.destChipText, item.addToPantry && s.destChipTextActive]}>
+                                  {item.addToPantry ? '✓ ' : ''}Pantry
+                                </Text>
+                              </TouchableOpacity>
                             </View>
                           )}
 
@@ -337,12 +371,21 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                   })
                 )}
 
-                {items.length > 0 && (
-                  <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleConfirm}>
-                    <Text style={modalSheet.primaryBtnText}>
-                      Save {selectedCount} item{selectedCount !== 1 ? 's' : ''}
+                {items.length > 0 && activeCount > 0 && (
+                  <>
+                    <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleConfirm}>
+                      <Text style={modalSheet.primaryBtnText}>
+                        Save {activeCount} item{activeCount !== 1 ? 's' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={s.saveSummary}>
+                      {priceCount > 0 && pantryCount > 0
+                        ? `${priceCount} → Prices · ${pantryCount} → Pantry`
+                        : priceCount > 0
+                        ? `${priceCount} → Prices only`
+                        : `${pantryCount} → Pantry only`}
                     </Text>
-                  </TouchableOpacity>
+                  </>
                 )}
                 <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
                   <Text style={modalSheet.cancelText}>Done</Text>
@@ -374,6 +417,7 @@ const s = StyleSheet.create({
   scanningTitle: { marginTop: 16, fontSize: 18, fontWeight: '700', color: theme.textDark },
   noItems: { paddingVertical: 24, alignItems: 'center' },
   noItemsText: { fontSize: 14, color: theme.textFaint, textAlign: 'center', lineHeight: 20 },
+  saveSummary: { textAlign: 'center', fontSize: 12, color: theme.textFaint, marginTop: -8, marginBottom: 8 },
 
   itemRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 12,
@@ -414,12 +458,12 @@ const s = StyleSheet.create({
   catBadge: {
     flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
     backgroundColor: theme.primaryLight, borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 4, gap: 4,
+    paddingHorizontal: 10, paddingVertical: 4, gap: 4, marginBottom: 8,
   },
   catBadgeText: { fontSize: 12, fontWeight: '700', color: theme.primary },
   catBadgeArrow: { fontSize: 10, color: theme.primary },
 
-  catPicker: { marginTop: 8 },
+  catPicker: { marginTop: 0, marginBottom: 8 },
   catChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 4 },
   catChip: {
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
@@ -433,6 +477,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6, color: theme.textDark,
     backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0, outlineStyle: 'none',
   },
+
+  destRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  destLabel: { fontSize: 11, color: theme.textFaint, fontWeight: '600', marginRight: 2 },
+  destChip: {
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.bg,
+  },
+  destChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  destChipText: { fontSize: 12, color: theme.textFaint, fontWeight: '600' },
+  destChipTextActive: { color: theme.primary, fontWeight: '800' },
 
   missingBanner: {
     backgroundColor: '#FEF3CD', borderRadius: 12, padding: 12, marginBottom: 16,

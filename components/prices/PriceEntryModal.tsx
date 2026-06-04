@@ -4,6 +4,7 @@ import {
   StyleSheet, Platform, ScrollView,
 } from 'react-native';
 import AppModal from '../AppModal';
+import DatePicker from '../DatePicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PriceEntry, Unit, UNITS } from '../../store/prices';
 import { modalSheet } from '../../lib/sharedStyles';
@@ -32,6 +33,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
   const [unit, setUnit] = useState<Unit>('oz');
+  const [dateAdded, setDateAdded] = useState(today());
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
@@ -39,17 +41,18 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
     if (!visible) {
       setDisplayName(''); setCategory(''); setStore('');
       setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false);
+      setDateAdded(today());
       return;
     }
     if (entry) {
       setDisplayName(entry.itemName);
-      // Show the display name for the category, not the raw key
       const matched = existingCategories.find((n) => n.toLowerCase() === entry.category);
       setCategory(matched ?? entry.category);
       setStore(entry.store);
       setPrice(String(entry.price));
       setSize(String(entry.size));
       setUnit(entry.unit);
+      setDateAdded(entry.dateAdded);
     } else if (prefill) {
       setDisplayName(prefill.itemName ?? '');
       const matched = existingCategories.find((n) => n.toLowerCase() === prefill.category);
@@ -58,6 +61,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
       setPrice(prefill.price ? String(prefill.price) : '');
       setSize(prefill.size ? String(prefill.size) : '');
       setUnit(prefill.unit ?? 'oz');
+      setDateAdded(prefill.dateAdded ?? today());
     }
   }, [visible, entry, prefill]);
 
@@ -91,7 +95,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
         price: priceVal,
         size: isNaN(sizeVal) ? 1 : sizeVal,
         unit,
-        dateAdded: entry?.dateAdded ?? today(),
+        dateAdded,
       },
       entry?.id,
     );
@@ -163,6 +167,9 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
                 ))}
               </View>
             )}
+
+            <Text style={modalSheet.label}>Date</Text>
+            <DatePicker value={dateAdded} onChange={setDateAdded} />
 
             <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
               <Text style={modalSheet.primaryBtnText}>Save</Text>
