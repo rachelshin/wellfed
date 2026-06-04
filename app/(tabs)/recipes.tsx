@@ -553,29 +553,42 @@ export default function RecipesTab() {
         <View style={modalSheet.backdrop}>
           <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
             <Text style={modalSheet.title}>What are you in the mood for? 🍽️</Text>
-            <Text style={s.promptSub}>Tell Claude what you're craving, or let it surprise you.</Text>
-            <TextInput
-              style={modalSheet.input}
-              value={promptText}
-              onChangeText={setPromptText}
-              placeholder="e.g. something quick, spicy, Thai food, use the chicken…"
-              placeholderTextColor={theme.placeholder}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={() => handleGenerate(promptText.trim() || undefined)}
-            />
-            <TouchableOpacity
-              style={modalSheet.primaryBtn}
-              onPress={() => handleGenerate(promptText.trim() || undefined)}
-            >
-              <Text style={modalSheet.primaryBtnText}>Generate</Text>
-            </TouchableOpacity>
+            
+            
             <TouchableOpacity
               style={s.surpriseBtn}
               onPress={() => handleGenerate(undefined)}
             >
               <Text style={s.surpriseBtnText}>🎲 Surprise me!</Text>
             </TouchableOpacity>
+
+            <Text style={s.promptSub}>or</Text>
+            
+            
+            <TextInput
+              style={modalSheet.input}
+              value={promptText}
+              onChangeText={setPromptText}
+              placeholder="Tell Claude what you're craving."
+              placeholderTextColor={theme.placeholder}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => handleGenerate(promptText.trim() || undefined)}
+            />
+
+
+
+            <TouchableOpacity
+              style={modalSheet.primaryBtn}
+              onPress={() => handleGenerate(promptText.trim() || undefined)}
+            >
+              <Text style={modalSheet.primaryBtnText}>Generate</Text>
+            </TouchableOpacity>
+           
+           
+            
+
+
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={() => setShowPrompt(false)}>
               <Text style={modalSheet.cancelText}>Cancel</Text>
             </TouchableOpacity>
