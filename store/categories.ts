@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 export interface PriceCategory {
   id: string;
   name: string;      // display label, e.g. "Eggs"
-  category: string;  // lowercase grouping key, e.g. "eggs"
+  category: string;  // lowercase key, e.g. "eggs" — always equals name.toLowerCase().trim()
 }
 
 const KEY = '@price_categories';
@@ -14,19 +14,11 @@ function col(uid: string) {
   return collection(db, 'users', uid, 'priceCategories');
 }
 
-// Transparently upgrades records written before the itemName→category rename.
-function normalizeCategory(raw: any): PriceCategory {
-  if (raw.category === undefined && raw.itemName !== undefined) {
-    return { id: raw.id, name: raw.name, category: raw.itemName };
-  }
-  return raw as PriceCategory;
-}
-
 export async function loadCategoriesFromCache(uid?: string | null): Promise<PriceCategory[]> {
   if (!uid) return [];
   try {
     const snap = await getDocsFromCache(col(uid));
-    return snap.docs.map((d) => normalizeCategory(d.data()));
+    return snap.docs.map((d) => d.data() as PriceCategory);
   } catch {
     return [];
   }
@@ -35,10 +27,10 @@ export async function loadCategoriesFromCache(uid?: string | null): Promise<Pric
 export async function loadCategories(uid?: string | null): Promise<PriceCategory[]> {
   if (uid) {
     const snap = await getDocs(col(uid));
-    return snap.docs.map((d) => normalizeCategory(d.data()));
+    return snap.docs.map((d) => d.data() as PriceCategory);
   }
   const json = await AsyncStorage.getItem(KEY);
-  return json ? (JSON.parse(json) as any[]).map(normalizeCategory) : [];
+  return json ? JSON.parse(json) : [];
 }
 
 export async function saveCategory(

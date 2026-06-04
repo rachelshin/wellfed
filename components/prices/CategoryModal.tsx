@@ -15,9 +15,10 @@ interface Props {
   onDelete?: (keepEntries: boolean) => void;
   initialName?: string;
   entryCount?: number;
+  existingNames?: string[];
 }
 
-export default function CategoryModal({ visible, onClose, onSave, onDelete, initialName, entryCount = 0 }: Props) {
+export default function CategoryModal({ visible, onClose, onSave, onDelete, initialName, entryCount = 0, existingNames = [] }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -43,8 +44,12 @@ export default function CategoryModal({ visible, onClose, onSave, onDelete, init
     return () => window.visualViewport!.removeEventListener('resize', onResize);
   }, []);
 
+  const isDuplicate = existingNames.some(
+    (n) => n.toLowerCase() === name.trim().toLowerCase() && n.toLowerCase() !== initialName?.toLowerCase(),
+  );
+
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || isDuplicate) return;
     onSave(name.trim());
   };
 
@@ -101,8 +106,11 @@ export default function CategoryModal({ visible, onClose, onSave, onDelete, init
                 returnKeyType="done"
                 onSubmitEditing={handleSave}
               />
+              {isDuplicate && (
+                <Text style={s.dupError}>A category with this name already exists.</Text>
+              )}
 
-              <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
+              <TouchableOpacity style={[modalSheet.primaryBtn, isDuplicate && s.btnDisabled]} onPress={handleSave}>
                 <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add Category'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
@@ -135,4 +143,6 @@ const s = StyleSheet.create({
   deleteEntriesBtnText: { fontSize: 15, color: theme.negative, fontWeight: '700' },
   deleteBtn: { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
   deleteBtnText: { fontSize: 15, color: theme.negative, fontWeight: '600' },
+  dupError: { fontSize: 13, color: theme.negative, marginTop: -8, marginBottom: 12 },
+  btnDisabled: { opacity: 0.4 },
 });

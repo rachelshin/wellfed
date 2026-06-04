@@ -49,20 +49,6 @@ export default function PricesTab() {
   const [refreshing, setRefreshing] = useState(false);
   const loadGen = useRef(0);
 
-  const applyLoaded = async (p: PriceEntry[], c: PriceCategory[]) => {
-    const knownCategories = new Set(c.map((cat) => cat.category));
-    let current = c;
-    for (const category of new Set(p.map((e) => e.category))) {
-      if (!knownCategories.has(category)) {
-        const catName = category.charAt(0).toUpperCase() + category.slice(1);
-        current = await saveCategory(current, { name: catName, category }, user?.uid);
-        knownCategories.add(category);
-      }
-    }
-    setPrices(p);
-    setCategories(current);
-  };
-
   const load = async () => {
     const gen = ++loadGen.current;
 
@@ -78,7 +64,8 @@ export default function PricesTab() {
 
     const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
     if (gen !== loadGen.current) return;
-    await applyLoaded(p, c);
+    setPrices(p);
+    setCategories(c);
   };
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
@@ -172,7 +159,7 @@ export default function PricesTab() {
     })
     .sort((a, b) => a.cat.name.localeCompare(b.cat.name));
 
-  const categoryNames = categories.map((c) => c.category);
+  const categoryNames = categories.map((c) => c.name);
 
   return (
     <View style={s.root}>
@@ -326,6 +313,7 @@ export default function PricesTab() {
         visible={showAddCategory}
         onClose={() => setShowAddCategory(false)}
         onSave={handleAddCategory}
+        existingNames={categories.map((c) => c.name)}
       />
       <CategoryModal
         visible={!!editingCategory}
@@ -334,6 +322,7 @@ export default function PricesTab() {
         onDelete={handleDeleteCategory}
         initialName={editingCategory?.name}
         entryCount={prices.filter((p) => p.category === editingCategory?.category).length}
+        existingNames={categories.map((c) => c.name)}
       />
       <PriceEntryModal
         visible={showAdd || !!editing}

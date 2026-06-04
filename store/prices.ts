@@ -8,13 +8,12 @@ export interface PriceEntry {
   id: string;
   itemName: string;   // display name, e.g. "Large Eggs"
   category: string;   // lowercase grouping key, e.g. "eggs"
-
   store: string;
-  price: number;       // total price paid
-  size: number;        // quantity (e.g. 16 for 16 oz)
+  price: number;
+  size: number;
   unit: Unit;
-  dateAdded: string;   // YYYY-MM-DD
-  scannedName?: string; // original name from receipt OCR, used for deduplication
+  dateAdded: string;  // YYYY-MM-DD
+  scannedName?: string;
 }
 
 const PRICES_KEY = '@price_entries';
@@ -25,29 +24,11 @@ function pricesCol(uid: string) {
   return collection(db, 'users', uid, 'prices');
 }
 
-// Transparently upgrades records written before the itemName/displayName rename.
-function normalizeEntry(raw: any): PriceEntry {
-  if (raw.category === undefined && raw.displayName !== undefined) {
-    return {
-      id: raw.id,
-      itemName: raw.displayName,
-      category: raw.itemName,
-      store: raw.store,
-      price: raw.price,
-      size: raw.size,
-      unit: raw.unit,
-      dateAdded: raw.dateAdded,
-      ...(raw.scannedName !== undefined ? { scannedName: raw.scannedName } : {}),
-    };
-  }
-  return raw as PriceEntry;
-}
-
 export async function loadPricesFromCache(uid?: string | null): Promise<PriceEntry[]> {
   if (!uid) return [];
   try {
     const snap = await getDocsFromCache(pricesCol(uid));
-    return snap.docs.map((d) => normalizeEntry(d.data()));
+    return snap.docs.map((d) => d.data() as PriceEntry);
   } catch {
     return [];
   }
@@ -56,10 +37,10 @@ export async function loadPricesFromCache(uid?: string | null): Promise<PriceEnt
 export async function loadPrices(uid?: string | null): Promise<PriceEntry[]> {
   if (uid) {
     const snap = await getDocs(pricesCol(uid));
-    return snap.docs.map((d) => normalizeEntry(d.data()));
+    return snap.docs.map((d) => d.data() as PriceEntry);
   }
   const json = await AsyncStorage.getItem(PRICES_KEY);
-  return json ? (JSON.parse(json) as any[]).map(normalizeEntry) : [];
+  return json ? JSON.parse(json) : [];
 }
 
 export async function addPrice(
@@ -67,7 +48,6 @@ export async function addPrice(
   price: Omit<PriceEntry, 'id'>,
   uid?: string | null,
 ): Promise<PriceEntry[]> {
-  // Skip duplicates from receipt scans: same original scanned name, price, and store
   if (price.scannedName) {
     const isDuplicate = prices.some(
       (p) =>
@@ -125,21 +105,16 @@ export function formatPricePerUnit(entry: PriceEntry): string {
   return `$${ppu.toFixed(3)}/${entry.unit}`;
 }
 
-// Group entries by category key
 export function groupByItem(prices: PriceEntry[]): Map<string, PriceEntry[]> {
   const map = new Map<string, PriceEntry[]>();
   for (const p of prices) {
-    const key = p.category;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(p);
+    if (!map.has(p.category)) map.set(p.category, []);
+    map.get(p.category)!.push(p);
   }
   return map;
 }
 
-// Return the cheapest entry (by price per unit) from a group
 export function bestPrice(entries: PriceEntry[]): PriceEntry | null {
   if (!entries.length) return null;
-  return entries.reduce((best, e) =>
-    pricePerUnit(e) < pricePerUnit(best) ? e : best
-  );
+  return entries.reduce((best, e) => pricePerUnit(e) < pricePerUnit(best) ? e : best);
 }

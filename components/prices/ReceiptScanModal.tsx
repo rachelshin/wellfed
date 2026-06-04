@@ -57,7 +57,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   useEffect(() => { setCatSearch(''); }, [openCategoryIndex]);
 
   const filteredCats = catSearch.trim()
-    ? existingCategories.filter((c) => c.includes(catSearch.toLowerCase())).slice(0, 6)
+    ? existingCategories.filter((c) => c.toLowerCase().includes(catSearch.toLowerCase())).slice(0, 6)
     : existingCategories.slice(0, 6);
 
   useEffect(() => {
