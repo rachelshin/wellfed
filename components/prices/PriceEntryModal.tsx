@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Platform, ScrollView,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PriceEntry, Unit, UNITS } from '../../store/prices';
 import { modalSheet } from '../../lib/sharedStyles';
@@ -12,7 +13,7 @@ interface Props {
   visible: boolean;
   entry?: PriceEntry | null;
   prefill?: Partial<PriceEntry>;
-  existingGroups?: string[];
+  existingCategories?: string[];
   onClose: () => void;
   onSave: (data: Omit<PriceEntry, 'id'>, id?: string) => void;
   onDelete?: (id: string) => void;
@@ -23,7 +24,7 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function PriceEntryModal({ visible, entry, prefill, existingGroups = [], onClose, onSave, onDelete }: Props) {
+export default function PriceEntryModal({ visible, entry, prefill, existingCategories = [], onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [group, setGroup] = useState('');
@@ -43,15 +44,15 @@ export default function PriceEntryModal({ visible, entry, prefill, existingGroup
       return;
     }
     if (entry) {
-      setDisplayName(entry.displayName);
-      setGroup(entry.itemName);
+      setDisplayName(entry.itemName);
+      setGroup(entry.category);
       setStore(entry.store);
       setPrice(String(entry.price));
       setSize(String(entry.size));
       setUnit(entry.unit);
     } else if (prefill) {
-      setDisplayName(prefill.displayName ?? '');
-      setGroup(prefill.itemName ?? '');
+      setDisplayName(prefill.itemName ?? '');
+      setGroup(prefill.category ?? '');
       setStore(prefill.store ?? '');
       setPrice(prefill.price ? String(prefill.price) : '');
       setSize(prefill.size ? String(prefill.size) : '');
@@ -69,8 +70,8 @@ export default function PriceEntryModal({ visible, entry, prefill, existingGroup
   }, []);
 
   const filteredGroups = group.trim()
-    ? existingGroups.filter((g) => g.includes(group.trim())).slice(0, 6)
-    : existingGroups.slice(0, 6);
+    ? existingCategories.filter((g) => g.includes(group.trim())).slice(0, 6)
+    : existingCategories.slice(0, 6);
 
   const handleSave = () => {
     const priceVal = parseFloat(price);
@@ -79,8 +80,8 @@ export default function PriceEntryModal({ visible, entry, prefill, existingGroup
     const resolvedGroup = group.trim().toLowerCase() || displayName.trim().toLowerCase();
     onSave(
       {
-        itemName: resolvedGroup,
-        displayName: displayName.trim(),
+        category: resolvedGroup,
+        itemName: displayName.trim(),
         store: store.trim(),
         price: priceVal,
         size: isNaN(sizeVal) ? 1 : sizeVal,
@@ -94,7 +95,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingGroup
   const isEdit = !!entry;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
@@ -104,7 +105,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingGroup
             <TextInput style={modalSheet.input} value={displayName} onChangeText={setDisplayName}
               placeholder="e.g. Organic Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
 
-            <Text style={modalSheet.label}>Group *</Text>
+            <Text style={modalSheet.label}>Category *</Text>
             <TextInput
               style={modalSheet.input}
               value={group}
@@ -172,7 +173,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingGroup
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

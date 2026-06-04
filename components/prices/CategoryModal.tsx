@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Platform,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
@@ -11,19 +12,26 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onSave: (name: string) => void;
-  onDelete?: () => void;
+  onDelete?: (keepEntries: boolean) => void;
   initialName?: string;
+  entryCount?: number;
 }
 
-export default function CategoryModal({ visible, onClose, onSave, onDelete, initialName }: Props) {
+export default function CategoryModal({ visible, onClose, onSave, onDelete, initialName, entryCount = 0 }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
   const isEdit = !!initialName;
 
   useEffect(() => {
-    if (visible) setName(initialName ?? '');
-    else setName('');
+    if (visible) {
+      setName(initialName ?? '');
+      setConfirmingDelete(false);
+    } else {
+      setName('');
+      setConfirmingDelete(false);
+    }
   }, [visible, initialName]);
 
   useEffect(() => {
@@ -41,41 +49,90 @@ export default function CategoryModal({ visible, onClose, onSave, onDelete, init
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
-          <Text style={modalSheet.title}>{isEdit ? 'Edit Category' : 'New Category'}</Text>
+          {confirmingDelete ? (
+            <>
+              <Text style={modalSheet.title}>Delete "{initialName}"?</Text>
+              {entryCount > 0 ? (
+                <>
+                  <Text style={s.confirmText}>
+                    This category has {entryCount} price {entryCount === 1 ? 'entry' : 'entries'}.
+                    What should happen to them?
+                  </Text>
+                  <TouchableOpacity
+                    style={s.keepBtn}
+                    onPress={() => { onDelete?.(true); setConfirmingDelete(false); }}
+                  >
+                    <Text style={s.keepBtnText}>Move to Uncategorized</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.deleteEntriesBtn}
+                    onPress={() => { onDelete?.(false); setConfirmingDelete(false); }}
+                  >
+                    <Text style={s.deleteEntriesBtnText}>Delete entries too</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={s.deleteEntriesBtn}
+                  onPress={() => { onDelete?.(false); setConfirmingDelete(false); }}
+                >
+                  <Text style={s.deleteEntriesBtnText}>Delete category</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={modalSheet.cancelBtn} onPress={() => setConfirmingDelete(false)}>
+                <Text style={modalSheet.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={modalSheet.title}>{isEdit ? 'Edit Category' : 'New Category'}</Text>
 
-          <Text style={modalSheet.label}>Category Name</Text>
-          <TextInput
-            style={modalSheet.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Eggs, Bread, Tofu"
-            placeholderTextColor={theme.placeholder}
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleSave}
-          />
+              <Text style={modalSheet.label}>Category Name</Text>
+              <TextInput
+                style={modalSheet.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Eggs, Bread, Tofu"
+                placeholderTextColor={theme.placeholder}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+              />
 
-          <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-            <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add Category'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
-            <Text style={modalSheet.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-          {onDelete && (
-            <TouchableOpacity style={s.deleteBtn} onPress={onDelete}>
-              <Text style={s.deleteBtnText}>Delete category</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
+                <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add Category'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
+                <Text style={modalSheet.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              {onDelete && (
+                <TouchableOpacity style={s.deleteBtn} onPress={() => setConfirmingDelete(true)}>
+                  <Text style={s.deleteBtnText}>Delete category</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
 const s = StyleSheet.create({
+  confirmText: {
+    fontSize: 15, color: theme.textFaint, lineHeight: 22, marginBottom: 20,
+  },
+  keepBtn: {
+    backgroundColor: theme.bgTint, borderRadius: 16, padding: 18,
+    alignItems: 'center', marginBottom: 12,
+    borderWidth: 1.5, borderColor: theme.border,
+  },
+  keepBtnText: { fontSize: 16, fontWeight: '700', color: theme.textDark },
+  deleteEntriesBtn: { alignItems: 'center', paddingVertical: 14, marginBottom: 4 },
+  deleteEntriesBtnText: { fontSize: 15, color: theme.negative, fontWeight: '700' },
   deleteBtn: { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
   deleteBtnText: { fontSize: 15, color: theme.negative, fontWeight: '600' },
 });

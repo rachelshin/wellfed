@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Modal, ActivityIndicator, Alert,
+  RefreshControl, ActivityIndicator, Alert,
   TextInput, Platform,
 } from 'react-native';
+import AppModal from '../../components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { loadPantry, PantryItem } from '../../store/pantry';
@@ -160,7 +161,7 @@ export default function RecipesTab() {
       const priceData = Array.from(groupByItem(prices).entries())
         .map(([, entries]) => {
           const best = bestPrice(entries);
-          return best ? { name: best.displayName, price: best.price, size: best.size, unit: best.unit } : null;
+          return best ? { name: best.itemName, price: best.price, size: best.size, unit: best.unit } : null;
         })
         .filter((x): x is NonNullable<typeof x> => x !== null);
       const plan = await generateMealPlan(pantryItems.map((i) => i.displayName), priceData, opts);
@@ -549,55 +550,53 @@ export default function RecipesTab() {
       </ScrollView>
 
       {/* Prompt modal */}
-      <Modal visible={showPrompt} animationType="slide" transparent>
+      <AppModal visible={showPrompt} animationType="slide" transparent>
         <View style={modalSheet.backdrop}>
           <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
-            <Text style={modalSheet.title}>What are you in the mood for? 🍽️</Text>
-            
-            
-            <TouchableOpacity
-              style={s.surpriseBtn}
-              onPress={() => handleGenerate(undefined)}
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <Text style={s.surpriseBtnText}>🎲 Surprise me!</Text>
-            </TouchableOpacity>
+              <Text style={modalSheet.title}>What are you in the mood for? 🍽️</Text>
 
-            <Text style={s.promptSub}>or</Text>
-            
-            
-            <TextInput
-              style={modalSheet.input}
-              value={promptText}
-              onChangeText={setPromptText}
-              placeholder="Tell Claude what you're craving."
-              placeholderTextColor={theme.placeholder}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={() => handleGenerate(promptText.trim() || undefined)}
-            />
+              <TouchableOpacity
+                style={s.surpriseBtn}
+                onPress={() => handleGenerate(undefined)}
+              >
+                <Text style={s.surpriseBtnText}>🎲 Surprise me!</Text>
+              </TouchableOpacity>
 
+              <Text style={s.promptSub}>or</Text>
 
+              <TextInput
+                style={modalSheet.input}
+                value={promptText}
+                onChangeText={setPromptText}
+                placeholder="Tell Claude what you're craving."
+                placeholderTextColor={theme.placeholder}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={() => handleGenerate(promptText.trim() || undefined)}
+              />
 
-            <TouchableOpacity
-              style={modalSheet.primaryBtn}
-              onPress={() => handleGenerate(promptText.trim() || undefined)}
-            >
-              <Text style={modalSheet.primaryBtnText}>Generate</Text>
-            </TouchableOpacity>
-           
-           
-            
+              <TouchableOpacity
+                style={modalSheet.primaryBtn}
+                onPress={() => handleGenerate(promptText.trim() || undefined)}
+              >
+                <Text style={modalSheet.primaryBtnText}>Generate</Text>
+              </TouchableOpacity>
 
-
-            <TouchableOpacity style={modalSheet.cancelBtn} onPress={() => setShowPrompt(false)}>
-              <Text style={modalSheet.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={modalSheet.cancelBtn} onPress={() => setShowPrompt(false)}>
+                <Text style={modalSheet.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* AI recipe detail modal */}
-      <Modal visible={!!selected} animationType="slide" transparent>
+      <AppModal visible={!!selected} animationType="slide" transparent>
         {selected && (
           <View style={s.modalBackdrop}>
             <View style={[s.detailSheet, { paddingBottom: insets.bottom + 24 }]}>
@@ -672,7 +671,7 @@ export default function RecipesTab() {
             </View>
           </View>
         )}
-      </Modal>
+      </AppModal>
 
       <MealPlanModal
         visible={showMealPlanPrompt}
@@ -716,7 +715,7 @@ const s = StyleSheet.create({
   infoText: { fontSize: 13, color: theme.textFaint, lineHeight: 20 },
   mono: { fontFamily: 'monospace', color: theme.primary },
 
-  promptSub: { fontSize: 14, color: theme.textFaint, marginBottom: 20, lineHeight: 20 },
+  promptSub: { fontSize: 15, fontWeight: '600', color: theme.textFaint, marginVertical: 14, lineHeight: 20, textAlign: 'center' },
   surpriseBtn: {
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 16,
     padding: 16, alignItems: 'center', marginBottom: 8,

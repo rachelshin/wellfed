@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity, ScrollView, Platform,
+  View, Text, TextInput, TouchableOpacity, ScrollView, Platform,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
 import { MealPlanOptions } from '../../lib/ai';
@@ -42,7 +43,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
@@ -100,6 +101,6 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }

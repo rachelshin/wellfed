@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Platform, ScrollView, Image, ActivityIndicator, Alert,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { PriceEntry, Unit } from '../../store/prices';
@@ -140,8 +141,8 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
     const selected = items.filter((it) => it.selected);
     if (selected.length === 0) { onClose(); return; }
     const entries: Omit<PriceEntry, 'id'>[] = selected.map((it) => ({
-      displayName: it.name.trim(),
-      itemName: it.category.trim() || it.name.trim().toLowerCase(),
+      itemName: it.name.trim(),
+      category: it.category.trim() || it.name.trim().toLowerCase(),
 
       store: storeName.trim() || it.store.trim(),
       price: parseFloat(it.price) || 0,
@@ -156,7 +157,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const selectedCount = items.filter((i) => i.selected).length;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
@@ -200,7 +201,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                 </Text>
                 <Text style={s.sub}>
                   {items.length > 0
-                    ? 'Review names, prices, and groups. Deselect anything you don\'t want to save.'
+                    ? 'Review names, prices, and categories. Deselect anything you don\'t want to save.'
                     : 'The receipt was tricky to read — add items from the + button on the Prices tab.'}
                 </Text>
 
@@ -295,7 +296,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                             onPress={() => setOpenCategoryIndex(catOpen ? null : i)}
                             activeOpacity={0.7}
                           >
-                            <Text style={s.catBadgeText}>{item.category || 'set group…'}</Text>
+                            <Text style={s.catBadgeText}>{item.category || 'set category…'}</Text>
                             <Text style={s.catBadgeArrow}>{catOpen ? '▲' : '▾'}</Text>
                           </TouchableOpacity>
 
@@ -305,7 +306,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                                 style={s.catInput}
                                 value={catSearch}
                                 onChangeText={setCatSearch}
-                                placeholder="Search or type a new group…"
+                                placeholder="Search or type a new category…"
                                 placeholderTextColor={theme.placeholder}
                                 returnKeyType="done"
                                 onSubmitEditing={() => {
@@ -351,7 +352,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

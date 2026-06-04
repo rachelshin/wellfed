@@ -6,8 +6,8 @@ export type Unit = 'oz' | 'lb' | 'g' | 'kg' | 'ml' | 'L' | 'fl oz' | 'count';
 
 export interface PriceEntry {
   id: string;
-  itemName: string;    // lowercase for grouping/search
-  displayName: string; // original case for display
+  itemName: string;   // display name, e.g. "Large Eggs"
+  category: string;   // lowercase grouping key, e.g. "eggs"
 
   store: string;
   price: number;       // total price paid
@@ -25,11 +25,29 @@ function pricesCol(uid: string) {
   return collection(db, 'users', uid, 'prices');
 }
 
+// Transparently upgrades records written before the itemName/displayName rename.
+function normalizeEntry(raw: any): PriceEntry {
+  if (raw.category === undefined && raw.displayName !== undefined) {
+    return {
+      id: raw.id,
+      itemName: raw.displayName,
+      category: raw.itemName,
+      store: raw.store,
+      price: raw.price,
+      size: raw.size,
+      unit: raw.unit,
+      dateAdded: raw.dateAdded,
+      ...(raw.scannedName !== undefined ? { scannedName: raw.scannedName } : {}),
+    };
+  }
+  return raw as PriceEntry;
+}
+
 export async function loadPricesFromCache(uid?: string | null): Promise<PriceEntry[]> {
   if (!uid) return [];
   try {
     const snap = await getDocsFromCache(pricesCol(uid));
-    return snap.docs.map((d) => d.data() as PriceEntry);
+    return snap.docs.map((d) => normalizeEntry(d.data()));
   } catch {
     return [];
   }
@@ -38,10 +56,10 @@ export async function loadPricesFromCache(uid?: string | null): Promise<PriceEnt
 export async function loadPrices(uid?: string | null): Promise<PriceEntry[]> {
   if (uid) {
     const snap = await getDocs(pricesCol(uid));
-    return snap.docs.map((d) => d.data() as PriceEntry);
+    return snap.docs.map((d) => normalizeEntry(d.data()));
   }
   const json = await AsyncStorage.getItem(PRICES_KEY);
-  return json ? JSON.parse(json) : [];
+  return json ? (JSON.parse(json) as any[]).map(normalizeEntry) : [];
 }
 
 export async function addPrice(
@@ -107,11 +125,11 @@ export function formatPricePerUnit(entry: PriceEntry): string {
   return `$${ppu.toFixed(3)}/${entry.unit}`;
 }
 
-// Group entries by normalized item name
+// Group entries by category key
 export function groupByItem(prices: PriceEntry[]): Map<string, PriceEntry[]> {
   const map = new Map<string, PriceEntry[]>();
   for (const p of prices) {
-    const key = p.itemName;
+    const key = p.category;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(p);
   }

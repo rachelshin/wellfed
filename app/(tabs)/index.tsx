@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Alert, TextInput, Modal, Platform,
+  RefreshControl, Alert, TextInput, Platform,
 } from 'react-native';
+import AppModal from '../../components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -311,7 +312,7 @@ export default function BudgetTab() {
         onAdd={async (entry) => { setEntries(await addEntry(entries, entry, user?.uid)); setShowAdd(false); }}
       />
 
-      <Modal visible={showBankModal} animationType="slide" transparent>
+      <AppModal visible={showBankModal} animationType="slide" transparent>
         <View style={modalSheet.backdrop}>
           <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
             <Text style={modalSheet.title}>Bank balance</Text>
@@ -335,7 +336,7 @@ export default function BudgetTab() {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

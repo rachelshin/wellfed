@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Platform, ScrollView,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Category, CATEGORIES, SpendingEntry, today } from '../../store/budget';
 import { modalSheet } from '../../lib/sharedStyles';
@@ -41,7 +42,7 @@ export default function AddEntryModal({ visible, onClose, onAdd }: Props) {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
@@ -101,7 +102,7 @@ export default function AddEntryModal({ visible, onClose, onAdd }: Props) {
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   Platform, ScrollView, StyleSheet,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PantryItem } from '../../store/pantry';
 import { modalSheet } from '../../lib/sharedStyles';
@@ -39,7 +40,7 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
   };
 
   return (
-    <Modal visible={!!item} animationType="slide" transparent>
+    <AppModal visible={!!item} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
@@ -69,7 +70,7 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

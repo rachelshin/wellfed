@@ -28,9 +28,9 @@ const CAT_PALETTE = [
   '#D4A574', '#C4A8D4', '#7CC8A4', '#F4A8A8',
 ];
 
-function categoryColor(itemName: string): string {
+function categoryColor(category: string): string {
   let h = 0;
-  for (let i = 0; i < itemName.length; i++) h = itemName.charCodeAt(i) + ((h << 5) - h);
+  for (let i = 0; i < category.length; i++) h = category.charCodeAt(i) + ((h << 5) - h);
   return CAT_PALETTE[Math.abs(h) % CAT_PALETTE.length];
 }
 
@@ -50,13 +50,13 @@ export default function PricesTab() {
   const loadGen = useRef(0);
 
   const applyLoaded = async (p: PriceEntry[], c: PriceCategory[]) => {
-    const categoryItemNames = new Set(c.map((cat) => cat.itemName));
+    const knownCategories = new Set(c.map((cat) => cat.category));
     let current = c;
-    for (const itemName of new Set(p.map((e) => e.itemName))) {
-      if (!categoryItemNames.has(itemName)) {
-        const catName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
-        current = await saveCategory(current, { name: catName, itemName }, user?.uid);
-        categoryItemNames.add(itemName);
+    for (const category of new Set(p.map((e) => e.category))) {
+      if (!knownCategories.has(category)) {
+        const catName = category.charAt(0).toUpperCase() + category.slice(1);
+        current = await saveCategory(current, { name: catName, category }, user?.uid);
+        knownCategories.add(category);
       }
     }
     setPrices(p);
@@ -83,10 +83,10 @@ export default function PricesTab() {
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const toggleExpand = (itemName: string) => {
+  const toggleExpand = (category: string) => {
     setExpandedItems((prev) => {
       const next = new Set(prev);
-      next.has(itemName) ? next.delete(itemName) : next.add(itemName);
+      next.has(category) ? next.delete(category) : next.add(category);
       return next;
     });
   };
@@ -98,7 +98,7 @@ export default function PricesTab() {
       setEditing(null);
     } else {
       const updatedPrices = await addPrice(prices, data, user?.uid);
-      const updatedCategories = await ensureCategory(categories, data.itemName, data.displayName);
+      const updatedCategories = await ensureCategory(categories, data.category, data.itemName);
       setPrices(updatedPrices);
       setCategories(updatedCategories);
       setShowAdd(false);
@@ -113,8 +113,8 @@ export default function PricesTab() {
 
   const handleAddCategory = async (name: string) => {
     loadGen.current++;
-    const itemName = name.toLowerCase().trim();
-    setCategories(await saveCategory(categories, { name, itemName }, user?.uid));
+    const category = name.toLowerCase().trim();
+    setCategories(await saveCategory(categories, { name, category }, user?.uid));
     setShowAddCategory(false);
   };
 
@@ -125,37 +125,54 @@ export default function PricesTab() {
     setEditingCategory(null);
   };
 
-  const handleDeleteCategory = async () => {
+  const handleDeleteCategory = async (keepEntries: boolean) => {
     if (!editingCategory) return;
     loadGen.current++;
-    setCategories(await deleteCategory(categories, editingCategory.id, user?.uid));
+    const itemEntries = prices.filter((p) => p.category === editingCategory.category);
+    if (!keepEntries) {
+      let updatedPrices = prices;
+      for (const entry of itemEntries) {
+        updatedPrices = await deletePrice(updatedPrices, entry.id, user?.uid);
+      }
+      setPrices(updatedPrices);
+      setCategories(await deleteCategory(categories, editingCategory.id, user?.uid));
+    } else {
+      let updatedPrices = prices;
+      for (const entry of itemEntries) {
+        updatedPrices = await updatePrice(updatedPrices, entry.id, { category: 'uncategorized' }, user?.uid);
+      }
+      setPrices(updatedPrices);
+      let updatedCategories = await ensureCategory(categories, 'uncategorized', 'Uncategorized');
+      updatedCategories = await deleteCategory(updatedCategories, editingCategory.id, user?.uid);
+      setCategories(updatedCategories);
+    }
     setEditingCategory(null);
   };
 
   const ensureCategory = async (
     current: PriceCategory[],
+    category: string,
     itemName: string,
-    displayName: string,
   ): Promise<PriceCategory[]> => {
-    if (current.some((c) => c.itemName === itemName)) return current;
-    const catName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-    return saveCategory(current, { name: catName, itemName }, user?.uid);
+    if (current.some((c) => c.category === category)) return current;
+    const catName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+    return saveCategory(current, { name: catName, category }, user?.uid);
   };
 
   // Build display list from categories only
   let displayList = categories
     .map((cat) => ({
       cat,
-      entries: prices.filter((p) => p.itemName === cat.itemName),
+      entries: prices.filter((p) => p.category === cat.category),
     }))
     .filter(({ cat }) => {
       if (!search.trim()) return true;
       const q = search.toLowerCase().trim();
-      return cat.itemName.includes(q) || cat.name.toLowerCase().includes(q);
+      return cat.category.includes(q) || cat.name.toLowerCase().includes(q);
     })
     .sort((a, b) => a.cat.name.localeCompare(b.cat.name));
 
-  const categoryNames = categories.map((c) => c.itemName);
+  const categoryNames = categories.map((c) => c.category);
 
   return (
     <View style={s.root}>
@@ -208,14 +225,14 @@ export default function PricesTab() {
 
         {displayList.map(({ cat, entries }) => {
           const best = bestPrice(entries);
-          const isExpanded = expandedItems.has(cat.itemName);
-          const catColor = categoryColor(cat.itemName);
+          const isExpanded = expandedItems.has(cat.category);
+          const catColor = categoryColor(cat.category);
 
           return (
             <View key={cat.id} style={[s.card, { borderLeftColor: catColor }]}>
               <TouchableOpacity
                 style={s.cardHeader}
-                onPress={() => toggleExpand(cat.itemName)}
+                onPress={() => toggleExpand(cat.category)}
                 activeOpacity={0.7}
               >
                 <View style={s.cardTitleWrap}>
@@ -271,7 +288,7 @@ export default function PricesTab() {
                                   <Text style={s.bestBadgeText}>✦ Best</Text>
                                 </View>
                               )}
-                              <Text style={s.entryName}>{entry.displayName}</Text>
+                              <Text style={s.entryName}>{entry.itemName}</Text>
                               <Text style={s.entryStore}>{entry.store || 'Unknown store'}</Text>
                               <Text style={s.entrySize}>{entry.size} {entry.unit} · ${entry.price.toFixed(2)}</Text>
                             </View>
@@ -316,11 +333,12 @@ export default function PricesTab() {
         onSave={handleUpdateCategory}
         onDelete={handleDeleteCategory}
         initialName={editingCategory?.name}
+        entryCount={prices.filter((p) => p.category === editingCategory?.category).length}
       />
       <PriceEntryModal
         visible={showAdd || !!editing}
         entry={editing}
-        existingGroups={categoryNames}
+        existingCategories={categoryNames}
         onClose={() => { setShowAdd(false); setEditing(null); }}
         onSave={handleSaveEntry}
         onDelete={handleDeleteEntry}
@@ -335,7 +353,7 @@ export default function PricesTab() {
           let currentCategories = categories;
           for (const item of newItems) {
             currentPrices = await addPrice(currentPrices, item, user?.uid);
-            currentCategories = await ensureCategory(currentCategories, item.itemName, item.itemName);
+            currentCategories = await ensureCategory(currentCategories, item.category, item.itemName);
           }
           setPrices(currentPrices);
           setCategories(currentCategories);
@@ -343,11 +361,11 @@ export default function PricesTab() {
           await addPantryItemsFromReceipt(
             pantry,
             newItems.map((item) => {
-              const cat = currentCategories.find((c) => c.itemName === item.itemName);
-              const catName = cat?.name ?? (item.itemName.charAt(0).toUpperCase() + item.itemName.slice(1));
+              const cat = currentCategories.find((c) => c.category === item.category);
+              const catName = cat?.name ?? (item.category.charAt(0).toUpperCase() + item.category.slice(1));
               return {
                 displayName: catName,
-                itemName: item.itemName,
+                itemName: item.category,
                 addedDate: todayDate(),
                 source: 'receipt' as const,
               };

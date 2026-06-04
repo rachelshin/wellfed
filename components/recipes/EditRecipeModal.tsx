@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Platform, ScrollView, Alert,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SavedRecipe, SavedIngredient } from '../../store/savedRecipes';
 import { modalSheet } from '../../lib/sharedStyles';
@@ -72,7 +73,7 @@ export default function EditRecipeModal({ recipe, onClose, onSave, onDelete }: P
     setSteps((prev) => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
 
   return (
-    <Modal visible={!!recipe} animationType="slide" transparent>
+    <AppModal visible={!!recipe} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, s.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
@@ -148,7 +149,7 @@ export default function EditRecipeModal({ recipe, onClose, onSave, onDelete }: P
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
