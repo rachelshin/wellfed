@@ -52,6 +52,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const [missingFields, setMissingFields] = useState<('store' | 'date')[]>([]);
   const [step, setStep] = useState<'pick' | 'review'>('pick');
   const [openCategoryIndex, setOpenCategoryIndex] = useState<number | null>(null);
+  const [openUnitIndex, setOpenUnitIndex] = useState<number | null>(null);
   const [catSearch, setCatSearch] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
@@ -59,7 +60,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
     if (!visible) {
       setImageUri(null); setScanning(false);
       setItems([]); setStoreName(''); setReceiptDate(today()); setMissingFields([]);
-      setStep('pick'); setOpenCategoryIndex(null);
+      setStep('pick'); setOpenCategoryIndex(null); setOpenUnitIndex(null);
     }
   }, [visible]);
 
@@ -291,20 +292,35 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
                                 onChangeText={(v) => updateItem(i, 'size', v)} keyboardType="decimal-pad"
                                 placeholder="qty" placeholderTextColor={theme.placeholder} />
                             )}
-                            <View style={s.unitSelect}>
-                              {(['oz', 'lb', 'count', 'fl oz'] as Unit[]).map((u) => (
-                                <TouchableOpacity key={u} onPress={() => updateItem(i, 'unit', u)}
-                                  style={[s.miniUnit, item.unit === u && s.miniUnitActive]}>
+                            <TouchableOpacity
+                              style={[s.miniUnit, s.unitDropBtn, openUnitIndex === i && s.miniUnitActive]}
+                              onPress={() => setOpenUnitIndex(openUnitIndex === i ? null : i)}
+                            >
+                              <Text style={[s.miniUnitText, openUnitIndex === i && s.miniUnitTextActive]}>
+                                {item.unit} {openUnitIndex === i ? '▲' : '▾'}
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[s.miniUnit, sizeNA && s.miniUnitActive]}
+                              onPress={() => updateItem(i, 'size', sizeNA ? '1' : 'n/a')}>
+                              <Text style={[s.miniUnitText, sizeNA && s.miniUnitTextActive]}>n/a</Text>
+                            </TouchableOpacity>
+                          </View>
+
+                          {/* Unit picker */}
+                          {openUnitIndex === i && (
+                            <View style={s.unitPicker}>
+                              {(['oz', 'lb', 'g', 'kg', 'ml', 'L', 'fl oz', 'count'] as Unit[]).map((u) => (
+                                <TouchableOpacity
+                                  key={u}
+                                  style={[s.miniUnit, item.unit === u && s.miniUnitActive]}
+                                  onPress={() => { updateItem(i, 'unit', u); setOpenUnitIndex(null); }}
+                                >
                                   <Text style={[s.miniUnitText, item.unit === u && s.miniUnitTextActive]}>{u}</Text>
                                 </TouchableOpacity>
                               ))}
-                              <TouchableOpacity
-                                style={[s.miniUnit, sizeNA && s.miniUnitActive]}
-                                onPress={() => updateItem(i, 'size', sizeNA ? '1' : 'n/a')}>
-                                <Text style={[s.miniUnitText, sizeNA && s.miniUnitTextActive]}>n/a</Text>
-                              </TouchableOpacity>
                             </View>
-                          </View>
+                          )}
 
                           {/* Category row */}
                           <TouchableOpacity
@@ -454,8 +470,9 @@ const s = StyleSheet.create({
     fontSize: 16, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
     borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48, outlineWidth: 0, outlineStyle: 'none',
   },
-  unitSelect: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: theme.border },
+  unitDropBtn: { paddingHorizontal: 10 },
+  unitPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   miniUnitActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
   miniUnitText: { fontSize: 11, color: theme.textFaint },
   miniUnitTextActive: { color: theme.primary, fontWeight: '800' },
