@@ -15,6 +15,7 @@ interface Props {
   entry?: PriceEntry | null;
   prefill?: Partial<PriceEntry>;
   existingCategories?: string[];  // display names, e.g. ["Beef", "Beverages"]
+  existingStores?: string[];      // past store names, e.g. ["Trader Joe's", "Costco"]
   onClose: () => void;
   onSave: (data: Omit<PriceEntry, 'id'>, id?: string) => void;
   onDelete?: (id: string) => void;
@@ -25,7 +26,7 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function PriceEntryModal({ visible, entry, prefill, existingCategories = [], onClose, onSave, onDelete }: Props) {
+export default function PriceEntryModal({ visible, entry, prefill, existingCategories = [], existingStores = [], onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [category, setCategory] = useState('');  // holds the display name while typing/selecting
@@ -77,6 +78,10 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
   const filteredCategories = category.trim()
     ? existingCategories.filter((n) => n.toLowerCase().includes(category.trim().toLowerCase())).slice(0, 6)
     : existingCategories.slice(0, 6);
+
+  const filteredStores = store.trim()
+    ? existingStores.filter((n) => n.toLowerCase().includes(store.trim().toLowerCase())).slice(0, 6)
+    : existingStores.slice(0, 6);
 
   const handleSave = () => {
     const priceVal = parseFloat(price);
@@ -142,6 +147,22 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
             <Text style={modalSheet.label}>Store *</Text>
             <TextInput style={modalSheet.input} value={store} onChangeText={setStore}
               placeholder="e.g. Trader Joe's" placeholderTextColor={theme.placeholder} />
+            {filteredStores.length > 0 && (
+              <View style={s.chipRow}>
+                {filteredStores.map((name) => {
+                  const active = name.toLowerCase() === store.trim().toLowerCase();
+                  return (
+                    <TouchableOpacity
+                      key={name}
+                      style={[s.chip, active && s.chipActive]}
+                      onPress={() => setStore(name)}
+                    >
+                      <Text style={[s.chipText, active && s.chipTextActive]}>{name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
             <Text style={modalSheet.label}>Price ($) *</Text>
             <TextInput style={modalSheet.input} value={price} onChangeText={setPrice}

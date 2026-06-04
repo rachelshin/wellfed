@@ -8,8 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry,
-  getCachedEntries, getCachedSettings,
-  getDaySpent, getAvailableBudget, refreshCarry, CATEGORIES,
+  getCachedEntries, getCachedSettings, getLocalCachedEntries, getLocalCachedSettings,
+  getDaySpent, getAvailableBudget, refreshCarry, entriesNeededFrom, CATEGORIES,
   today, yesterday, formatDate, SpendingEntry, BudgetSettings,
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
@@ -34,13 +34,36 @@ export default function BudgetTab() {
   const todayStr = today();
 
   const load = async () => {
+    let e: SpendingEntry[];
+    let s: BudgetSettings | null;
+
     if (user?.uid) {
+      // Layer 1 — module-level memory cache: instant, lives for the session.
       const cachedE = getCachedEntries(user.uid);
       const cachedS = getCachedSettings(user.uid);
       if (cachedE) setEntries(cachedE);
       if (cachedS !== undefined) setSettings(cachedS);
+
+      // Layer 2 — AsyncStorage: fast (~10 ms), survives page refresh. Skip if layer 1 hit.
+      if (!cachedE || cachedS === undefined) {
+        const [localE, localS] = await Promise.all([
+          !cachedE ? getLocalCachedEntries(user.uid) : Promise.resolve(null),
+          cachedS === undefined ? getLocalCachedSettings(user.uid) : Promise.resolve(undefined as BudgetSettings | null | undefined),
+        ]);
+        if (localE) setEntries(localE);
+        if (localS !== undefined) setSettings(localS);
+      }
+
+      // Layer 3 — Firestore: authoritative. Load settings first so we know how far back
+      // entries are needed (carry tells us the last computed day, so we only fetch from
+      // carry+1 onward instead of fetching the full history).
+      s = await loadSettings(user.uid);
+      e = await loadEntries(user.uid, entriesNeededFrom(s, todayStr));
+    } else {
+      // Guest: both reads hit AsyncStorage which is already fast, so parallel is fine.
+      [e, s] = await Promise.all([loadEntries(), loadSettings()]);
     }
-    const [e, s] = await Promise.all([loadEntries(user?.uid), loadSettings(user?.uid)]);
+
     setEntries(e);
     if (!s) {
       setSettings(null);

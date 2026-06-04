@@ -12,7 +12,7 @@ export const fab = StyleSheet.create({
     shadowColor: theme.textDark, shadowOpacity: 0.25, shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
-  label: { color: theme.textDark, fontSize: 28, fontWeight: '400', lineHeight: 32 },
+  label: { color: theme.textDark, fontSize: 28, fontWeight: '400', includeFontPadding: false },
 });
 
 // Search bar that sits inside the hero card

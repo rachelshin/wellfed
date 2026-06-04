@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/auth';
@@ -18,6 +18,19 @@ function AuthGate() {
       router.replace('/sign-in');
     } else if (isAuthed && inAuthScreen) {
       router.replace('/(tabs)');
+    }
+
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const MIN_SPLASH_MS = 1200;
+      const elapsed = Date.now() - ((window as any).__splashStart ?? Date.now());
+      const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
+      setTimeout(() => {
+        const splash = document.getElementById('splash');
+        if (splash) {
+          splash.classList.add('fade-out');
+          setTimeout(() => splash.remove(), 350);
+        }
+      }, delay);
     }
   }, [user, isGuest, loading]);
 

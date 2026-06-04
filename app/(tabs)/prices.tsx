@@ -169,6 +169,7 @@ export default function PricesTab() {
     .sort((a, b) => a.cat.name.localeCompare(b.cat.name));
 
   const categoryNames = categories.map((c) => c.name);
+  const storeNames = [...new Set(prices.map((p) => p.store).filter(Boolean))].sort();
 
   return (
     <View style={s.root}>
@@ -350,6 +351,7 @@ export default function PricesTab() {
         visible={showAdd || !!editing}
         entry={editing}
         existingCategories={categoryNames}
+        existingStores={storeNames}
         onClose={() => { setShowAdd(false); setEditing(null); }}
         onSave={handleSaveEntry}
         onDelete={handleDeleteEntry}

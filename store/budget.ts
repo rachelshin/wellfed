@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, doc, getDocs, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, deleteDoc, getDoc, query, where, Query, DocumentData } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export type Category =
@@ -29,6 +29,8 @@ export interface BudgetSettings {
 
 const ENTRIES_KEY = '@budget_entries';
 const SETTINGS_KEY = '@budget_settings';
+const ENTRIES_UID_PREFIX = '@budget_entries_uid_';
+const SETTINGS_UID_PREFIX = '@budget_settings_uid_';
 
 // Module-level cache so tab re-focus renders instantly without a network round-trip
 const _entriesCache = new Map<string, SpendingEntry[]>();
@@ -41,6 +43,30 @@ export function getCachedSettings(uid: string): BudgetSettings | null | undefine
   return _settingsCache.has(uid) ? (_settingsCache.get(uid) ?? null) : undefined;
 }
 
+// Reads the persisted AsyncStorage copy for signed-in users (survives page refresh).
+export async function getLocalCachedEntries(uid: string): Promise<SpendingEntry[] | null> {
+  try {
+    const json = await AsyncStorage.getItem(ENTRIES_UID_PREFIX + uid);
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+
+// Returns undefined if the key has never been written (distinct from null = no settings).
+export async function getLocalCachedSettings(uid: string): Promise<BudgetSettings | null | undefined> {
+  try {
+    const raw = await AsyncStorage.getItem(SETTINGS_UID_PREFIX + uid);
+    if (raw === null) return undefined;
+    return JSON.parse(raw) as BudgetSettings | null;
+  } catch { return undefined; }
+}
+
+// Returns the earliest date we need entries from, given the current carry state.
+// This lets us skip fetching the full history when carry is already up to date.
+export function entriesNeededFrom(settings: BudgetSettings | null, todayStr: string): string {
+  if (!settings?.carry?.date) return settings?.startDate ?? todayStr;
+  return addDay(settings.carry.date);
+}
+
 function entriesCol(uid: string) {
   return collection(db, 'users', uid, 'entries');
 }
@@ -48,7 +74,7 @@ function settingsDoc(uid: string) {
   return doc(db, 'users', uid, 'settings', 'main');
 }
 
-function addDay(dateStr: string): string {
+export function addDay(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   date.setDate(date.getDate() + 1);
@@ -75,11 +101,16 @@ export function formatDate(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-export async function loadEntries(uid?: string | null): Promise<SpendingEntry[]> {
+export async function loadEntries(uid?: string | null, fromDate?: string): Promise<SpendingEntry[]> {
   if (uid) {
-    const snap = await getDocs(entriesCol(uid));
+    const col = entriesCol(uid);
+    const q: Query<DocumentData> = fromDate
+      ? query(col, where('date', '>=', fromDate))
+      : col;
+    const snap = await getDocs(q);
     const entries = snap.docs.map((d) => d.data() as SpendingEntry);
     _entriesCache.set(uid, entries);
+    AsyncStorage.setItem(ENTRIES_UID_PREFIX + uid, JSON.stringify(entries)); // fire-and-forget
     return entries;
   }
   const json = await AsyncStorage.getItem(ENTRIES_KEY);
@@ -126,6 +157,7 @@ export async function loadSettings(uid?: string | null): Promise<BudgetSettings 
     const snap = await getDoc(settingsDoc(uid));
     const settings = snap.exists() ? (snap.data() as BudgetSettings) : null;
     _settingsCache.set(uid, settings);
+    AsyncStorage.setItem(SETTINGS_UID_PREFIX + uid, JSON.stringify(settings)); // fire-and-forget
     return settings;
   }
   const json = await AsyncStorage.getItem(SETTINGS_KEY);
