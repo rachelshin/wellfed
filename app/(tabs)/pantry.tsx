@@ -60,6 +60,10 @@ export default function PantryTab() {
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
+  const handleDelete = async (id: string) => {
+    setItems(await deletePantryItem(items, id, user?.uid));
+  };
+
   const handleEdit = async (id: string, displayName: string, itemName: string) => {
     setItems(await updatePantryItem(items, id, { displayName, itemName }, user?.uid));
     setEditing(null);
@@ -146,7 +150,13 @@ export default function PantryTab() {
                   <View style={s.itemInfo}>
                     <Text style={s.itemName}>{item.displayName}</Text>
                   </View>
-                  <Text style={s.itemDate}>{item.addedDate}</Text>
+                  <TouchableOpacity
+                    style={s.deleteBtn}
+                    onPress={() => handleDelete(item.id)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={s.deleteX}>✕</Text>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
@@ -214,5 +224,6 @@ const s = StyleSheet.create({
   itemEmoji: { fontSize: 22, marginRight: 10 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: '700', color: theme.textDark },
-  itemDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5 },
+  deleteBtn: { padding: 4 },
+  deleteX: { fontSize: 14, color: theme.textFaint, fontWeight: '700' },
 });

@@ -17,6 +17,9 @@ import {
   loadSavedRecipes, saveRecipe, updateSavedRecipe, deleteSavedRecipe,
   SavedRecipe,
 } from '../../store/savedRecipes';
+import {
+  loadSavedMealPlans, saveMealPlan, deleteSavedMealPlan, SavedMealPlan,
+} from '../../store/savedMealPlans';
 import HeroHeader from '../../components/HeroHeader';
 import EditRecipeModal from '../../components/recipes/EditRecipeModal';
 import MealPlanModal from '../../components/recipes/MealPlanModal';
@@ -58,6 +61,8 @@ export default function RecipesTab() {
   const [mealPlanLoading, setMealPlanLoading] = useState(false);
   const [mealPlanError, setMealPlanError] = useState('');
   const [showMealPlanPrompt, setShowMealPlanPrompt] = useState(false);
+  const [savedMealPlans, setSavedMealPlans] = useState<SavedMealPlan[]>([]);
+  const [planSaving, setPlanSaving] = useState(false);
 
   const hasApiKey = true;
 
@@ -83,6 +88,7 @@ export default function RecipesTab() {
     setSavedRecipes(await loadSavedRecipes(user?.uid));
     const cachedPlan = await loadCachedMealPlan();
     if (cachedPlan) setMealPlan(cachedPlan);
+    setSavedMealPlans(await loadSavedMealPlans(user?.uid));
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -163,6 +169,18 @@ export default function RecipesTab() {
       setMealPlanError('Couldn\'t build the meal plan right now. Check your connection and try again.');
     } finally {
       setMealPlanLoading(false);
+    }
+  };
+
+  const handleSaveMealPlan = async () => {
+    if (!mealPlan) return;
+    setPlanSaving(true);
+    try {
+      const now = new Date();
+      const title = `Plan – ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      setSavedMealPlans(await saveMealPlan(savedMealPlans, mealPlan, title, user?.uid));
+    } finally {
+      setPlanSaving(false);
     }
   };
 
@@ -366,6 +384,31 @@ export default function RecipesTab() {
 
         {segment === 'plan' && (
           <>
+            {savedMealPlans.length > 0 && (
+              <View style={s.savedPlansSection}>
+                <Text style={s.planSectionTitle}>Saved Plans</Text>
+                {savedMealPlans.map((sp) => (
+                  <TouchableOpacity
+                    key={sp.id}
+                    style={s.savedPlanRow}
+                    onPress={() => setMealPlan(sp.plan)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={s.savedPlanInfo}>
+                      <Text style={s.savedPlanTitle}>{sp.title}</Text>
+                      <Text style={s.savedPlanMeta}>{sp.plan.days.length} days</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => deleteSavedMealPlan(savedMealPlans, sp.id, user?.uid).then(setSavedMealPlans)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Text style={s.savedPlanDelete}>✕</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
             <TouchableOpacity
               style={[s.generateBtn, mealPlanLoading && s.generateBtnDisabled]}
               onPress={() => setShowMealPlanPrompt(true)}
@@ -471,6 +514,19 @@ export default function RecipesTab() {
                     <Text style={s.planNotesText}>{mealPlan.notes}</Text>
                   </View>
                 ) : null}
+
+                <TouchableOpacity
+                  style={[s.savePlanBtn, planSaving && s.generateBtnDisabled]}
+                  onPress={handleSaveMealPlan}
+                  disabled={planSaving}
+                  activeOpacity={0.85}
+                >
+                  {planSaving ? (
+                    <ActivityIndicator size="small" color={theme.bg} />
+                  ) : (
+                    <Text style={s.savePlanBtnText}>Save this plan</Text>
+                  )}
+                </TouchableOpacity>
               </>
             )}
           </>
@@ -803,4 +859,21 @@ const s = StyleSheet.create({
     backgroundColor: theme.bgTint, borderRadius: 14, padding: 14, marginTop: 8,
   },
   planNotesText: { fontSize: 13, color: theme.textFaint, lineHeight: 20, fontStyle: 'italic' },
+
+  savePlanBtn: {
+    backgroundColor: theme.primary, borderRadius: 16, padding: 16,
+    alignItems: 'center', marginTop: 16, marginBottom: 8,
+  },
+  savePlanBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+
+  savedPlansSection: { marginBottom: 16 },
+  savedPlanRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 6,
+    borderLeftWidth: 3, borderLeftColor: theme.primary,
+  },
+  savedPlanInfo: { flex: 1 },
+  savedPlanTitle: { fontSize: 15, fontWeight: '700', color: theme.textDark },
+  savedPlanMeta: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
+  savedPlanDelete: { fontSize: 14, color: theme.textFaint, fontWeight: '700', padding: 4 },
 });

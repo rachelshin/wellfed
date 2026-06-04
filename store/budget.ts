@@ -24,6 +24,7 @@ export interface BudgetSettings {
   startDate: string;          // YYYY-MM-DD — first day of tracking
   adjustments?: Record<string, number>; // date → manual remaining override delta
   bankBalance?: number;
+  carry?: { date: string; amount: number }; // end-of-day remaining cache through `date`
 }
 
 const ENTRIES_KEY = '@budget_entries';
@@ -47,12 +48,25 @@ function settingsDoc(uid: string) {
   return doc(db, 'users', uid, 'settings', 'main');
 }
 
+function addDay(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function today(): string {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+export function yesterday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function formatDate(dateStr: string): string {
@@ -133,28 +147,56 @@ export function getDaySpent(entries: SpendingEntry[], date: string): number {
     .reduce((sum, e) => sum + e.amount, 0);
 }
 
+// Call this after loading entries+settings each day.
+// Computes end-of-day carry through `throughDate` (usually yesterday) and caches it.
+// Returns updated settings — same object reference if nothing changed.
+export function refreshCarry(
+  entries: SpendingEntry[],
+  settings: BudgetSettings,
+  throughDate: string,
+): BudgetSettings {
+  const { dailyBudget, startDate, adjustments = {}, carry } = settings;
+  if (throughDate < startDate) return settings;       // tracking hasn't started yet
+  if (carry && carry.date >= throughDate) return settings; // already up to date
+
+  let amount = carry?.amount ?? 0;
+  let cursor = carry ? addDay(carry.date) : startDate;
+
+  while (cursor <= throughDate) {
+    amount = dailyBudget + amount - getDaySpent(entries, cursor) + (adjustments[cursor] ?? 0);
+    cursor = addDay(cursor);
+  }
+
+  return { ...settings, carry: { date: throughDate, amount } };
+}
+
 export function getAvailableBudget(
   entries: SpendingEntry[],
   settings: BudgetSettings,
   forDate: string
 ): number {
-  const { dailyBudget, startDate, adjustments = {} } = settings;
+  const { dailyBudget, startDate, adjustments = {}, carry } = settings;
 
-  const start = new Date(startDate + 'T00:00:00');
-  const end = new Date(forDate + 'T00:00:00');
-
-  // carry = end-of-day remaining accumulated from previous days
-  // each day's carry factors in any manual adjustment for that day
-  let carry = 0;
-  const cursor = new Date(start);
-  while (cursor < end) {
-    const dateStr = cursor.toISOString().split('T')[0];
-    const daySpent = getDaySpent(entries, dateStr);
-    carry = dailyBudget + carry - daySpent + (adjustments[dateStr] ?? 0);
-    cursor.setDate(cursor.getDate() + 1);
+  // Fast path: carry is cached through the day before forDate
+  const prevDate = (() => {
+    const [y, m, d] = forDate.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() - 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  })();
+  if (carry?.date === prevDate) {
+    return dailyBudget + carry.amount + (adjustments[forDate] ?? 0);
   }
 
-  return dailyBudget + carry + (adjustments[forDate] ?? 0);
+  // Fallback: iterate from carry date (or startDate) forward
+  let amount = carry?.amount ?? 0;
+  let cursor = carry && carry.date >= startDate ? addDay(carry.date) : startDate;
+  while (cursor < forDate) {
+    amount = dailyBudget + amount - getDaySpent(entries, cursor) + (adjustments[cursor] ?? 0);
+    cursor = addDay(cursor);
+  }
+
+  return dailyBudget + amount + (adjustments[forDate] ?? 0);
 }
 
 export const CATEGORIES: Record<

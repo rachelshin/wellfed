@@ -8,8 +8,8 @@ import { useFocusEffect } from 'expo-router';
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry,
   getCachedEntries, getCachedSettings,
-  getDaySpent, getAvailableBudget, CATEGORIES,
-  today, formatDate, SpendingEntry, BudgetSettings,
+  getDaySpent, getAvailableBudget, refreshCarry, CATEGORIES,
+  today, yesterday, formatDate, SpendingEntry, BudgetSettings,
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import HeroHeader from '../../components/HeroHeader';
@@ -41,8 +41,15 @@ export default function BudgetTab() {
     }
     const [e, s] = await Promise.all([loadEntries(user?.uid), loadSettings(user?.uid)]);
     setEntries(e);
-    setSettings(s);
-    if (!s) { setEditMode('daily'); setEditValue(''); }
+    if (!s) {
+      setSettings(null);
+      setEditMode('daily');
+      setEditValue('');
+      return;
+    }
+    const updated = refreshCarry(e, s, yesterday());
+    if (updated !== s) saveSettings(updated, user?.uid);
+    setSettings(updated);
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));

@@ -60,13 +60,13 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
             <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
               <Text style={modalSheet.primaryBtnText}>Save</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
-              <Text style={modalSheet.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.deleteBtn} onPress={() => item && onDelete(item.id)}>
-              <Text style={s.deleteBtnText}>Remove from pantry</Text>
-            </TouchableOpacity>
           </ScrollView>
+          <TouchableOpacity style={s.cancelBtn} onPress={onClose}>
+            <Text style={modalSheet.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.deleteBtn} onPress={() => item && onDelete(item.id)}>
+            <Text style={s.deleteBtnText}>Remove from pantry</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -74,6 +74,7 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
 }
 
 const s = StyleSheet.create({
-  deleteBtn: { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
+  cancelBtn: { alignItems: 'center', paddingVertical: 8 },
+  deleteBtn: { alignItems: 'center', paddingVertical: 8 },
   deleteBtnText: { fontSize: 15, color: theme.negative, fontWeight: '600' },
 });
