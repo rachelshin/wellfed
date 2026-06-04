@@ -48,15 +48,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="pantry"
+        options={{
+          title: 'Pantry',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🧺" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="recipes"
         options={{
           title: 'Recipes',
           tabBarIcon: ({ focused }) => <TabIcon emoji="🍳" focused={focused} />,
         }}
-      />
-      <Tabs.Screen
-        name="pantry"
-        options={{ href: null }}
       />
     </Tabs>
   );

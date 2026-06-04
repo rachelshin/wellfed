@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry,
+  getCachedEntries, getCachedSettings,
   getDaySpent, getAvailableBudget, CATEGORIES,
   today, formatDate, SpendingEntry, BudgetSettings,
 } from '../../store/budget';
@@ -32,6 +33,12 @@ export default function BudgetTab() {
   const todayStr = today();
 
   const load = async () => {
+    if (user?.uid) {
+      const cachedE = getCachedEntries(user.uid);
+      const cachedS = getCachedSettings(user.uid);
+      if (cachedE) setEntries(cachedE);
+      if (cachedS !== undefined) setSettings(cachedS);
+    }
     const [e, s] = await Promise.all([loadEntries(user?.uid), loadSettings(user?.uid)]);
     setEntries(e);
     setSettings(s);

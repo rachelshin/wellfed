@@ -7,9 +7,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { loadPantry, PantryItem } from '../../store/pantry';
+import { loadPrices, groupByItem, bestPrice } from '../../store/prices';
 import {
   generateRecipes, loadCachedRecipes, getCachedPantryHash, hashItems,
-  AIRecipe,
+  generateMealPlan, loadCachedMealPlan,
+  AIRecipe, MealPlan, MealPlanOptions,
 } from '../../lib/ai';
 import {
   loadSavedRecipes, saveRecipe, updateSavedRecipe, deleteSavedRecipe,
@@ -17,6 +19,7 @@ import {
 } from '../../store/savedRecipes';
 import HeroHeader from '../../components/HeroHeader';
 import EditRecipeModal from '../../components/recipes/EditRecipeModal';
+import MealPlanModal from '../../components/recipes/MealPlanModal';
 import { modalSheet } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
@@ -29,7 +32,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 function categoryColor(cat: string) { return CATEGORY_COLORS[cat] ?? theme.primary; }
 
-type Segment = 'ideas' | 'saved';
+type Segment = 'ideas' | 'saved' | 'plan';
 
 export default function RecipesTab() {
   const insets = useSafeAreaInsets();
@@ -49,7 +52,12 @@ export default function RecipesTab() {
 
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [editingRecipe, setEditingRecipe] = useState<SavedRecipe | null>(null);
-  const [saving, setSaving] = useState<string | null>(null); // recipe name being saved
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [mealPlanLoading, setMealPlanLoading] = useState(false);
+  const [mealPlanError, setMealPlanError] = useState('');
+  const [showMealPlanPrompt, setShowMealPlanPrompt] = useState(false);
 
   const hasApiKey = true;
 
@@ -73,6 +81,8 @@ export default function RecipesTab() {
       setAiRecipes([]);
     }
     setSavedRecipes(await loadSavedRecipes(user?.uid));
+    const cachedPlan = await loadCachedMealPlan();
+    if (cachedPlan) setMealPlan(cachedPlan);
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -135,6 +145,27 @@ export default function RecipesTab() {
     setEditingRecipe(null);
   };
 
+  const handleGenerateMealPlan = async (opts: MealPlanOptions) => {
+    setShowMealPlanPrompt(false);
+    setMealPlanLoading(true);
+    setMealPlanError('');
+    try {
+      const prices = await loadPrices(user?.uid);
+      const priceData = Array.from(groupByItem(prices).entries())
+        .map(([, entries]) => {
+          const best = bestPrice(entries);
+          return best ? { name: best.displayName, price: best.price, size: best.size, unit: best.unit } : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+      const plan = await generateMealPlan(pantryItems.map((i) => i.displayName), priceData, opts);
+      setMealPlan(plan);
+    } catch {
+      setMealPlanError('Couldn\'t build the meal plan right now. Check your connection and try again.');
+    } finally {
+      setMealPlanLoading(false);
+    }
+  };
+
   const pantryCount = pantryItems.length;
   const alreadySaved = (recipe: AIRecipe) =>
     savedRecipes.some((r) => r.title === recipe.name);
@@ -159,6 +190,13 @@ export default function RecipesTab() {
           <Text style={[s.segBtnText, segment === 'saved' && s.segBtnTextActive]}>
             Recipe Box {savedRecipes.length > 0 ? `(${savedRecipes.length})` : ''}
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.segBtn, segment === 'plan' && s.segBtnActive]}
+          onPress={() => setSegment('plan')}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Plan 📅</Text>
         </TouchableOpacity>
       </View>
 
@@ -326,6 +364,118 @@ export default function RecipesTab() {
           </>
         )}
 
+        {segment === 'plan' && (
+          <>
+            <TouchableOpacity
+              style={[s.generateBtn, mealPlanLoading && s.generateBtnDisabled]}
+              onPress={() => setShowMealPlanPrompt(true)}
+              disabled={mealPlanLoading}
+              activeOpacity={0.85}
+            >
+              {mealPlanLoading ? (
+                <View style={s.generateBtnInner}>
+                  <ActivityIndicator size="small" color={theme.bg} />
+                  <Text style={s.generateBtnText}>Building your week…</Text>
+                </View>
+              ) : (
+                <Text style={s.generateBtnText}>
+                  {mealPlan ? 'Regenerate plan 📅' : 'Create meal plan 📅'}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {mealPlanError ? (
+              <View style={s.errorCard}>
+                <Text style={s.errorText}>{mealPlanError}</Text>
+              </View>
+            ) : null}
+
+            {!mealPlanLoading && !mealPlan && !mealPlanError && (
+              <View style={s.empty}>
+                <Text style={s.emptyTitle}>Plan your week 📅</Text>
+                <Text style={s.emptySub}>
+                  Claude will build a 7-day meal plan around your pantry, then give you a grocery list for anything else you need.
+                </Text>
+              </View>
+            )}
+
+            {mealPlan && !mealPlanLoading && (
+              <>
+                {mealPlan.days.map((day) => (
+                  <View key={day.day} style={s.dayCard}>
+                    <Text style={s.dayName}>{day.day}</Text>
+                    <View style={s.mealRow}>
+                      <Text style={s.mealEmoji}>🌅</Text>
+                      <View style={s.mealInfo}>
+                        <Text style={s.mealName}>{day.breakfast.name}</Text>
+                        <Text style={s.mealDesc} numberOfLines={2}>{day.breakfast.description}</Text>
+                      </View>
+                    </View>
+                    <View style={s.mealDivider} />
+                    <View style={s.mealRow}>
+                      <Text style={s.mealEmoji}>☀️</Text>
+                      <View style={s.mealInfo}>
+                        <Text style={s.mealName}>{day.lunch.name}</Text>
+                        <Text style={s.mealDesc} numberOfLines={2}>{day.lunch.description}</Text>
+                      </View>
+                    </View>
+                    <View style={s.mealDivider} />
+                    <View style={s.mealRow}>
+                      <Text style={s.mealEmoji}>🌙</Text>
+                      <View style={s.mealInfo}>
+                        <Text style={s.mealName}>{day.dinner.name}</Text>
+                        <Text style={s.mealDesc} numberOfLines={2}>{day.dinner.description}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+
+                <Text style={s.planSectionTitle}>Grocery List</Text>
+
+                {mealPlan.groceryList.filter((i) => !i.inPantry).map((item, idx) => (
+                  <View key={idx} style={s.groceryRow}>
+                    <View style={s.groceryItemInfo}>
+                      <Text style={s.groceryItemName}>{item.item}</Text>
+                      <Text style={s.groceryItemAmount}>{item.amount}</Text>
+                    </View>
+                    {item.estimatedCost != null && (
+                      <Text style={s.groceryItemCost}>~${item.estimatedCost.toFixed(2)}</Text>
+                    )}
+                  </View>
+                ))}
+
+                {mealPlan.groceryList.filter((i) => i.inPantry).length > 0 && (
+                  <>
+                    <Text style={s.planSubtitle}>Already in your pantry ✓</Text>
+                    {mealPlan.groceryList.filter((i) => i.inPantry).map((item, idx) => (
+                      <View key={idx} style={[s.groceryRow, s.groceryRowHave]}>
+                        <Text style={s.groceryCheck}>✓</Text>
+                        <View style={s.groceryItemInfo}>
+                          <Text style={[s.groceryItemName, s.groceryItemNameHave]}>{item.item}</Text>
+                          <Text style={s.groceryItemAmount}>{item.amount}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {mealPlan.totalEstimatedCost != null && (
+                  <View style={s.groceryTotal}>
+                    <Text style={s.groceryTotalLabel}>Estimated total</Text>
+                    <Text style={s.groceryTotalAmount}>~${mealPlan.totalEstimatedCost.toFixed(2)}</Text>
+                  </View>
+                )}
+
+                {mealPlan.notes ? (
+                  <View style={s.planNotesCard}>
+                    <Text style={s.planNotesText}>{mealPlan.notes}</Text>
+                  </View>
+                ) : null}
+              </>
+            )}
+          </>
+        )}
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -442,6 +592,12 @@ export default function RecipesTab() {
         )}
       </Modal>
 
+      <MealPlanModal
+        visible={showMealPlanPrompt}
+        onClose={() => setShowMealPlanPrompt(false)}
+        onGenerate={handleGenerateMealPlan}
+      />
+
       <EditRecipeModal
         recipe={editingRecipe}
         onClose={() => setEditingRecipe(null)}
@@ -463,7 +619,7 @@ const s = StyleSheet.create({
     flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 11,
   },
   segBtnActive: { backgroundColor: '#FFFFFF' },
-  segBtnText: { fontSize: 14, fontWeight: '700', color: theme.textFaint },
+  segBtnText: { fontSize: 12, fontWeight: '700', color: theme.textFaint },
   segBtnTextActive: { color: theme.textDark },
 
   scroll: { flex: 1 },
@@ -598,4 +754,53 @@ const s = StyleSheet.create({
     backgroundColor: theme.textDark, borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 10,
   },
   closeBtnText: { color: theme.bg, fontSize: 17, fontWeight: '800' },
+
+  // Meal plan segment
+  dayCard: {
+    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10,
+    borderLeftWidth: 3, borderLeftColor: theme.primary,
+  },
+  dayName: {
+    fontSize: 12, fontWeight: '800', color: theme.primary,
+    textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12,
+  },
+  mealRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  mealEmoji: { fontSize: 15, marginTop: 1, width: 20, textAlign: 'center' },
+  mealInfo: { flex: 1 },
+  mealName: { fontSize: 14, fontWeight: '700', color: theme.textDark },
+  mealDesc: { fontSize: 12, color: theme.textFaint, marginTop: 2, lineHeight: 16 },
+  mealDivider: { height: 1, backgroundColor: theme.border, marginVertical: 10, marginLeft: 30 },
+
+  planSectionTitle: {
+    fontSize: 13, fontWeight: '800', color: theme.textFaint,
+    letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 8, marginBottom: 10,
+  },
+  planSubtitle: {
+    fontSize: 11, fontWeight: '700', color: theme.textFaint,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 8,
+  },
+
+  groceryRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, marginBottom: 6,
+  },
+  groceryRowHave: { opacity: 0.55 },
+  groceryCheck: { fontSize: 13, color: theme.accent, marginRight: 10, fontWeight: '800' },
+  groceryItemInfo: { flex: 1 },
+  groceryItemName: { fontSize: 14, fontWeight: '700', color: theme.textDark },
+  groceryItemNameHave: { color: theme.textFaint },
+  groceryItemAmount: { fontSize: 12, color: theme.textFaint, marginTop: 1 },
+  groceryItemCost: { fontSize: 14, fontWeight: '800', color: theme.textDark },
+
+  groceryTotal: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: theme.primaryLight, borderRadius: 14, padding: 16, marginTop: 6,
+  },
+  groceryTotalLabel: { fontSize: 13, fontWeight: '700', color: theme.primary },
+  groceryTotalAmount: { fontSize: 22, fontWeight: '900', color: theme.primary },
+
+  planNotesCard: {
+    backgroundColor: theme.bgTint, borderRadius: 14, padding: 14, marginTop: 8,
+  },
+  planNotesText: { fontSize: 13, color: theme.textFaint, lineHeight: 20, fontStyle: 'italic' },
 });

@@ -4,14 +4,14 @@ import {
   TextInput, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import {
   loadPantry, addPantryItem, updatePantryItem, deletePantryItem, PantryItem,
 } from '../../store/pantry';
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import EditPantryModal from '../../components/pantry/EditPantryModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
+import { fab, darkSearch } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -49,7 +49,6 @@ function getEmoji(itemName: string): string | null {
 
 export default function PantryTab() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { user } = useAuth();
   const [items, setItems] = useState<PantryItem[]>([]);
   const [search, setSearch] = useState('');
@@ -88,11 +87,6 @@ export default function PantryTab() {
         eyebrow="What's in your kitchen?"
         title="Pantry 🧺"
         cardColor="#A78BDB"
-        right={items.length > 0 ? (
-          <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => router.push('/(tabs)/recipes')}>
-            <Text style={heroOutlineBtn.text}>Recipes →</Text>
-          </TouchableOpacity>
-        ) : null}
       >
         {items.length > 0 && (
           <Text style={s.heroStats}>

@@ -29,6 +29,17 @@ export interface BudgetSettings {
 const ENTRIES_KEY = '@budget_entries';
 const SETTINGS_KEY = '@budget_settings';
 
+// Module-level cache so tab re-focus renders instantly without a network round-trip
+const _entriesCache = new Map<string, SpendingEntry[]>();
+const _settingsCache = new Map<string, BudgetSettings | null>();
+
+export function getCachedEntries(uid: string): SpendingEntry[] | null {
+  return _entriesCache.get(uid) ?? null;
+}
+export function getCachedSettings(uid: string): BudgetSettings | null | undefined {
+  return _settingsCache.has(uid) ? (_settingsCache.get(uid) ?? null) : undefined;
+}
+
 function entriesCol(uid: string) {
   return collection(db, 'users', uid, 'entries');
 }
@@ -53,7 +64,9 @@ export function formatDate(dateStr: string): string {
 export async function loadEntries(uid?: string | null): Promise<SpendingEntry[]> {
   if (uid) {
     const snap = await getDocs(entriesCol(uid));
-    return snap.docs.map((d) => d.data() as SpendingEntry);
+    const entries = snap.docs.map((d) => d.data() as SpendingEntry);
+    _entriesCache.set(uid, entries);
+    return entries;
   }
   const json = await AsyncStorage.getItem(ENTRIES_KEY);
   return json ? JSON.parse(json) : [];
@@ -69,12 +82,14 @@ export async function addEntry(
     id: `${Date.now()}-${Math.random()}`,
     timestamp: Date.now(),
   };
+  const updated = [...entries, newEntry];
   if (uid) {
     await setDoc(doc(entriesCol(uid), newEntry.id), newEntry);
+    _entriesCache.set(uid, updated);
   } else {
-    await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify([...entries, newEntry]));
+    await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(updated));
   }
-  return [...entries, newEntry];
+  return updated;
 }
 
 export async function deleteEntry(
@@ -85,6 +100,7 @@ export async function deleteEntry(
   const updated = entries.filter((e) => e.id !== id);
   if (uid) {
     await deleteDoc(doc(entriesCol(uid), id));
+    _entriesCache.set(uid, updated);
   } else {
     await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(updated));
   }
@@ -94,7 +110,9 @@ export async function deleteEntry(
 export async function loadSettings(uid?: string | null): Promise<BudgetSettings | null> {
   if (uid) {
     const snap = await getDoc(settingsDoc(uid));
-    return snap.exists() ? (snap.data() as BudgetSettings) : null;
+    const settings = snap.exists() ? (snap.data() as BudgetSettings) : null;
+    _settingsCache.set(uid, settings);
+    return settings;
   }
   const json = await AsyncStorage.getItem(SETTINGS_KEY);
   return json ? JSON.parse(json) : null;
@@ -103,6 +121,7 @@ export async function loadSettings(uid?: string | null): Promise<BudgetSettings 
 export async function saveSettings(settings: BudgetSettings, uid?: string | null): Promise<void> {
   if (uid) {
     await setDoc(settingsDoc(uid), settings);
+    _settingsCache.set(uid, settings);
   } else {
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
