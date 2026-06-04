@@ -360,16 +360,25 @@ export default function PricesTab() {
         existingCategories={categoryNames}
         onAddItems={async (taggedItems: ScannedItem[]) => {
           loadGen.current++;
-          let currentPrices = prices;
+          const priceItems = taggedItems.filter((i) => i.addToPrice);
+          const pantryItems = taggedItems.filter((i) => i.addToPantry);
+
+          // Pass 1: create any new categories first so prices land in the right place
           let currentCategories = categories;
-          for (const { entry, addToPrice } of taggedItems) {
-            if (!addToPrice) continue;
+          const uniqueCategories = [...new Set(taggedItems.map((i) => i.entry.category))];
+          for (const cat of uniqueCategories) {
+            currentCategories = await ensureCategory(currentCategories, cat);
+          }
+          setCategories(currentCategories);
+
+          // Pass 2: add price entries
+          let currentPrices = prices;
+          for (const { entry } of priceItems) {
             currentPrices = await addPrice(currentPrices, entry, user?.uid);
-            currentCategories = await ensureCategory(currentCategories, entry.category);
           }
           setPrices(currentPrices);
-          setCategories(currentCategories);
-          const pantryItems = taggedItems.filter((i) => i.addToPantry);
+
+          // Pass 3: add pantry items
           if (pantryItems.length > 0) {
             const pantry = await loadPantry(user?.uid);
             await addPantryItemsFromReceipt(
