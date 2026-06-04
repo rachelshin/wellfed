@@ -102,7 +102,7 @@ This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on on
 - Aim for only 4–6 unique recipes for the entire week.
 - Scale grocery quantities for ${numPeople * 2}–${numPeople * 3} servings per dish so leftovers cover multiple meals.
 - Maximise use of pantry items to reduce grocery spend.
-- Grocery list: only items NOT in the pantry. Mark inPantry: true only if it clearly matches the pantry list.
+- Grocery list: include ALL ingredients needed for the week. Mark inPantry: true for items that clearly match the pantry list (no need to buy), and inPantry: false for items that must be purchased.
 - Estimate costs from the provided price data where possible, otherwise use typical US grocery prices.
 ${weeklyBudget ? `- Total grocery cost must stay under $${weeklyBudget}.` : ''}
 
@@ -150,7 +150,8 @@ Return ONLY this JSON (no markdown, no extra text):
     }
   ],
   "groceryList": [
-    { "item": "chicken breast", "amount": "3 lbs", "estimatedCost": 12.00, "inPantry": false }
+    { "item": "chicken breast", "amount": "3 lbs", "estimatedCost": 12.00, "inPantry": false },
+    { "item": "soy sauce", "amount": "1/4 cup", "estimatedCost": null, "inPantry": true }
   ],
   "totalEstimatedCost": 75.00,
   "notes": "Optional tip about the plan."

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, Platform,
 } from 'react-native';
@@ -21,6 +21,10 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  const contentH = useRef(0);
+  const viewH = useRef(0);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -30,6 +34,18 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
     window.visualViewport.addEventListener('resize', onResize);
     return () => window.visualViewport!.removeEventListener('resize', onResize);
   }, []);
+
+  // When keyboard opens/closes the layout shifts, which can push the scroll position past the
+  // content end (showing empty whitespace). Clamp it back to the valid maximum.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !scrollRef.current) return;
+    requestAnimationFrame(() => {
+      const max = Math.max(0, contentH.current - viewH.current);
+      if (scrollY.current > max) {
+        scrollRef.current?.scrollTo({ y: max, animated: false });
+      }
+    });
+  }, [iosPWAKeyboard]);
 
   const handleGenerate = () => {
     const p = parseInt(people, 10);
@@ -46,7 +62,15 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
     <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
-          <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
+          <ScrollView
+            ref={scrollRef}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            scrollEventThrottle={16}
+            onScroll={e => { scrollY.current = e.nativeEvent.contentOffset.y; }}
+            onContentSizeChange={(_, h) => { contentH.current = h; }}
+            onLayout={e => { viewH.current = e.nativeEvent.layout.height; }}
+          >
             <Text style={modalSheet.title}>Prep your week 🥘</Text>
 
             <Text style={modalSheet.label}>How many people is this for?</Text>
