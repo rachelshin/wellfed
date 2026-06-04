@@ -10,6 +10,21 @@ export interface PriceCategory {
 
 const KEY = '@price_categories';
 
+const DEFAULTS: Omit<PriceCategory, 'id'>[] = [
+  { name: 'Uncategorized', category: 'uncategorized' },
+];
+
+export async function seedDefaultCategories(
+  categories: PriceCategory[],
+  uid?: string | null,
+): Promise<PriceCategory[]> {
+  let current = categories;
+  for (const def of DEFAULTS) {
+    current = await saveCategory(current, def, uid);
+  }
+  return current;
+}
+
 function col(uid: string) {
   return collection(db, 'users', uid, 'priceCategories');
 }

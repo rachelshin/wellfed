@@ -11,7 +11,8 @@ import {
   PriceEntry,
 } from '../../store/prices';
 import {
-  loadCategories, loadCategoriesFromCache, saveCategory, updateCategory, deleteCategory,
+  loadCategories, loadCategoriesFromCache, seedDefaultCategories,
+  saveCategory, updateCategory, deleteCategory,
   PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
@@ -64,8 +65,10 @@ export default function PricesTab() {
 
     const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
     if (gen !== loadGen.current) return;
+    const seeded = await seedDefaultCategories(c, user?.uid);
+    if (gen !== loadGen.current) return;
     setPrices(p);
-    setCategories(c);
+    setCategories(seeded);
   };
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
@@ -85,7 +88,7 @@ export default function PricesTab() {
       setEditing(null);
     } else {
       const updatedPrices = await addPrice(prices, data, user?.uid);
-      const updatedCategories = await ensureCategory(categories, data.category, data.itemName);
+      const updatedCategories = await ensureCategory(categories, data.category);
       setPrices(updatedPrices);
       setCategories(updatedCategories);
       setShowAdd(false);
@@ -129,9 +132,7 @@ export default function PricesTab() {
         updatedPrices = await updatePrice(updatedPrices, entry.id, { category: 'uncategorized' }, user?.uid);
       }
       setPrices(updatedPrices);
-      let updatedCategories = await ensureCategory(categories, 'uncategorized', 'Uncategorized');
-      updatedCategories = await deleteCategory(updatedCategories, editingCategory.id, user?.uid);
-      setCategories(updatedCategories);
+      setCategories(await deleteCategory(categories, editingCategory.id, user?.uid));
     }
     setEditingCategory(null);
   };
@@ -139,20 +140,28 @@ export default function PricesTab() {
   const ensureCategory = async (
     current: PriceCategory[],
     category: string,
-    itemName: string,
   ): Promise<PriceCategory[]> => {
     if (current.some((c) => c.category === category)) return current;
-    const catName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+    // Derive display name from the category key itself, not the item name
+    const catName = category.charAt(0).toUpperCase() + category.slice(1);
     return saveCategory(current, { name: catName, category }, user?.uid);
   };
 
-  // Build display list from categories only
+  // True when the only category is the seeded Uncategorized placeholder
+  const noRealCategories = !categories.some((c) => c.category !== 'uncategorized');
+
+  const SUGGESTED_CATEGORIES = [
+    'Bread', 'Milk', 'Eggs', 'Produce', 'Meat', 'Dairy', 'Snacks', 'Beverages',
+  ];
+
+  // Build display list from categories only; hide Uncategorized when it has no entries
   let displayList = categories
     .map((cat) => ({
       cat,
       entries: prices.filter((p) => p.category === cat.category),
     }))
-    .filter(({ cat }) => {
+    .filter(({ cat, entries }) => {
+      if (cat.category === 'uncategorized' && entries.length === 0) return false;
       if (!search.trim()) return true;
       const q = search.toLowerCase().trim();
       return cat.category.includes(q) || cat.name.toLowerCase().includes(q);
@@ -195,12 +204,25 @@ export default function PricesTab() {
         contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
-        {categories.length === 0 && (
+        {noRealCategories && (
           <View style={s.empty}>
             <Text style={s.emptyTitle}>No categories yet</Text>
             <Text style={s.emptySub}>
-              Scan a receipt, tap + to add a price, or use "Add a category" below.
+              Scan a receipt, tap + to add a price, or start with a suggestion:
             </Text>
+            <View style={s.suggestRow}>
+              {SUGGESTED_CATEGORIES.filter(
+                (n) => !categories.some((c) => c.name.toLowerCase() === n.toLowerCase())
+              ).map((name) => (
+                <TouchableOpacity
+                  key={name}
+                  style={s.suggestChip}
+                  onPress={() => handleAddCategory(name)}
+                >
+                  <Text style={s.suggestChipText}>+ {name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
@@ -319,7 +341,7 @@ export default function PricesTab() {
         visible={!!editingCategory}
         onClose={() => setEditingCategory(null)}
         onSave={handleUpdateCategory}
-        onDelete={handleDeleteCategory}
+        onDelete={editingCategory?.category !== 'uncategorized' ? handleDeleteCategory : undefined}
         initialName={editingCategory?.name}
         entryCount={prices.filter((p) => p.category === editingCategory?.category).length}
         existingNames={categories.map((c) => c.name)}
@@ -343,7 +365,7 @@ export default function PricesTab() {
           for (const { entry, addToPrice } of taggedItems) {
             if (!addToPrice) continue;
             currentPrices = await addPrice(currentPrices, entry, user?.uid);
-            currentCategories = await ensureCategory(currentCategories, entry.category, entry.itemName);
+            currentCategories = await ensureCategory(currentCategories, entry.category);
           }
           setPrices(currentPrices);
           setCategories(currentCategories);
@@ -382,6 +404,12 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.textDark, marginBottom: 8 },
   emptySub: { fontSize: 14, color: theme.textFaint, textAlign: 'center', lineHeight: 22 },
   emptyText: { fontSize: 15, color: theme.textFaint, fontWeight: '600' },
+  suggestRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 16 },
+  suggestChip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1.5, borderColor: theme.primary, backgroundColor: theme.primaryLight,
+  },
+  suggestChipText: { fontSize: 13, color: theme.primary, fontWeight: '700' },
 
   card: {
     backgroundColor: '#FFFFFF', borderRadius: 18, marginBottom: 10,

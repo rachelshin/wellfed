@@ -122,18 +122,23 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
           seen.add(key);
           return true;
         })
-        .map((it) => ({
-          name: it.name || '',
-          originalName: it.name || '',
-          price: String(parseFloat(it.price) || 0),
-          size: '1',
-          unit: 'count',
-          store: '',
-          selected: true,
-          category: (it.category || it.name || '').toLowerCase().trim(),
-          addToPrice: true,
-          addToPantry: true,
-        }));
+        .map((it) => {
+          const aiCat = (it.category || '').toLowerCase().trim();
+          const itemLow = (it.name || '').toLowerCase().trim();
+          return {
+            name: it.name || '',
+            originalName: it.name || '',
+            price: String(parseFloat(it.price) || 0),
+            size: '1',
+            unit: 'count',
+            store: '',
+            selected: true,
+            // Only use the AI category if it's a real grouping (not just the item name repeated)
+            category: aiCat && aiCat !== itemLow ? aiCat : '',
+            addToPrice: true,
+            addToPantry: true,
+          };
+        });
       setItems(detected);
       setStep('review');
     } catch {
@@ -154,7 +159,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
     onAddItems(active.map((it) => ({
       entry: {
         itemName: it.name.trim(),
-        category: it.category.trim().toLowerCase() || it.name.trim().toLowerCase(),
+        category: it.category.trim().toLowerCase() || 'uncategorized',
         store: storeName.trim() || it.store.trim(),
         price: parseFloat(it.price) || 0,
         size: it.size === 'n/a' ? 1 : (parseFloat(it.size) || 1),
