@@ -109,13 +109,37 @@ export async function deletePrice(
   return updated;
 }
 
+// Factors to convert each unit into the canonical comparison unit:
+//   weight → oz    (lb × 16, g ÷ 28.3495, kg × 35.274)
+//   volume → fl oz (ml ÷ 29.5735, L × 33.814)
+//   count  → count (no conversion)
+const TO_OZ: Partial<Record<Unit, number>> = {
+  oz: 1,
+  lb: 16,
+  g: 1 / 28.3495,
+  kg: 1000 / 28.3495,
+};
+const TO_FL_OZ: Partial<Record<Unit, number>> = {
+  'fl oz': 1,
+  ml: 1 / 29.5735,
+  L: 1000 / 29.5735,
+};
+
+function normalizeSize(size: number, unit: Unit): { size: number; unit: Unit } {
+  if (unit in TO_OZ)    return { size: size * TO_OZ[unit]!,    unit: 'oz' };
+  if (unit in TO_FL_OZ) return { size: size * TO_FL_OZ[unit]!, unit: 'fl oz' };
+  return { size, unit }; // count — no conversion
+}
+
 export function pricePerUnit(entry: PriceEntry): number {
-  return entry.size > 0 ? entry.price / entry.size : entry.price;
+  const n = normalizeSize(entry.size, entry.unit);
+  return n.size > 0 ? entry.price / n.size : entry.price;
 }
 
 export function formatPricePerUnit(entry: PriceEntry): string {
-  const ppu = pricePerUnit(entry);
-  return `$${ppu.toFixed(3)}/${entry.unit}`;
+  const n = normalizeSize(entry.size, entry.unit);
+  const ppu = n.size > 0 ? entry.price / n.size : entry.price;
+  return `$${ppu.toFixed(3)}/${n.unit}`;
 }
 
 export function groupByItem(prices: PriceEntry[]): Map<string, PriceEntry[]> {
