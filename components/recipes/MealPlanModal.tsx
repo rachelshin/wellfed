@@ -1,12 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, Platform,
+  View, Text, TextInput, TouchableOpacity, ScrollView, Platform, StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
 import { MealPlanOptions } from '../../lib/ai';
 import theme from '../../lib/theme';
+
+const PROFILES_KEY = '@meal_plan_profiles';
+
+interface MealPlanProfile {
+  id: string;
+  name: string;
+  people: string;
+  dietary: string;
+  budget: string;
+  notes: string;
+}
 
 interface Props {
   visible: boolean;
@@ -26,6 +38,16 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   const contentH = useRef(0);
   const viewH = useRef(0);
 
+  const [profiles, setProfiles] = useState<MealPlanProfile[]>([]);
+  const [showSave, setShowSave] = useState(false);
+  const [profileName, setProfileName] = useState('');
+
+  useEffect(() => {
+    AsyncStorage.getItem(PROFILES_KEY).then(raw => {
+      if (raw) setProfiles(JSON.parse(raw));
+    });
+  }, []);
+
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     if (!window.navigator?.standalone || !window.visualViewport) return;
@@ -35,8 +57,6 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
     return () => window.visualViewport!.removeEventListener('resize', onResize);
   }, []);
 
-  // When keyboard opens/closes the layout shifts, which can push the scroll position past the
-  // content end (showing empty whitespace). Clamp it back to the valid maximum.
   useEffect(() => {
     if (Platform.OS !== 'web' || !scrollRef.current) return;
     requestAnimationFrame(() => {
@@ -46,6 +66,32 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
       }
     });
   }, [iosPWAKeyboard]);
+
+  const applyProfile = (p: MealPlanProfile) => {
+    setPeople(p.people);
+    setDietary(p.dietary);
+    setBudget(p.budget);
+    setNotes(p.notes);
+  };
+
+  const deleteProfile = async (id: string) => {
+    const updated = profiles.filter(p => p.id !== id);
+    setProfiles(updated);
+    await AsyncStorage.setItem(PROFILES_KEY, JSON.stringify(updated));
+  };
+
+  const saveProfile = async () => {
+    const name = profileName.trim();
+    if (!name) return;
+    const existing = profiles.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const updated = existing
+      ? profiles.map(p => p.id === existing.id ? { ...p, people, dietary, budget, notes } : p)
+      : [...profiles, { id: Date.now().toString(), name, people, dietary, budget, notes }];
+    setProfiles(updated);
+    await AsyncStorage.setItem(PROFILES_KEY, JSON.stringify(updated));
+    setShowSave(false);
+    setProfileName('');
+  };
 
   const handleGenerate = () => {
     const p = parseInt(people, 10);
@@ -72,6 +118,21 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
             onLayout={e => { viewH.current = e.nativeEvent.layout.height; }}
           >
             <Text style={modalSheet.title}>Prep your week 🥘</Text>
+
+            {profiles.length > 0 && (
+              <View style={s.profilesRow}>
+                {profiles.map(p => (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={s.chip}
+                    onPress={() => applyProfile(p)}
+                    onLongPress={() => deleteProfile(p.id)}
+                  >
+                    <Text style={s.chipText}>{p.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <Text style={modalSheet.label}>How many people is this for?</Text>
             <TextInput
@@ -115,6 +176,31 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
               returnKeyType="done"
               onSubmitEditing={handleGenerate}
             />
+
+            {showSave ? (
+              <View style={s.saveRow}>
+                <TextInput
+                  style={[modalSheet.input, s.nameInput]}
+                  value={profileName}
+                  onChangeText={setProfileName}
+                  placeholder="Profile name"
+                  placeholderTextColor={theme.placeholder}
+                  returnKeyType="done"
+                  onSubmitEditing={saveProfile}
+                  autoFocus
+                />
+                <TouchableOpacity style={s.saveBtn} onPress={saveProfile}>
+                  <Text style={s.saveBtnText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.cancelSaveBtn} onPress={() => { setShowSave(false); setProfileName(''); }}>
+                  <Text style={s.cancelSaveBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={s.saveProfileBtn} onPress={() => setShowSave(true)}>
+                <Text style={s.saveProfileBtnText}>Save as profile</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
 
           <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleGenerate}>
@@ -128,3 +214,62 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
     </AppModal>
   );
 }
+
+const s = StyleSheet.create({
+  profilesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  chip: {
+    backgroundColor: theme.primaryLight,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  chipText: {
+    color: theme.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  saveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  nameInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  saveBtn: {
+    backgroundColor: theme.primary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  saveBtnText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  cancelSaveBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 14,
+  },
+  cancelSaveBtnText: {
+    color: theme.textFaint,
+    fontSize: 16,
+  },
+  saveProfileBtn: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  saveProfileBtnText: {
+    color: theme.textFaint,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

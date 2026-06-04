@@ -21,20 +21,39 @@ function AuthGate() {
     }
 
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const MIN_SPLASH_MS = 1200;
-      const elapsed = Date.now() - ((window as any).__splashStart ?? Date.now());
-      const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
-      setTimeout(() => {
-        const splash = document.getElementById('splash');
-        if (splash) {
-          splash.classList.add('fade-out');
-          setTimeout(() => splash.remove(), 350);
-        }
-      }, delay);
+      const MIN_SPLASH_MS = 1000;
+
+      const removeSplash = () => {
+        const elapsed = Date.now() - ((window as any).__splashStart ?? Date.now());
+        const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
+        setTimeout(() => {
+          const splash = document.getElementById('splash');
+          if (splash) {
+            splash.classList.add('fade-out');
+            setTimeout(() => splash.remove(), 350);
+          }
+        }, delay);
+      };
+
+      // On iOS PWA the web view can finish loading while the native launch image is
+      // still covering it. If the page isn't visible yet, wait until it is so the
+      // splash is never removed before the user sees it.
+      if (document.visibilityState === 'visible') {
+        removeSplash();
+      } else {
+        document.addEventListener('visibilitychange', function onVisible() {
+          if (document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', onVisible);
+            // Reset the start time so the full MIN_SPLASH_MS is shown from now
+            (window as any).__splashStart = Date.now();
+            removeSplash();
+          }
+        });
+      }
     }
   }, [user, isGuest, loading]);
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: theme.bg }} />;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#9B80A8' }} />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
