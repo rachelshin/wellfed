@@ -171,8 +171,9 @@ export default function RecipesTab() {
         .filter((x): x is NonNullable<typeof x> => x !== null);
       const plan = await generateMealPlan(pantryItems.map((i) => i.displayName), priceData, opts);
       setMealPlan(plan);
-    } catch {
-      setMealPlanError('Couldn\'t build the meal plan right now. Check your connection and try again.');
+    } catch (e: unknown) {
+      const msg = String((e as Error)?.message ?? '');
+      setMealPlanError(`Couldn't build the meal plan right now. ${msg ? `Error: ${msg}` : 'Check your connection and try again.'}`);
     } finally {
       setMealPlanLoading(false);
     }

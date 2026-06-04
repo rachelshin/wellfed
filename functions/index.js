@@ -58,7 +58,7 @@ exports.scanReceipt = functions.https.onRequest(async (req, res) => {
   }
 });
 
-exports.generateMealPlan = functions.https.onRequest(async (req, res) => {
+exports.generateMealPlan = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -104,6 +104,7 @@ This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on on
 - Maximise use of pantry items to reduce grocery spend.
 - Grocery list: include ALL ingredients needed for the week. Mark inPantry: true for items that clearly match the pantry list (no need to buy), and inPantry: false for items that must be purchased.
 - Estimate costs from the provided price data where possible, otherwise use typical US grocery prices.
+- Use the price data to inform cost estimates, do not use the price data to dictate what ingredients to use or what meals to make.
 ${weeklyBudget ? `- Total grocery cost must stay under $${weeklyBudget}.` : ''}
 
 Return ONLY this JSON (no markdown, no extra text):
