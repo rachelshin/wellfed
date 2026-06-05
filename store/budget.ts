@@ -2,6 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, doc, getDocs, setDoc, deleteDoc, getDoc, query, where, Query, DocumentData } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
+export interface FundsRecord {
+  id: string;
+  date: string;       // YYYY-MM-DD
+  amount: number;
+  note: string;
+  timestamp: number;
+  type: 'daily-increment' | 'manual';
+}
+
 export type Category =
   | 'groceries'
   | 'delivery'
@@ -29,18 +38,24 @@ export interface BudgetSettings {
 
 const ENTRIES_KEY = '@budget_entries';
 const SETTINGS_KEY = '@budget_settings';
+const FUNDS_KEY = '@budget_funds';
 const ENTRIES_UID_PREFIX = '@budget_entries_uid_';
 const SETTINGS_UID_PREFIX = '@budget_settings_uid_';
+const FUNDS_UID_PREFIX = '@budget_funds_uid_';
 
 // Module-level cache so tab re-focus renders instantly without a network round-trip
 const _entriesCache = new Map<string, SpendingEntry[]>();
 const _settingsCache = new Map<string, BudgetSettings | null>();
+const _fundsCache = new Map<string, FundsRecord[]>();
 
 export function getCachedEntries(uid: string): SpendingEntry[] | null {
   return _entriesCache.get(uid) ?? null;
 }
 export function getCachedSettings(uid: string): BudgetSettings | null | undefined {
   return _settingsCache.has(uid) ? (_settingsCache.get(uid) ?? null) : undefined;
+}
+export function getCachedFunds(uid: string): FundsRecord[] | null {
+  return _fundsCache.get(uid) ?? null;
 }
 
 // Reads the persisted AsyncStorage copy for signed-in users (survives page refresh).
@@ -60,6 +75,13 @@ export async function getLocalCachedSettings(uid: string): Promise<BudgetSetting
   } catch { return undefined; }
 }
 
+export async function getLocalCachedFunds(uid: string): Promise<FundsRecord[] | null> {
+  try {
+    const json = await AsyncStorage.getItem(FUNDS_UID_PREFIX + uid);
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+
 // Returns the earliest date we need entries from, given the current carry state.
 // This lets us skip fetching the full history when carry is already up to date.
 export function entriesNeededFrom(settings: BudgetSettings | null, todayStr: string): string {
@@ -72,6 +94,9 @@ function entriesCol(uid: string) {
 }
 function settingsDoc(uid: string) {
   return doc(db, 'users', uid, 'settings', 'main');
+}
+function fundsCol(uid: string) {
+  return collection(db, 'users', uid, 'funds');
 }
 
 export function addDay(dateStr: string): string {
@@ -148,6 +173,120 @@ export async function deleteEntry(
     _entriesCache.set(uid, updated);
   } else {
     await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
+export async function updateEntry(
+  entries: SpendingEntry[],
+  id: string,
+  updates: Omit<SpendingEntry, 'id' | 'timestamp'>,
+  uid?: string | null,
+): Promise<SpendingEntry[]> {
+  const updated = entries.map((e) => e.id === id ? { ...e, ...updates } : e);
+  if (uid) {
+    const entry = updated.find((e) => e.id === id)!;
+    await setDoc(doc(entriesCol(uid), id), entry);
+    _entriesCache.set(uid, updated);
+  } else {
+    await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
+export async function loadFundsRecords(uid?: string | null): Promise<FundsRecord[]> {
+  if (uid) {
+    const snap = await getDocs(fundsCol(uid));
+    const records = snap.docs.map((d) => d.data() as FundsRecord);
+    _fundsCache.set(uid, records);
+    AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(records));
+    return records;
+  }
+  const json = await AsyncStorage.getItem(FUNDS_KEY);
+  return json ? JSON.parse(json) : [];
+}
+
+export async function addFundsRecord(
+  records: FundsRecord[],
+  record: Omit<FundsRecord, 'id' | 'timestamp'>,
+  uid?: string | null,
+): Promise<FundsRecord[]> {
+  const newRecord: FundsRecord = { ...record, id: `${Date.now()}-${Math.random()}`, timestamp: Date.now() };
+  const updated = [...records, newRecord];
+  if (uid) {
+    await setDoc(doc(fundsCol(uid), newRecord.id), newRecord);
+    _fundsCache.set(uid, updated);
+    AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(updated));
+  } else {
+    await AsyncStorage.setItem(FUNDS_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
+export async function updateFundsRecord(
+  records: FundsRecord[],
+  id: string,
+  updates: Partial<Pick<FundsRecord, 'amount' | 'note' | 'date'>>,
+  uid?: string | null,
+): Promise<FundsRecord[]> {
+  const updated = records.map((r) => r.id === id ? { ...r, ...updates } : r);
+  if (uid) {
+    const record = updated.find((r) => r.id === id)!;
+    await setDoc(doc(fundsCol(uid), id), record);
+    _fundsCache.set(uid, updated);
+    AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(updated));
+  } else {
+    await AsyncStorage.setItem(FUNDS_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
+export async function deleteFundsRecord(
+  records: FundsRecord[],
+  id: string,
+  uid?: string | null,
+): Promise<FundsRecord[]> {
+  const updated = records.filter((r) => r.id !== id);
+  if (uid) {
+    await deleteDoc(doc(fundsCol(uid), id));
+    _fundsCache.set(uid, updated);
+    AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(updated));
+  } else {
+    await AsyncStorage.setItem(FUNDS_KEY, JSON.stringify(updated));
+  }
+  return updated;
+}
+
+// Ensures daily-increment records exist for every day from startDate through today.
+// Only writes missing records, batching all Firestore ops in parallel.
+export async function ensureDailyIncrements(
+  records: FundsRecord[],
+  settings: BudgetSettings,
+  todayStr: string,
+  uid?: string | null,
+): Promise<FundsRecord[]> {
+  const toAdd: Omit<FundsRecord, 'id' | 'timestamp'>[] = [];
+  let cursor = settings.startDate;
+  while (cursor <= todayStr) {
+    if (!records.some((r) => r.type === 'daily-increment' && r.date === cursor)) {
+      toAdd.push({ date: cursor, amount: settings.dailyBudget, note: '', type: 'daily-increment' });
+    }
+    cursor = addDay(cursor);
+  }
+  if (toAdd.length === 0) return records;
+
+  const newRecords: FundsRecord[] = toAdd.map((r) => ({
+    ...r,
+    id: `${Date.now()}-${Math.random()}-${r.date}`,
+    timestamp: Date.now(),
+  }));
+  const updated = [...records, ...newRecords];
+  if (uid) {
+    await Promise.all(newRecords.map((r) => setDoc(doc(fundsCol(uid), r.id), r)));
+    _fundsCache.set(uid, updated);
+    AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(updated));
+  } else {
+    await AsyncStorage.setItem(FUNDS_KEY, JSON.stringify(updated));
   }
   return updated;
 }

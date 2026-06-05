@@ -5,37 +5,35 @@ import {
 } from 'react-native';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Category, CATEGORIES, SpendingEntry, today } from '../../store/budget';
+import { FundsRecord, today } from '../../store/budget';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  entry?: SpendingEntry | null;
-  onSave: (entry: Omit<SpendingEntry, 'id' | 'timestamp'>) => void;
+  record?: FundsRecord | null;
+  onSave: (record: Omit<FundsRecord, 'id' | 'timestamp'>) => void;
   onDelete?: () => void;
 }
 
-export default function AddEntryModal({ visible, onClose, entry, onSave, onDelete }: Props) {
+export default function FundsRecordModal({ visible, onClose, record, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
-  const isEdit = !!entry;
-  const [category, setCategory] = useState<Category>('groceries');
+  const isEdit = !!record;
+  const isDailyIncrement = record?.type === 'daily-increment';
   const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+  const [note, setNote] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
     if (visible) {
-      setCategory(entry?.category ?? 'groceries');
-      setAmount(entry ? String(entry.amount) : '');
-      setDescription(entry?.description ?? '');
+      setAmount(record ? String(record.amount) : '');
+      setNote(record?.note ?? '');
     } else {
       setAmount('');
-      setDescription('');
-      setCategory('groceries');
+      setNote('');
     }
-  }, [visible, entry]);
+  }, [visible, record]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -49,38 +47,34 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
   const handleSave = () => {
     const val = parseFloat(amount);
     if (isNaN(val) || val <= 0) return;
-    onSave({ date: entry?.date ?? today(), amount: val, category, description: description.trim() });
+    onSave({
+      date: record?.date ?? today(),
+      amount: val,
+      note: note.trim(),
+      type: record?.type ?? 'manual',
+    });
   };
+
+  const title = isEdit
+    ? (isDailyIncrement ? 'Daily Budget' : 'Edit Funds')
+    : 'Add Funds';
 
   return (
     <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
-            <Text style={modalSheet.title}>{isEdit ? 'Edit entry' : 'What did you spend on?'}</Text>
+            <Text style={modalSheet.title}>{title}</Text>
 
-            <View style={s.categoryGrid}>
-              {(Object.entries(CATEGORIES) as [Category, typeof CATEGORIES[Category]][]).map(
-                ([key, cat]) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[
-                      s.categoryBtn,
-                      category === key && { backgroundColor: cat.color + '18', borderColor: cat.color },
-                    ]}
-                    onPress={() => setCategory(key)}
-                  >
-                    <Text style={s.categoryEmoji}>{cat.emoji}</Text>
-                    <Text style={[s.categoryLabel, category === key && { color: cat.color, fontWeight: '700' }]}>
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              )}
-            </View>
+            {isDailyIncrement && (
+              <View style={s.infoBadge}>
+                <Text style={s.infoText}>Auto-generated daily budget record</Text>
+              </View>
+            )}
 
             <Text style={modalSheet.label}>Amount</Text>
             <View style={s.amountRow}>
+              <Text style={s.plus}>+</Text>
               <Text style={s.dollar}>$</Text>
               <TextInput
                 style={s.amountInput}
@@ -89,32 +83,37 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={theme.placeholder}
-                autoFocus
+                autoFocus={!isDailyIncrement}
+                editable={!isDailyIncrement}
               />
             </View>
 
             <Text style={modalSheet.label}>Note (optional)</Text>
             <TextInput
               style={modalSheet.input}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="e.g. Whole Foods haul"
+              value={note}
+              onChangeText={setNote}
+              placeholder={isDailyIncrement ? 'Daily budget added' : 'e.g. ATM withdrawal'}
               placeholderTextColor={theme.placeholder}
               returnKeyType="done"
             />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-              <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add'}</Text>
-            </TouchableOpacity>
+            {!isDailyIncrement && (
+              <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
+                <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add'}</Text>
+              </TouchableOpacity>
+            )}
 
-            {isEdit && onDelete && (
+            {isEdit && onDelete && !isDailyIncrement && (
               <TouchableOpacity style={s.deleteBtn} onPress={onDelete}>
-                <Text style={s.deleteBtnText}>Delete entry</Text>
+                <Text style={s.deleteBtnText}>Delete record</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
-              <Text style={modalSheet.cancelText}>Cancel</Text>
+              <Text style={modalSheet.cancelText}>
+                {isDailyIncrement ? 'Close' : 'Cancel'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -124,20 +123,18 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
 }
 
 const s = StyleSheet.create({
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
-  categoryBtn: {
-    width: '31%', paddingVertical: 12, paddingHorizontal: 6,
-    borderRadius: 14, borderWidth: 2, borderColor: theme.border,
-    alignItems: 'center', gap: 4, backgroundColor: theme.bg,
+  infoBadge: {
+    backgroundColor: theme.primaryLight, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 20,
   },
-  categoryEmoji: { fontSize: 24 },
-  categoryLabel: { fontSize: 11, color: theme.textFaint, fontWeight: '600' },
+  infoText: { fontSize: 13, color: theme.textMuted, fontWeight: '600' },
 
   amountRow: {
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 16,
     backgroundColor: theme.bgTint, paddingHorizontal: 16, marginBottom: 20,
   },
+  plus: { fontSize: 28, fontWeight: '800', color: '#4CAF50', marginRight: 2 },
   dollar: { fontSize: 28, fontWeight: '800', color: theme.textFaint, marginRight: 4 },
   amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14 },
 

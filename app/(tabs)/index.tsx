@@ -1,29 +1,40 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Alert, TextInput, Platform,
+  RefreshControl, TextInput, Platform,
 } from 'react-native';
 import AppModal from '../../components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
-  loadEntries, loadSettings, saveSettings, addEntry, deleteEntry,
+  loadEntries, loadSettings, saveSettings, addEntry, deleteEntry, updateEntry,
   getCachedEntries, getCachedSettings, getLocalCachedEntries, getLocalCachedSettings,
   getDaySpent, getAvailableBudget, refreshCarry, entriesNeededFrom, CATEGORIES,
   today, yesterday, formatDate, SpendingEntry, BudgetSettings,
+  FundsRecord, loadFundsRecords, addFundsRecord, updateFundsRecord, deleteFundsRecord,
+  getCachedFunds, getLocalCachedFunds, ensureDailyIncrements,
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
+import FundsRecordModal from '../../components/budget/FundsRecordModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, heroOutlineBtn, modalSheet } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
+type RecordItem =
+  | { kind: 'spending'; entry: SpendingEntry }
+  | { kind: 'funds'; record: FundsRecord };
+
 export default function BudgetTab() {
   const insets = useSafeAreaInsets();
   const { isGuest, exitGuestMode, user } = useAuth();
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
+  const [fundsRecords, setFundsRecords] = useState<FundsRecord[]>([]);
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editEntry, setEditEntry] = useState<SpendingEntry | null>(null);
+  const [showFundsModal, setShowFundsModal] = useState(false);
+  const [editFunds, setEditFunds] = useState<FundsRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [editMode, setEditMode] = useState<'remaining' | 'daily' | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -36,32 +47,32 @@ export default function BudgetTab() {
   const load = async () => {
     let e: SpendingEntry[];
     let s: BudgetSettings | null;
+    let f: FundsRecord[];
 
     if (user?.uid) {
-      // Layer 1 — module-level memory cache: instant, lives for the session.
       const cachedE = getCachedEntries(user.uid);
       const cachedS = getCachedSettings(user.uid);
+      const cachedF = getCachedFunds(user.uid);
       if (cachedE) setEntries(cachedE);
       if (cachedS !== undefined) setSettings(cachedS);
+      if (cachedF) setFundsRecords(cachedF);
 
-      // Layer 2 — AsyncStorage: fast (~10 ms), survives page refresh. Skip if layer 1 hit.
-      if (!cachedE || cachedS === undefined) {
-        const [localE, localS] = await Promise.all([
+      if (!cachedE || cachedS === undefined || !cachedF) {
+        const [localE, localS, localF] = await Promise.all([
           !cachedE ? getLocalCachedEntries(user.uid) : Promise.resolve(null),
           cachedS === undefined ? getLocalCachedSettings(user.uid) : Promise.resolve(undefined as BudgetSettings | null | undefined),
+          !cachedF ? getLocalCachedFunds(user.uid) : Promise.resolve(null),
         ]);
         if (localE) setEntries(localE);
         if (localS !== undefined) setSettings(localS);
+        if (localF) setFundsRecords(localF);
       }
 
-      // Layer 3 — Firestore: authoritative. Load settings first so we know how far back
-      // entries are needed (carry tells us the last computed day, so we only fetch from
-      // carry+1 onward instead of fetching the full history).
       s = await loadSettings(user.uid);
       e = await loadEntries(user.uid, entriesNeededFrom(s, todayStr));
+      f = await loadFundsRecords(user.uid);
     } else {
-      // Guest: both reads hit AsyncStorage which is already fast, so parallel is fine.
-      [e, s] = await Promise.all([loadEntries(), loadSettings()]);
+      [e, s, f] = await Promise.all([loadEntries(), loadSettings(), loadFundsRecords()]);
     }
 
     setEntries(e);
@@ -74,21 +85,33 @@ export default function BudgetTab() {
     const updated = refreshCarry(e, s, yesterday());
     if (updated !== s) saveSettings(updated, user?.uid);
     setSettings(updated);
+
+    const updatedFunds = await ensureDailyIncrements(f, updated, todayStr, user?.uid);
+    setFundsRecords(updatedFunds);
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const todayEntries = entries
-    .filter((e) => e.date === todayStr)
-    .sort((a, b) => b.timestamp - a.timestamp);
-
   const spent = getDaySpent(entries, todayStr);
   const available = settings ? getAvailableBudget(entries, settings, todayStr) : 0;
   const remaining = available - spent;
   const rollover = settings ? available - settings.dailyBudget : 0;
   const pct = available > 0 ? Math.min(spent / available, 1) : 0;
+
+  // Unified sorted list: spending entries + funds records, most recent first
+  const allRecords: RecordItem[] = [
+    ...entries.map((entry) => ({ kind: 'spending' as const, entry })),
+    ...fundsRecords.map((record) => ({ kind: 'funds' as const, record })),
+  ].sort((a, b) => {
+    const dateA = a.kind === 'spending' ? a.entry.date : a.record.date;
+    const dateB = b.kind === 'spending' ? b.entry.date : b.record.date;
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    const tsA = a.kind === 'spending' ? a.entry.timestamp : a.record.timestamp;
+    const tsB = b.kind === 'spending' ? b.entry.timestamp : b.record.timestamp;
+    return tsB - tsA;
+  });
 
   const startEditRemaining = () => {
     if (!settings) { startEditDaily(); return; }
@@ -154,16 +177,6 @@ export default function BudgetTab() {
     }
   };
 
-  const handleDelete = (entry: SpendingEntry) => {
-    Alert.alert('Remove entry?', `"${entry.description || CATEGORIES[entry.category].label}"`, [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Remove', style: 'destructive',
-        onPress: async () => setEntries(await deleteEntry(entries, entry.id, user?.uid)),
-      },
-    ]);
-  };
-
   const bigLabel = () => {
     if (editMode === 'remaining') return 'set remaining for today ✏️';
     if (editMode === 'daily' && !settings) return 'set your daily budget 🌟';
@@ -175,6 +188,38 @@ export default function BudgetTab() {
   };
 
   const showBigEdit = editMode === 'remaining' || (editMode === 'daily' && !settings);
+
+  const handleSaveEntry = async (entryData: Omit<SpendingEntry, 'id' | 'timestamp'>) => {
+    if (editEntry) {
+      setEntries(await updateEntry(entries, editEntry.id, entryData, user?.uid));
+      setEditEntry(null);
+    } else {
+      setEntries(await addEntry(entries, entryData, user?.uid));
+      setShowAdd(false);
+    }
+  };
+
+  const handleDeleteEntry = async () => {
+    if (!editEntry) return;
+    setEntries(await deleteEntry(entries, editEntry.id, user?.uid));
+    setEditEntry(null);
+  };
+
+  const handleSaveFunds = async (recordData: Omit<FundsRecord, 'id' | 'timestamp'>) => {
+    if (editFunds) {
+      setFundsRecords(await updateFundsRecord(fundsRecords, editFunds.id, recordData, user?.uid));
+      setEditFunds(null);
+    } else {
+      setFundsRecords(await addFundsRecord(fundsRecords, recordData, user?.uid));
+      setShowFundsModal(false);
+    }
+  };
+
+  const handleDeleteFunds = async () => {
+    if (!editFunds || editFunds.type === 'daily-increment') return;
+    setFundsRecords(await deleteFundsRecord(fundsRecords, editFunds.id, user?.uid));
+    setEditFunds(null);
+  };
 
   return (
     <View style={s.root}>
@@ -282,38 +327,64 @@ export default function BudgetTab() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={s.sectionTitle}>Today's Spending</Text>
+        <View style={s.sectionHeader}>
+          <Text style={s.sectionTitle}>Records</Text>
+          {settings && (
+            <TouchableOpacity style={s.addFundsBtn} onPress={() => { setEditFunds(null); setShowFundsModal(true); }}>
+              <Text style={s.addFundsBtnText}>+ Add Funds</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {todayEntries.length === 0 ? (
+        {allRecords.length === 0 ? (
           <View style={s.noEntries}>
             <Text style={s.noEntriesTitle}>Nothing logged yet 🍽️</Text>
             <Text style={s.noEntriesText}>Tap + to add your first entry today.</Text>
           </View>
         ) : (
-          todayEntries.map((entry) => {
-            const cat = CATEGORIES[entry.category];
-            return (
-              <TouchableOpacity
-                key={entry.id}
-                style={[s.entryRow, { borderLeftColor: cat.color }]}
-                onLongPress={() => handleDelete(entry)}
-                activeOpacity={0.7}
-              >
-                <Text style={s.catEmoji}>{cat.emoji}</Text>
-                <View style={s.entryInfo}>
-                  <Text style={s.entryDesc} numberOfLines={1}>
-                    {entry.description || cat.label}
-                  </Text>
-                  <Text style={s.entryCat}>{cat.label}</Text>
-                </View>
-                <Text style={s.entryAmt}>${entry.amount.toFixed(2)}</Text>
-              </TouchableOpacity>
-            );
+          allRecords.map((item) => {
+            if (item.kind === 'spending') {
+              const { entry } = item;
+              const cat = CATEGORIES[entry.category];
+              return (
+                <TouchableOpacity
+                  key={entry.id}
+                  style={[s.entryRow, { borderLeftColor: cat.color }]}
+                  onPress={() => setEditEntry(entry)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.catEmoji}>{cat.emoji}</Text>
+                  <View style={s.entryInfo}>
+                    <Text style={s.entryDesc} numberOfLines={1}>
+                      {entry.description || cat.label}
+                    </Text>
+                    <Text style={s.entryCat}>{cat.label} · {formatDate(entry.date)}</Text>
+                  </View>
+                  <Text style={[s.entryAmt, s.entryAmtNeg]}>-${entry.amount.toFixed(2)}</Text>
+                </TouchableOpacity>
+              );
+            } else {
+              const { record } = item;
+              const label = record.type === 'daily-increment'
+                ? 'Daily Budget'
+                : (record.note || 'Funds Added');
+              return (
+                <TouchableOpacity
+                  key={record.id}
+                  style={[s.entryRow, s.fundsRow]}
+                  onPress={() => { setEditFunds(record); setShowFundsModal(true); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.catEmoji}>💰</Text>
+                  <View style={s.entryInfo}>
+                    <Text style={s.entryDesc} numberOfLines={1}>{label}</Text>
+                    <Text style={s.entryCat}>{formatDate(record.date)}</Text>
+                  </View>
+                  <Text style={[s.entryAmt, s.entryAmtPos]}>+${record.amount.toFixed(2)}</Text>
+                </TouchableOpacity>
+              );
+            }
           })
-        )}
-
-        {todayEntries.length > 0 && (
-          <Text style={s.hint}>Hold to remove</Text>
         )}
 
         <View style={{ height: 110 }} />
@@ -322,7 +393,7 @@ export default function BudgetTab() {
       {settings && (
         <TouchableOpacity
           style={[fab.btn, { bottom: insets.bottom + 72 }]}
-          onPress={() => setShowAdd(true)}
+          onPress={() => { setEditEntry(null); setShowAdd(true); }}
           activeOpacity={0.85}
         >
           <Text style={fab.label}>+</Text>
@@ -330,9 +401,19 @@ export default function BudgetTab() {
       )}
 
       <AddEntryModal
-        visible={showAdd}
-        onClose={() => setShowAdd(false)}
-        onAdd={async (entry) => { setEntries(await addEntry(entries, entry, user?.uid)); setShowAdd(false); }}
+        visible={showAdd || !!editEntry}
+        onClose={() => { setShowAdd(false); setEditEntry(null); }}
+        entry={editEntry}
+        onSave={handleSaveEntry}
+        onDelete={editEntry ? handleDeleteEntry : undefined}
+      />
+
+      <FundsRecordModal
+        visible={showFundsModal || !!editFunds}
+        onClose={() => { setShowFundsModal(false); setEditFunds(null); }}
+        record={editFunds}
+        onSave={handleSaveFunds}
+        onDelete={editFunds && editFunds.type !== 'daily-increment' ? handleDeleteFunds : undefined}
       />
 
       <AppModal visible={showBankModal} animationType="slide" transparent>
@@ -397,7 +478,6 @@ const s = StyleSheet.create({
     fontWeight: '700', letterSpacing: 0.6,
   },
   statDivider: { width: 1, backgroundColor: 'rgba(43,32,64,0.12)', marginVertical: 4 },
-
   statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   // Rollover
@@ -423,10 +503,18 @@ const s = StyleSheet.create({
   // List
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 28 },
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
+  },
   sectionTitle: {
     fontSize: 13, fontWeight: '800', color: theme.textFaint,
-    letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 14,
+    letterSpacing: 0.5, textTransform: 'uppercase',
   },
+  addFundsBtn: {
+    backgroundColor: theme.primaryLight, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5,
+  },
+  addFundsBtnText: { fontSize: 12, fontWeight: '700', color: theme.primary },
 
   noEntries: { alignItems: 'center', paddingVertical: 48 },
   noEntriesTitle: { fontSize: 17, fontWeight: '800', color: theme.textDark, marginBottom: 6 },
@@ -437,14 +525,20 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 10,
     borderLeftWidth: 4,
   },
+  fundsRow: { borderLeftColor: '#4CAF50' },
   catEmoji: { fontSize: 24, marginRight: 12 },
   entryInfo: { flex: 1 },
   entryDesc: { fontSize: 15, fontWeight: '700', color: theme.textDark },
   entryCat: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
   entryAmt: { fontSize: 17, fontWeight: '800', color: theme.textDark },
+  entryAmtNeg: { color: theme.negative },
+  entryAmtPos: { color: '#4CAF50' },
 
-  hint: {
-    textAlign: 'center', fontSize: 12, color: theme.textFaint,
-    opacity: 0.5, marginTop: 4, marginBottom: 8,
+  // stat input (inline hero edit)
+  statInput: {
+    fontSize: 18, fontWeight: '800', color: theme.textDark,
+    borderBottomWidth: 1, borderColor: theme.textDark,
+    padding: 0, minWidth: 40,
   },
+  statDone: { fontSize: 16, fontWeight: '800', color: theme.textDark, marginLeft: 4 },
 });
