@@ -9,7 +9,7 @@ import { useFocusEffect } from 'expo-router';
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry, updateEntry,
   getCachedEntries, getCachedSettings, getLocalCachedEntries, getLocalCachedSettings,
-  getDaySpent, getAvailableBudget, refreshCarry, entriesNeededFrom, CATEGORIES,
+  getDaySpent, refreshCarry, CATEGORIES,
   today, yesterday, formatDate, SpendingEntry, BudgetSettings,
   FundsRecord, loadFundsRecords, addFundsRecord, updateFundsRecord, deleteFundsRecord,
   getCachedFunds, getLocalCachedFunds, ensureDailyIncrements,
@@ -69,7 +69,7 @@ export default function BudgetTab() {
       }
 
       s = await loadSettings(user.uid);
-      e = await loadEntries(user.uid, entriesNeededFrom(s, todayStr));
+      e = await loadEntries(user.uid);
       f = await loadFundsRecords(user.uid);
     } else {
       [e, s, f] = await Promise.all([loadEntries(), loadSettings(), loadFundsRecords()]);
@@ -98,11 +98,12 @@ export default function BudgetTab() {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const spent = getDaySpent(entries, todayStr);
-  const available = settings ? getAvailableBudget(entries, settings, todayStr) : 0;
-  const remaining = available - spent;
-  const rollover = settings ? available - settings.dailyBudget : 0;
-  const pct = available > 0 ? Math.min(spent / available, 1) : 0;
+  const todaySpent = getDaySpent(entries, todayStr);
+  const totalFunds = fundsRecords.reduce((sum, r) => sum + r.amount, 0);
+  const totalSpent = entries.reduce((sum, e) => sum + e.amount, 0);
+  const remaining = settings ? totalFunds - totalSpent : 0;
+  const rollover = settings ? remaining + todaySpent - settings.dailyBudget : 0;
+  const pct = settings ? Math.min(todaySpent / Math.max(settings.dailyBudget, 1), 1) : 0;
 
   // Unified sorted list: spending entries + funds records, most recent first
   const allRecords: RecordItem[] = [
@@ -170,32 +171,34 @@ export default function BudgetTab() {
   const handleSaveEntry = async (entryData: Omit<SpendingEntry, 'id' | 'timestamp'>) => {
     if (editEntry) {
       setEntries(await updateEntry(entries, editEntry.id, entryData, user?.uid));
-      setEditEntry(null);
     } else {
       setEntries(await addEntry(entries, entryData, user?.uid));
-      setShowAdd(false);
     }
+    setShowAdd(false);
+    setEditEntry(null);
   };
 
   const handleDeleteEntry = async () => {
     if (!editEntry) return;
     setEntries(await deleteEntry(entries, editEntry.id, user?.uid));
+    setShowAdd(false);
     setEditEntry(null);
   };
 
   const handleSaveFunds = async (recordData: Omit<FundsRecord, 'id' | 'timestamp'>) => {
     if (editFunds) {
       setFundsRecords(await updateFundsRecord(fundsRecords, editFunds.id, recordData, user?.uid));
-      setEditFunds(null);
     } else {
       setFundsRecords(await addFundsRecord(fundsRecords, recordData, user?.uid));
-      setShowFundsModal(false);
     }
+    setShowFundsModal(false);
+    setEditFunds(null);
   };
 
   const handleDeleteFunds = async () => {
     if (!editFunds) return;
     setFundsRecords(await deleteFundsRecord(fundsRecords, editFunds.id, user?.uid));
+    setShowFundsModal(false);
     setEditFunds(null);
   };
 
@@ -267,7 +270,7 @@ export default function BudgetTab() {
               )}
               <View style={s.statDivider} />
               <View style={s.stat}>
-                <Text style={[s.statVal, s.statSpent]}>${spent.toFixed(2)}</Text>
+                <Text style={[s.statVal, s.statSpent]}>${todaySpent.toFixed(2)}</Text>
                 <Text style={s.statLabel}>SPENT</Text>
               </View>
               <View style={s.statDivider} />
