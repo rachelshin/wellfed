@@ -85,7 +85,12 @@ export default function PricesTab() {
   const handleSaveEntry = async (data: Omit<PriceEntry, 'id'>, id?: string) => {
     loadGen.current++;
     if (id) {
-      setPrices(await updatePrice(prices, id, data, user?.uid));
+      const [updatedPrices, updatedCategories] = await Promise.all([
+        updatePrice(prices, id, data, user?.uid),
+        ensureCategory(categories, data.category),
+      ]);
+      setPrices(updatedPrices);
+      setCategories(updatedCategories);
       setEditing(null);
     } else {
       const updatedPrices = await addPrice(prices, data, user?.uid);
