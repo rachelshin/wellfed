@@ -5,6 +5,25 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/auth';
 import theme from '../lib/theme';
 
+// Module-level flag — survives re-renders, guarantees the splash is dismissed at most once.
+let _splashDismissed = false;
+
+function dismissSplash() {
+  if (_splashDismissed || Platform.OS !== 'web' || typeof document === 'undefined') return;
+  _splashDismissed = true;
+
+  const MIN_SPLASH_MS = 2500;
+  const elapsed = Date.now() - ((window as any).__splashStart ?? Date.now());
+  const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
+
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    splash.classList.add('fade-out');
+    setTimeout(() => splash.remove(), 450);
+  }, delay);
+}
+
 function AuthGate() {
   const { user, isGuest, loading } = useAuth();
   const router = useRouter();
@@ -20,40 +39,27 @@ function AuthGate() {
       router.replace('/(tabs)');
     }
 
+    // On iOS PWA, visibilityState starts as 'hidden' while the native launch
+    // image is still covering the screen. Wait until the page is actually visible
+    // so the splash isn't dismissed before the user ever sees it.
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const MIN_SPLASH_MS = 2500;
-
-      const removeSplash = () => {
-        const elapsed = Date.now() - ((window as any).__splashStart ?? Date.now());
-        const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
-        setTimeout(() => {
-          const splash = document.getElementById('splash');
-          if (splash) {
-            splash.classList.add('fade-out');
-            setTimeout(() => splash.remove(), 350);
-          }
-        }, delay);
-      };
-
-      // On iOS PWA the web view can finish loading while the native launch image is
-      // still covering it. If the page isn't visible yet, wait until it is so the
-      // splash is never removed before the user sees it.
       if (document.visibilityState === 'visible') {
-        removeSplash();
+        dismissSplash();
       } else {
-        document.addEventListener('visibilitychange', function onVisible() {
-          if (document.visibilityState === 'visible') {
-            document.removeEventListener('visibilitychange', onVisible);
-            // Reset the start time so the full MIN_SPLASH_MS is shown from now
-            (window as any).__splashStart = Date.now();
-            removeSplash();
-          }
-        });
+        const onVisible = () => {
+          if (document.visibilityState !== 'visible') return;
+          document.removeEventListener('visibilitychange', onVisible);
+          // Reset start time so the full MIN_SPLASH_MS plays from when the user sees it.
+          (window as any).__splashStart = Date.now();
+          dismissSplash();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
       }
     }
   }, [user, isGuest, loading]);
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: '#9B80A8' }} />;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#7050BE' }} />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

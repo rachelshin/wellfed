@@ -24,6 +24,7 @@ const theme = {
   textMuted: '#6B5070',
   textFaint: '#A890B4',
   placeholder: '#C4AED0',
+  placeholderOnHero: 'rgba(43,32,64,0.45)',
 
   // Semantic
   negative: '#C0392B',

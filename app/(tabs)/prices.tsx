@@ -199,7 +199,7 @@ export default function PricesTab() {
             value={search}
             onChangeText={setSearch}
             placeholder="Search categories…"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.placeholderOnHero}
             returnKeyType="search"
           />
           {search.length > 0 && (

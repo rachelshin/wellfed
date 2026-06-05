@@ -103,7 +103,7 @@ export default function PantryTab() {
             value={search}
             onChangeText={setSearch}
             placeholder="Search your pantry…"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.placeholderOnHero}
             returnKeyType="search"
           />
           {search.length > 0 && (
