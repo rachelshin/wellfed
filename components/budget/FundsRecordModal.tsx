@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FundsRecord, today } from '../../store/budget';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
+import DateField from './DateField';
 
 interface Props {
   visible: boolean;
@@ -22,15 +23,18 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
   const isEdit = !!record;
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [date, setDate] = useState(today());
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
     if (visible) {
       setAmount(record ? String(record.amount) : '');
       setNote(record?.note ?? '');
+      setDate(record?.date ?? today());
     } else {
       setAmount('');
       setNote('');
+      setDate(today());
     }
   }, [visible, record]);
 
@@ -47,7 +51,7 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
     const val = parseFloat(amount);
     if (isNaN(val) || val <= 0) return;
     onSave({
-      date: record?.date ?? today(),
+      date,
       amount: val,
       note: note.trim(),
       type: record?.type ?? 'manual',
@@ -77,6 +81,8 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
                 autoFocus
               />
             </View>
+
+            <DateField value={date} onChange={setDate} />
 
             <Text style={modalSheet.label}>Note (optional)</Text>
             <TextInput

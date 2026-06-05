@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Category, CATEGORIES, SpendingEntry, today } from '../../store/budget';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
+import DateField from './DateField';
 
 interface Props {
   visible: boolean;
@@ -23,6 +24,7 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
   const [category, setCategory] = useState<Category>('groceries');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [date, setDate] = useState(today());
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
@@ -30,10 +32,12 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
       setCategory(entry?.category ?? 'groceries');
       setAmount(entry ? String(entry.amount) : '');
       setDescription(entry?.description ?? '');
+      setDate(entry?.date ?? today());
     } else {
+      setCategory('groceries');
       setAmount('');
       setDescription('');
-      setCategory('groceries');
+      setDate(today());
     }
   }, [visible, entry]);
 
@@ -49,7 +53,7 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
   const handleSave = () => {
     const val = parseFloat(amount);
     if (isNaN(val) || val <= 0) return;
-    onSave({ date: entry?.date ?? today(), amount: val, category, description: description.trim() });
+    onSave({ date, amount: val, category, description: description.trim() });
   };
 
   return (
@@ -92,6 +96,8 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
                 autoFocus
               />
             </View>
+
+            <DateField value={date} onChange={setDate} />
 
             <Text style={modalSheet.label}>Note (optional)</Text>
             <TextInput
