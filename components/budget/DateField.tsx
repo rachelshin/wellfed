@@ -13,27 +13,28 @@ export default function DateField({ value, onChange }: Props) {
     <View style={{ marginBottom: 16 }}>
       <Text style={modalSheet.label}>Date</Text>
       {Platform.OS === 'web' ? (
-        // @ts-ignore — raw <input type="date"> is the only reliable iOS PWA date picker
-        <input
-          type="date"
-          value={value}
-          onChange={(e: any) => onChange(e.target.value)}
-          style={{
-            display: 'block',
-            width: '100%',
-            boxSizing: 'border-box',
-            fontSize: 16,             // MUST be ≥16 — prevents iOS viewport zoom on focus
-            padding: '14px',
-            border: `1.5px solid ${theme.border}`,
-            borderRadius: 14,
-            backgroundColor: theme.bgTint,
-            color: theme.textDark,
-            outline: 'none',          // no blue focus ring on PWA
-            fontFamily: 'inherit',
-          } as any}
-        />
+        // Flex-row wrapper so flex:1 on the input resolves against the container width,
+        // not the viewport. minWidth:0 prevents the input's intrinsic width from overflowing.
+        <View style={{ flexDirection: 'row' }}>
+          {/* @ts-ignore — raw <input type="date"> triggers iOS native date picker */}
+          <input
+            type="date"
+            value={value}
+            onChange={(e: any) => onChange(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 16,
+              padding: '14px',
+              border: `1.5px solid ${theme.border}`,
+              borderRadius: 14,
+              backgroundColor: theme.bgTint,
+              color: theme.textDark,
+              outline: 'none',
+            } as any}
+          />
+        </View>
       ) : (
-        // Expo Go / native fallback (not the primary target)
         <TextInput
           style={[modalSheet.input, { marginBottom: 0 }]}
           value={value}
