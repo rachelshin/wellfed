@@ -21,7 +21,7 @@ function AuthGate() {
     }
 
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const MIN_SPLASH_MS = 1000;
+      const MIN_SPLASH_MS = 2500;
 
       const removeSplash = () => {
         const elapsed = Date.now() - ((window as any).__splashStart ?? Date.now());

@@ -136,10 +136,28 @@ export function pricePerUnit(entry: PriceEntry): number {
   return n.size > 0 ? entry.price / n.size : entry.price;
 }
 
-export function formatPricePerUnit(entry: PriceEntry): string {
+export function unitGroup(unit: Unit): 'weight' | 'volume' | 'count' {
+  if (unit in TO_OZ) return 'weight';
+  if (unit in TO_FL_OZ) return 'volume';
+  return 'count';
+}
+
+export function displayUnitLabel(unit: Unit): string {
+  return unit === 'fl oz' ? 'oz' : unit;
+}
+
+export function formatPricePerUnit(entry: PriceEntry, displayUnit?: Unit): string {
   const n = normalizeSize(entry.size, entry.unit);
   const ppu = n.size > 0 ? entry.price / n.size : entry.price;
-  return `$${ppu.toFixed(3)}/${n.unit}`;
+
+  if (displayUnit && unitGroup(displayUnit) === unitGroup(entry.unit) && unitGroup(entry.unit) !== 'count') {
+    const factor = unitGroup(entry.unit) === 'weight' ? TO_OZ[displayUnit]! : TO_FL_OZ[displayUnit]!;
+    const sizeInDisplay = n.size / factor;
+    const ppuDisplay = sizeInDisplay > 0 ? entry.price / sizeInDisplay : entry.price;
+    return `$${ppuDisplay.toFixed(3)}/${displayUnitLabel(displayUnit)}`;
+  }
+
+  return `$${ppu.toFixed(3)}/${displayUnitLabel(n.unit)}`;
 }
 
 export function groupByItem(prices: PriceEntry[]): Map<string, PriceEntry[]> {

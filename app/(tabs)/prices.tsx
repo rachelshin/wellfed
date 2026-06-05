@@ -7,12 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadPrices, loadPricesFromCache, saveNewPrices, addPrice, updatePrice, deletePrice,
-  pricePerUnit, formatPricePerUnit, bestPrice,
-  PriceEntry,
+  pricePerUnit, formatPricePerUnit, bestPrice, unitGroup,
+  PriceEntry, Unit,
 } from '../../store/prices';
 import {
   loadCategories, loadCategoriesFromCache, seedDefaultCategories,
-  saveCategory, saveNewCategories, updateCategory, deleteCategory,
+  saveCategory, saveNewCategories, updateCategory, deleteCategory, setCategoryDisplayUnit,
   PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
@@ -101,14 +101,14 @@ export default function PricesTab() {
     setEditing(null);
   };
 
-  const handleAddCategory = async (name: string) => {
+  const handleAddCategory = async (name: string, displayUnit?: Unit) => {
     loadGen.current++;
     const category = name.toLowerCase().trim();
-    setCategories(await saveCategory(categories, { name, category }, user?.uid));
+    setCategories(await saveCategory(categories, { name, category, displayUnit }, user?.uid));
     setShowAddCategory(false);
   };
 
-  const handleUpdateCategory = async (name: string) => {
+  const handleUpdateCategory = async (name: string, _displayUnit?: Unit) => {
     if (!editingCategory) return;
     loadGen.current++;
     setCategories(await updateCategory(categories, editingCategory.id, name, user?.uid));
@@ -135,6 +135,10 @@ export default function PricesTab() {
       setCategories(await deleteCategory(categories, editingCategory.id, user?.uid));
     }
     setEditingCategory(null);
+  };
+
+  const handleSetDisplayUnit = async (catId: string, unit: Unit) => {
+    setCategories(await setCategoryDisplayUnit(categories, catId, unit, user?.uid));
   };
 
   const ensureCategory = async (
@@ -237,6 +241,9 @@ export default function PricesTab() {
           const best = bestPrice(entries);
           const isExpanded = expandedItems.has(cat.category);
           const catColor = categoryColor(cat.category);
+          const du = cat.displayUnit;
+          const entryGroups = new Set(entries.map((e) => unitGroup(e.unit)));
+          const catUnitGroup = entryGroups.has('weight') ? 'weight' : entryGroups.has('volume') ? 'volume' : entryGroups.size > 0 ? 'count' : undefined;
 
           return (
             <View key={cat.id} style={[s.card, { borderLeftColor: catColor }]}>
@@ -259,7 +266,7 @@ export default function PricesTab() {
                 <View style={s.cardRight}>
                   {best && (
                     <View style={s.bestWrap}>
-                      <Text style={s.bestPrice}>{formatPricePerUnit(best)}</Text>
+                      <Text style={s.bestPrice}>{formatPricePerUnit(best, du)}</Text>
                       <Text style={s.bestStore}>{best.store || 'Unknown'}</Text>
                     </View>
                   )}
@@ -303,7 +310,7 @@ export default function PricesTab() {
                               <Text style={s.entrySize}>{entry.size} {entry.unit} · ${entry.price.toFixed(2)}</Text>
                             </View>
                             <View style={s.entryRight}>
-                              <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>{formatPricePerUnit(entry)}</Text>
+                              <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>{formatPricePerUnit(entry, du)}</Text>
                               <Text style={s.entryDate}>{entry.dateAdded}</Text>
                             </View>
                           </TouchableOpacity>
@@ -346,6 +353,13 @@ export default function PricesTab() {
         initialName={editingCategory?.name}
         entryCount={prices.filter((p) => p.category === editingCategory?.category).length}
         existingNames={categories.map((c) => c.name)}
+        unitGroup={(() => {
+          if (!editingCategory) return undefined;
+          const groups = new Set(prices.filter((p) => p.category === editingCategory.category).map((p) => unitGroup(p.unit)));
+          return groups.has('weight') ? 'weight' : groups.has('volume') ? 'volume' : groups.has('count') ? 'count' : undefined;
+        })()}
+        displayUnit={editingCategory?.displayUnit}
+        onDisplayUnitChange={(unit) => editingCategory && handleSetDisplayUnit(editingCategory.id, unit)}
       />
       <PriceEntryModal
         visible={showAdd || !!editing}
