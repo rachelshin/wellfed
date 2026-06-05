@@ -126,7 +126,6 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
               onChangeText={setCategory}
               placeholder="e.g. Dairy"
               placeholderTextColor={theme.placeholder}
-              returnKeyType="done"
             />
             {filteredCategories.length > 0 && (
               <View style={s.chipRow}>
