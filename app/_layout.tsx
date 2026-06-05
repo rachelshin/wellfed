@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text } from 'react-native';
+import { Animated, Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/auth';
 
-const MIN_SPLASH_MS = 2500;
+// Show splash only if loading takes longer than this — fast cached sessions skip it entirely.
+const THRESHOLD_MS = 400;
+// Once the splash appears, keep it for at least this long so it doesn't flash.
+const MIN_DISPLAY_MS = 1500;
 
 function PulseDot({ delay }: { delay: number }) {
   const opacity = useRef(new Animated.Value(0.3)).current;
@@ -32,14 +35,14 @@ function SplashOverlay({ authReady, onDone }: { authReady: boolean; onDone: () =
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const exitOpacity = useRef(new Animated.Value(1)).current;
 
-  // Remove the HTML placeholder splash — React is now rendering the overlay
+  // Remove the HTML background placeholder immediately — React is now covering the screen.
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.getElementById('splash')?.remove();
     }
   }, []);
 
-  // Entrance animation
+  // Entrance animation.
   useEffect(() => {
     Animated.parallel([
       Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 70, useNativeDriver: true }),
@@ -48,11 +51,11 @@ function SplashOverlay({ authReady, onDone }: { authReady: boolean; onDone: () =
     ]).start();
   }, []);
 
-  // Exit once auth resolves and the minimum display time has passed
+  // Exit once auth resolves AND the minimum display time has passed.
   useEffect(() => {
     if (!authReady) return;
     const elapsed = Date.now() - mountTime.current;
-    const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
+    const delay = Math.max(0, MIN_DISPLAY_MS - elapsed);
     const t = setTimeout(() => {
       Animated.timing(exitOpacity, { toValue: 0, duration: 400, useNativeDriver: true })
         .start(({ finished }) => { if (finished) onDone(); });
@@ -62,14 +65,10 @@ function SplashOverlay({ authReady, onDone }: { authReady: boolean; onDone: () =
 
   return (
     <Animated.View style={[ss.overlay, { opacity: exitOpacity }]}>
-      <Animated.Image
-        source={require('../assets/icon.png')}
-        style={[ss.logo, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
-      />
-      <Animated.View style={{ opacity: contentOpacity, alignItems: 'center' }}>
-        <Text style={ss.title}>Well Fed</Text>
-        <Text style={ss.subtitle}>your kitchen companion</Text>
+      <Animated.View style={[ss.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
+        <Image source={require('../assets/icon.png')} style={ss.logoImg} />
       </Animated.View>
+      
       <Animated.View style={[ss.dotsRow, { opacity: contentOpacity }]}>
         <PulseDot delay={0} />
         <PulseDot delay={180} />
@@ -83,8 +82,32 @@ function AuthGate() {
   const { user, isGuest, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
+  // Ref so the threshold timeout reads the latest loading value without a stale closure.
+  const loadingRef = useRef(loading);
 
+  // Keep ref current. On fast loads (auth done before threshold), fade out the HTML placeholder.
+  useEffect(() => {
+    loadingRef.current = loading;
+    if (!loading && !showSplash && Platform.OS === 'web' && typeof document !== 'undefined') {
+      const el = document.getElementById('splash');
+      if (el) {
+        el.style.transition = 'opacity 0.25s ease-out';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 250);
+      }
+    }
+  }, [loading, showSplash]);
+
+  // After the threshold, show the splash only if auth is still pending.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (loadingRef.current) setShowSplash(true);
+    }, THRESHOLD_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Navigation guard.
   useEffect(() => {
     if (loading) return;
     const isAuthed = !!user || isGuest;
@@ -93,13 +116,18 @@ function AuthGate() {
     else if (isAuthed && inAuthScreen) router.replace('/(tabs)');
   }, [user, isGuest, loading]);
 
+  // Don't render the Stack until auth resolves — prevents screens from mounting with a null
+  // user uid and loading data from the wrong place (guest storage instead of Firebase).
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }} />
+    <View style={{ flex: 1 }}>
+      {loading
+        ? <View style={{ flex: 1, backgroundColor: '#7050BE' }} />
+        : <Stack screenOptions={{ headerShown: false }} />
+      }
       {showSplash && (
         <SplashOverlay authReady={!loading} onDone={() => setShowSplash(false)} />
       )}
-    </>
+    </View>
   );
 }
 
@@ -121,11 +149,16 @@ const ss = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 9999,
   },
-  logo: {
+  logoContainer: {
     width: 96,
     height: 96,
     borderRadius: 22,
+    overflow: 'hidden',
     marginBottom: 20,
+  },
+  logoImg: {
+    width: 96,
+    height: 96,
   },
   title: {
     color: '#fff',
