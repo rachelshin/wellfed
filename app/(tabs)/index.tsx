@@ -36,7 +36,7 @@ export default function BudgetTab() {
   const [showFundsModal, setShowFundsModal] = useState(false);
   const [editFunds, setEditFunds] = useState<FundsRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [editMode, setEditMode] = useState<'remaining' | 'daily' | null>(null);
+  const [editMode, setEditMode] = useState<'daily' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [showBankModal, setShowBankModal] = useState(false);
   const [bankInput, setBankInput] = useState('');
@@ -86,8 +86,12 @@ export default function BudgetTab() {
     if (updated !== s) saveSettings(updated, user?.uid);
     setSettings(updated);
 
-    const updatedFunds = await ensureDailyIncrements(f, updated, todayStr, user?.uid);
+    const { records: updatedFunds, settings: settingsWithFunds } = await ensureDailyIncrements(f, updated, todayStr, user?.uid);
     setFundsRecords(updatedFunds);
+    if (settingsWithFunds !== updated) {
+      saveSettings(settingsWithFunds, user?.uid);
+      setSettings(settingsWithFunds);
+    }
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -112,12 +116,6 @@ export default function BudgetTab() {
     const tsB = b.kind === 'spending' ? b.entry.timestamp : b.record.timestamp;
     return tsB - tsA;
   });
-
-  const startEditRemaining = () => {
-    if (!settings) { startEditDaily(); return; }
-    setEditValue(remaining >= 0 ? remaining.toFixed(2) : '0');
-    setEditMode('remaining');
-  };
 
   const startEditDaily = () => {
     setEditValue(settings ? String(settings.dailyBudget) : '');
@@ -147,38 +145,18 @@ export default function BudgetTab() {
 
   const commitEdit = async () => {
     const val = parseFloat(editValue);
-    if (!isNaN(val) && val > 0) {
-      if (editMode === 'daily') {
-        const newSettings: BudgetSettings = {
-          dailyBudget: val,
-          startDate: settings?.startDate ?? today(),
-          adjustments: settings?.adjustments,
-        };
-        await saveSettings(newSettings, user?.uid);
-        setSettings(newSettings);
-        setEditMode(null);
-      } else if (editMode === 'remaining' && settings) {
-        const baseSettings: BudgetSettings = {
-          ...settings,
-          adjustments: { ...settings.adjustments, [todayStr]: 0 },
-        };
-        const baseRemaining = getAvailableBudget(entries, baseSettings, todayStr) - spent;
-        const newAdj = val - baseRemaining;
-        const newSettings: BudgetSettings = {
-          ...settings,
-          adjustments: { ...(settings.adjustments ?? {}), [todayStr]: newAdj },
-        };
-        await saveSettings(newSettings, user?.uid);
-        setSettings(newSettings);
-        setEditMode(null);
-      }
-    } else if (settings) {
-      setEditMode(null);
+    if (!isNaN(val) && val > 0 && editMode === 'daily') {
+      const newSettings: BudgetSettings = {
+        dailyBudget: val,
+        startDate: settings?.startDate ?? today(),
+      };
+      await saveSettings(newSettings, user?.uid);
+      setSettings(newSettings);
     }
+    setEditMode(null);
   };
 
   const bigLabel = () => {
-    if (editMode === 'remaining') return 'set remaining for today ✏️';
     if (editMode === 'daily' && !settings) return 'set your daily budget 🌟';
     if (!settings) return 'tap to set your daily budget 🌟';
     if (remaining < 0) return 'over budget today 😬';
@@ -187,7 +165,7 @@ export default function BudgetTab() {
     return 'left — almost there! 💪';
   };
 
-  const showBigEdit = editMode === 'remaining' || (editMode === 'daily' && !settings);
+  const showBigEdit = editMode === 'daily' && !settings;
 
   const handleSaveEntry = async (entryData: Omit<SpendingEntry, 'id' | 'timestamp'>) => {
     if (editEntry) {
@@ -216,7 +194,7 @@ export default function BudgetTab() {
   };
 
   const handleDeleteFunds = async () => {
-    if (!editFunds || editFunds.type === 'daily-increment') return;
+    if (!editFunds) return;
     setFundsRecords(await deleteFundsRecord(fundsRecords, editFunds.id, user?.uid));
     setEditFunds(null);
   };
@@ -251,14 +229,12 @@ export default function BudgetTab() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity onPress={startEditRemaining} activeOpacity={0.8}>
-            <Text style={[s.bigAmount, remaining < 0 && s.bigAmountNeg]}>
-              {settings ? `$${Math.abs(remaining).toFixed(2)}` : '—'}
-            </Text>
-          </TouchableOpacity>
+          <Text style={[s.bigAmount, remaining < 0 && s.bigAmountNeg]}>
+            {settings ? `$${Math.abs(remaining).toFixed(2)}` : '—'}
+          </Text>
         )}
 
-        <Text style={[s.bigLabel, remaining < 0 && editMode !== 'remaining' && s.bigLabelNeg]}>
+        <Text style={[s.bigLabel, remaining < 0 && s.bigLabelNeg]}>
           {bigLabel()}
         </Text>
 
@@ -413,7 +389,7 @@ export default function BudgetTab() {
         onClose={() => { setShowFundsModal(false); setEditFunds(null); }}
         record={editFunds}
         onSave={handleSaveFunds}
-        onDelete={editFunds && editFunds.type !== 'daily-increment' ? handleDeleteFunds : undefined}
+        onDelete={editFunds ? handleDeleteFunds : undefined}
       />
 
       <AppModal visible={showBankModal} animationType="slide" transparent>

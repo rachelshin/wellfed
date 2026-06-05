@@ -20,7 +20,6 @@ interface Props {
 export default function FundsRecordModal({ visible, onClose, record, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const isEdit = !!record;
-  const isDailyIncrement = record?.type === 'daily-increment';
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
@@ -55,9 +54,7 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
     });
   };
 
-  const title = isEdit
-    ? (isDailyIncrement ? 'Daily Budget' : 'Edit Funds')
-    : 'Add Funds';
+  const title = isEdit ? (record!.type === 'daily-increment' ? 'Edit Daily Budget' : 'Edit Funds') : 'Add Funds';
 
   return (
     <AppModal visible={visible} animationType="slide" transparent>
@@ -65,12 +62,6 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
             <Text style={modalSheet.title}>{title}</Text>
-
-            {isDailyIncrement && (
-              <View style={s.infoBadge}>
-                <Text style={s.infoText}>Auto-generated daily budget record</Text>
-              </View>
-            )}
 
             <Text style={modalSheet.label}>Amount</Text>
             <View style={s.amountRow}>
@@ -83,8 +74,7 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={theme.placeholder}
-                autoFocus={!isDailyIncrement}
-                editable={!isDailyIncrement}
+                autoFocus
               />
             </View>
 
@@ -93,27 +83,23 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
               style={modalSheet.input}
               value={note}
               onChangeText={setNote}
-              placeholder={isDailyIncrement ? 'Daily budget added' : 'e.g. ATM withdrawal'}
+              placeholder="e.g. ATM withdrawal"
               placeholderTextColor={theme.placeholder}
               returnKeyType="done"
             />
 
-            {!isDailyIncrement && (
-              <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-                <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add'}</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
+              <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add'}</Text>
+            </TouchableOpacity>
 
-            {isEdit && onDelete && !isDailyIncrement && (
+            {isEdit && onDelete && (
               <TouchableOpacity style={s.deleteBtn} onPress={onDelete}>
                 <Text style={s.deleteBtnText}>Delete record</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
-              <Text style={modalSheet.cancelText}>
-                {isDailyIncrement ? 'Close' : 'Cancel'}
-              </Text>
+              <Text style={modalSheet.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -123,12 +109,6 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
 }
 
 const s = StyleSheet.create({
-  infoBadge: {
-    backgroundColor: theme.primaryLight, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 20,
-  },
-  infoText: { fontSize: 13, color: theme.textMuted, fontWeight: '600' },
-
   amountRow: {
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 16,

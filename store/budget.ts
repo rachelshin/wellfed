@@ -31,9 +31,9 @@ export interface SpendingEntry {
 export interface BudgetSettings {
   dailyBudget: number;
   startDate: string;          // YYYY-MM-DD — first day of tracking
-  adjustments?: Record<string, number>; // date → manual remaining override delta
   bankBalance?: number;
   carry?: { date: string; amount: number }; // end-of-day remaining cache through `date`
+  fundsLastChecked?: string;  // YYYY-MM-DD — daily-increment records exist through this date
 }
 
 const ENTRIES_KEY = '@budget_entries';
@@ -257,38 +257,47 @@ export async function deleteFundsRecord(
   return updated;
 }
 
-// Ensures daily-increment records exist for every day from startDate through today.
-// Only writes missing records, batching all Firestore ops in parallel.
+// Ensures daily-increment records exist for every day from the day after fundsLastChecked
+// (or startDate on first run) through today. Only looks forward — never re-creates deleted records.
+// Returns updated records and updated settings (with fundsLastChecked advanced to today).
 export async function ensureDailyIncrements(
   records: FundsRecord[],
   settings: BudgetSettings,
   todayStr: string,
   uid?: string | null,
-): Promise<FundsRecord[]> {
+): Promise<{ records: FundsRecord[]; settings: BudgetSettings }> {
+  const fromDate = settings.fundsLastChecked
+    ? addDay(settings.fundsLastChecked)
+    : settings.startDate;
+
   const toAdd: Omit<FundsRecord, 'id' | 'timestamp'>[] = [];
-  let cursor = settings.startDate;
+  let cursor = fromDate;
   while (cursor <= todayStr) {
-    if (!records.some((r) => r.type === 'daily-increment' && r.date === cursor)) {
-      toAdd.push({ date: cursor, amount: settings.dailyBudget, note: '', type: 'daily-increment' });
-    }
+    toAdd.push({ date: cursor, amount: settings.dailyBudget, note: '', type: 'daily-increment' });
     cursor = addDay(cursor);
   }
-  if (toAdd.length === 0) return records;
 
-  const newRecords: FundsRecord[] = toAdd.map((r) => ({
-    ...r,
-    id: `${Date.now()}-${Math.random()}-${r.date}`,
-    timestamp: Date.now(),
-  }));
-  const updated = [...records, ...newRecords];
-  if (uid) {
-    await Promise.all(newRecords.map((r) => setDoc(doc(fundsCol(uid), r.id), r)));
-    _fundsCache.set(uid, updated);
-    AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(updated));
-  } else {
-    await AsyncStorage.setItem(FUNDS_KEY, JSON.stringify(updated));
+  let updatedRecords = records;
+  if (toAdd.length > 0) {
+    const newRecords: FundsRecord[] = toAdd.map((r) => ({
+      ...r,
+      id: `${Date.now()}-${Math.random()}-${r.date}`,
+      timestamp: Date.now(),
+    }));
+    updatedRecords = [...records, ...newRecords];
+    if (uid) {
+      await Promise.all(newRecords.map((r) => setDoc(doc(fundsCol(uid), r.id), r)));
+      _fundsCache.set(uid, updatedRecords);
+      AsyncStorage.setItem(FUNDS_UID_PREFIX + uid, JSON.stringify(updatedRecords));
+    } else {
+      await AsyncStorage.setItem(FUNDS_KEY, JSON.stringify(updatedRecords));
+    }
   }
-  return updated;
+
+  if (settings.fundsLastChecked === todayStr) {
+    return { records: updatedRecords, settings };
+  }
+  return { records: updatedRecords, settings: { ...settings, fundsLastChecked: todayStr } };
 }
 
 export async function loadSettings(uid?: string | null): Promise<BudgetSettings | null> {
@@ -326,15 +335,15 @@ export function refreshCarry(
   settings: BudgetSettings,
   throughDate: string,
 ): BudgetSettings {
-  const { dailyBudget, startDate, adjustments = {}, carry } = settings;
-  if (throughDate < startDate) return settings;       // tracking hasn't started yet
-  if (carry && carry.date >= throughDate) return settings; // already up to date
+  const { dailyBudget, startDate, carry } = settings;
+  if (throughDate < startDate) return settings;
+  if (carry && carry.date >= throughDate) return settings;
 
   let amount = carry?.amount ?? 0;
   let cursor = carry ? addDay(carry.date) : startDate;
 
   while (cursor <= throughDate) {
-    amount = dailyBudget + amount - getDaySpent(entries, cursor) + (adjustments[cursor] ?? 0);
+    amount = dailyBudget + amount - getDaySpent(entries, cursor);
     cursor = addDay(cursor);
   }
 
@@ -346,7 +355,7 @@ export function getAvailableBudget(
   settings: BudgetSettings,
   forDate: string
 ): number {
-  const { dailyBudget, startDate, adjustments = {}, carry } = settings;
+  const { dailyBudget, startDate, carry } = settings;
 
   // Fast path: carry is cached through the day before forDate
   const prevDate = (() => {
@@ -356,18 +365,18 @@ export function getAvailableBudget(
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   })();
   if (carry?.date === prevDate) {
-    return dailyBudget + carry.amount + (adjustments[forDate] ?? 0);
+    return dailyBudget + carry.amount;
   }
 
   // Fallback: iterate from carry date (or startDate) forward
   let amount = carry?.amount ?? 0;
   let cursor = carry && carry.date >= startDate ? addDay(carry.date) : startDate;
   while (cursor < forDate) {
-    amount = dailyBudget + amount - getDaySpent(entries, cursor) + (adjustments[cursor] ?? 0);
+    amount = dailyBudget + amount - getDaySpent(entries, cursor);
     cursor = addDay(cursor);
   }
 
-  return dailyBudget + amount + (adjustments[forDate] ?? 0);
+  return dailyBudget + amount;
 }
 
 export const CATEGORIES: Record<

@@ -154,10 +154,10 @@ export function formatPricePerUnit(entry: PriceEntry, displayUnit?: Unit): strin
     const factor = unitGroup(entry.unit) === 'weight' ? TO_OZ[displayUnit]! : TO_FL_OZ[displayUnit]!;
     const sizeInDisplay = n.size / factor;
     const ppuDisplay = sizeInDisplay > 0 ? entry.price / sizeInDisplay : entry.price;
-    return `$${ppuDisplay.toFixed(3)}/${displayUnitLabel(displayUnit)}`;
+    return `$${ppuDisplay.toFixed(2)}/${displayUnitLabel(displayUnit)}`;
   }
 
-  return `$${ppu.toFixed(3)}/${displayUnitLabel(n.unit)}`;
+  return `$${ppu.toFixed(2)}/${displayUnitLabel(n.unit)}`;
 }
 
 export function groupByItem(prices: PriceEntry[]): Map<string, PriceEntry[]> {
