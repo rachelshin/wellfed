@@ -16,9 +16,10 @@ import {
   PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
+import { addSingleEntry } from '../../store/budget';
 import PriceEntryModal from '../../components/prices/PriceEntryModal';
 import CategoryModal from '../../components/prices/CategoryModal';
-import ReceiptScanModal, { ScannedItem } from '../../components/prices/ReceiptScanModal';
+import ReceiptScanModal, { ScannedItem, ReceiptBudgetEntry } from '../../components/prices/ReceiptScanModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
@@ -374,7 +375,7 @@ export default function PricesTab() {
         visible={showScan}
         onClose={() => setShowScan(false)}
         existingCategories={categoryNames}
-        onAddItems={async (taggedItems: ScannedItem[]) => {
+        onAddItems={async (taggedItems: ScannedItem[], budget?: ReceiptBudgetEntry) => {
           loadGen.current++;
           const priceItems = taggedItems.filter((i) => i.addToPrice);
           const pantryItems = taggedItems.filter((i) => i.addToPantry);
@@ -430,6 +431,16 @@ export default function PricesTab() {
               }),
               user?.uid,
             );
+          }
+
+          // Budget entry — fire and forget
+          if (budget && budget.amount > 0) {
+            await addSingleEntry({
+              amount: budget.amount,
+              category: 'groceries',
+              description: budget.store || 'Grocery shopping',
+              date: budget.date,
+            }, user?.uid);
           }
         }}
       />

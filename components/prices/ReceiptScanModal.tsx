@@ -30,10 +30,16 @@ export interface ScannedItem {
   addToPantry: boolean;
 }
 
+export interface ReceiptBudgetEntry {
+  amount: number;
+  date: string;
+  store: string;
+}
+
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onAddItems: (items: ScannedItem[]) => void;
+  onAddItems: (items: ScannedItem[], budget?: ReceiptBudgetEntry) => void;
   existingCategories: string[];   // display names
 }
 
@@ -54,6 +60,9 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const [openCategoryIndex, setOpenCategoryIndex] = useState<number | null>(null);
   const [openUnitIndex, setOpenUnitIndex] = useState<number | null>(null);
   const [catSearch, setCatSearch] = useState('');
+  const [receiptTotal, setReceiptTotal] = useState<number | null>(null);
+  const [addToBudget, setAddToBudget] = useState(false);
+  const [manualTotal, setManualTotal] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   useEffect(() => {
@@ -61,6 +70,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       setImageUri(null); setScanning(false);
       setItems([]); setStoreName(''); setReceiptDate(today()); setMissingFields([]);
       setStep('pick'); setOpenCategoryIndex(null); setOpenUnitIndex(null);
+      setReceiptTotal(null); setAddToBudget(false); setManualTotal('');
     }
   }, [visible]);
 
@@ -108,11 +118,12 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       });
       if (!res.ok) throw new Error('Server error');
 
-      const { items: raw, store: scannedStore, date: scannedDate } = await res.json();
+      const { items: raw, store: scannedStore, date: scannedDate, total: scannedTotal } = await res.json();
 
       const missing: ('store' | 'date')[] = [];
       if (scannedStore) { setStoreName(scannedStore); } else { missing.push('store'); }
       if (scannedDate) { setReceiptDate(scannedDate); } else { missing.push('date'); }
+      if (typeof scannedTotal === 'number' && scannedTotal > 0) setReceiptTotal(scannedTotal);
       setMissingFields(missing);
 
       const seen = new Set<string>();
@@ -157,6 +168,10 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const handleConfirm = () => {
     const active = items.filter((it) => it.selected && (it.addToPrice || it.addToPantry));
     if (active.length === 0) { onClose(); return; }
+    const budgetAmount = receiptTotal ?? parseFloat(manualTotal);
+    const budget: ReceiptBudgetEntry | undefined = (addToBudget && budgetAmount > 0)
+      ? { amount: budgetAmount, date: receiptDate, store: storeName.trim() }
+      : undefined;
     onAddItems(active.map((it) => ({
       entry: {
         itemName: it.name.trim(),
@@ -170,12 +185,15 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       },
       addToPrice: it.addToPrice,
       addToPantry: it.addToPantry,
-    })));
+    })), budget);
   };
 
   const activeCount = items.filter((i) => i.selected && (i.addToPrice || i.addToPantry)).length;
   const priceCount = items.filter((i) => i.selected && i.addToPrice).length;
   const pantryCount = items.filter((i) => i.selected && i.addToPantry).length;
+  const selectedTotal = items
+    .filter((i) => i.selected)
+    .reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0);
 
   return (
     <AppModal visible={visible} animationType="slide" transparent>
@@ -394,6 +412,47 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
 
                 {items.length > 0 && activeCount > 0 && (
                   <>
+                    {receiptTotal !== null ? (
+                      <TouchableOpacity
+                        style={[s.budgetToggle, addToBudget && s.budgetToggleActive]}
+                        onPress={() => setAddToBudget((v) => !v)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[s.budgetToggleText, addToBudget && s.budgetToggleTextActive]}>
+                          {addToBudget ? '✓ ' : ''}Add ${receiptTotal.toFixed(2)} to Budget
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={[s.budgetToggle, addToBudget && s.budgetToggleActive]}
+                          onPress={() => setAddToBudget((v) => !v)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[s.budgetToggleText, addToBudget && s.budgetToggleTextActive]}>
+                            {addToBudget ? '✓ ' : ''}Add to Budget
+                          </Text>
+                        </TouchableOpacity>
+                        {addToBudget && (
+                          <View style={s.manualTotalRow}>
+                            <Text style={s.manualTotalLabel}>Receipt total (incl. tax)</Text>
+                            <View style={s.manualTotalInputWrap}>
+                              <Text style={s.manualTotalDollar}>$</Text>
+                              <TextInput
+                                style={s.manualTotalInput}
+                                value={manualTotal}
+                                onChangeText={setManualTotal}
+                                keyboardType="decimal-pad"
+                                placeholder="0.00"
+                                placeholderTextColor={theme.placeholder}
+                                autoFocus
+                                returnKeyType="done"
+                              />
+                            </View>
+                          </View>
+                        )}
+                      </>
+                    )}
                     <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleConfirm}>
                       <Text style={modalSheet.primaryBtnText}>
                         Save {activeCount} item{activeCount !== 1 ? 's' : ''}
@@ -509,6 +568,30 @@ const s = StyleSheet.create({
   destChipActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
   destChipText: { fontSize: 12, color: theme.textFaint, fontWeight: '600' },
   destChipTextActive: { color: theme.primary, fontWeight: '800' },
+
+  manualTotalRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1.5, borderColor: theme.primary, borderRadius: 16,
+    paddingHorizontal: 16, paddingVertical: 10, marginBottom: 12,
+    backgroundColor: theme.primaryLight,
+  },
+  manualTotalLabel: { fontSize: 13, fontWeight: '600', color: theme.primary },
+  manualTotalInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  manualTotalDollar: { fontSize: 16, fontWeight: '700', color: theme.primary },
+  manualTotalInput: {
+    fontSize: 16, fontWeight: '700', color: theme.primary,
+    minWidth: 70, textAlign: 'right',
+    outlineWidth: 0, outlineStyle: 'none',
+  },
+
+  budgetToggle: {
+    borderWidth: 1.5, borderColor: theme.border, borderRadius: 16,
+    paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center', marginBottom: 12,
+    backgroundColor: theme.bg,
+  },
+  budgetToggleActive: { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+  budgetToggleText: { fontSize: 14, fontWeight: '700', color: theme.textFaint },
+  budgetToggleTextActive: { color: theme.primary },
 
   missingBanner: {
     backgroundColor: '#FEF3CD', borderRadius: 12, padding: 12, marginBottom: 16,

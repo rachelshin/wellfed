@@ -142,6 +142,25 @@ export async function loadEntries(uid?: string | null, fromDate?: string): Promi
   return json ? JSON.parse(json) : [];
 }
 
+export async function addSingleEntry(
+  entry: Omit<SpendingEntry, 'id' | 'timestamp'>,
+  uid?: string | null,
+): Promise<void> {
+  const newEntry: SpendingEntry = {
+    ...entry,
+    id: `${Date.now()}-${Math.random()}`,
+    timestamp: Date.now(),
+  };
+  if (uid) {
+    await setDoc(doc(entriesCol(uid), newEntry.id), newEntry);
+    _entriesCache.delete(uid);
+  } else {
+    const existing = await AsyncStorage.getItem(ENTRIES_KEY);
+    const arr: SpendingEntry[] = existing ? JSON.parse(existing) : [];
+    await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify([...arr, newEntry]));
+  }
+}
+
 export async function addEntry(
   entries: SpendingEntry[],
   entry: Omit<SpendingEntry, 'id' | 'timestamp'>,
