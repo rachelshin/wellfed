@@ -42,7 +42,7 @@ export const heroOutlineBtn = StyleSheet.create({
 export const modalSheet = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: theme.card, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: theme.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 24, paddingTop: 24, maxHeight: '92%',
   },
   title: { fontSize: 22, fontWeight: '800', color: theme.textDark, marginBottom: 20 },

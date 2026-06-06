@@ -466,15 +466,14 @@ const s = StyleSheet.create({
   suggestRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 16 },
   suggestChip: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1.5, borderColor: theme.primary, backgroundColor: theme.primaryLight,
+    borderWidth: 1, borderColor: theme.border,
   },
-  suggestChipText: { fontSize: 13, color: theme.primary, fontWeight: '700' },
+  suggestChipText: { fontSize: 13, color: theme.textMuted, fontWeight: '600' },
 
   card: {
-    backgroundColor: theme.card, borderRadius: 18, marginBottom: 10,
-    overflow: 'hidden', borderLeftWidth: 3,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'space-between' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, justifyContent: 'space-between' },
   cardTitleWrap: { flex: 1 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   catDot: { width: 8, height: 8, borderRadius: 4 },
@@ -487,16 +486,16 @@ const s = StyleSheet.create({
   editIcon: { fontSize: 15, color: theme.textFaint },
   chevron: { fontSize: 11, color: theme.textFaint },
 
-  cardBody: { borderTopWidth: 1, borderTopColor: theme.border, paddingHorizontal: 12, paddingBottom: 12 },
+  cardBody: { paddingBottom: 8 },
   emptyEntries: { paddingVertical: 16, alignItems: 'center' },
   emptyEntriesText: { fontSize: 13, color: theme.textFaint },
 
   entryRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, marginTop: 8,
-    backgroundColor: theme.bg,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
-  entryRowBest: { backgroundColor: 'rgba(244,207,110,0.12)' },
+  entryRowBest: {},
   entryLeft: { flex: 1 },
   bestBadge: {
     backgroundColor: theme.warning, borderRadius: 6,

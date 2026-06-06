@@ -218,8 +218,8 @@ const s = StyleSheet.create({
 
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.card, borderRadius: 14, padding: 14, marginBottom: 6,
-    borderLeftWidth: 3, borderLeftColor: theme.accent,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
   itemEmoji: { fontSize: 22, marginRight: 10 },
   itemInfo: { flex: 1 },

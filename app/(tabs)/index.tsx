@@ -451,8 +451,9 @@ const s = StyleSheet.create({
 
   entryRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.card, borderRadius: 14, padding: 14, marginBottom: 10,
-    borderLeftWidth: 4,
+    paddingVertical: 14, paddingLeft: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
+    borderLeftWidth: 2,
   },
   fundsRow: { borderLeftColor: theme.positive },
   catEmoji: { fontSize: 24, marginRight: 12 },

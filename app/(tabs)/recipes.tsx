@@ -853,13 +853,13 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   segmentWrap: {
-    flexDirection: 'row', marginHorizontal: 20, marginTop: 16, marginBottom: 4,
-    backgroundColor: theme.bgTint, borderRadius: 14, padding: 3,
+    flexDirection: 'row', marginHorizontal: 20, marginTop: 16, marginBottom: 0,
   },
   segBtn: {
-    flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 11,
+    flex: 1, paddingVertical: 10, alignItems: 'center',
+    borderBottomWidth: 1, borderBottomColor: theme.border,
   },
-  segBtnActive: { backgroundColor: '#FFFFFF' },
+  segBtnActive: { borderBottomWidth: 2, borderBottomColor: theme.textDark },
   segBtnText: { fontSize: 12, fontWeight: '700', color: theme.textFaint },
   segBtnTextActive: { color: theme.textDark },
 
@@ -868,8 +868,8 @@ const s = StyleSheet.create({
 
 
   infoCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 20, marginBottom: 16,
-    borderLeftWidth: 3, borderLeftColor: theme.warning,
+    paddingVertical: 16, marginBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
   infoTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark, marginBottom: 6 },
   infoText: { fontSize: 13, color: theme.textFaint, lineHeight: 20 },
@@ -890,23 +890,20 @@ const s = StyleSheet.create({
   generateBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   generateBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
 
-  errorCard: {
-    backgroundColor: '#FEF2F2', borderRadius: 14, padding: 14,
-    marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#FECACA',
-  },
-  errorText: { color: '#EF4444', fontSize: 14, fontWeight: '600' },
+  errorCard: { paddingVertical: 12, marginBottom: 16 },
+  errorText: { color: theme.negative, fontSize: 14 },
 
   empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24 },
   emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.textDark, marginBottom: 8 },
   emptySub: { fontSize: 14, color: theme.textFaint, textAlign: 'center', lineHeight: 22, marginBottom: 20 },
   goToPantryBtn: {
-    backgroundColor: theme.textDark, borderRadius: 20, paddingHorizontal: 24, paddingVertical: 12,
+    backgroundColor: theme.primary, borderRadius: 20, paddingHorizontal: 24, paddingVertical: 12,
   },
-  goToPantryBtnText: { color: theme.bg, fontWeight: '800', fontSize: 15 },
+  goToPantryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
 
   card: {
-    backgroundColor: theme.card, borderRadius: 16, padding: 16, marginBottom: 10,
-    borderLeftWidth: 3,
+    paddingVertical: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   catChip: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
@@ -924,12 +921,13 @@ const s = StyleSheet.create({
   progressTrack: { height: 5, backgroundColor: theme.border, borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
   progressFill: { height: '100%', borderRadius: 3 },
   ingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  ingChip: { backgroundColor: theme.primaryLight, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  ingChipText: { fontSize: 11, color: theme.primary, fontWeight: '700' },
+  ingChip: { borderWidth: 1, borderColor: theme.border, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  ingChipText: { fontSize: 11, color: theme.textFaint, fontWeight: '600' },
 
   savedCard: {
-    backgroundColor: theme.card, borderRadius: 16, padding: 16, marginBottom: 10,
-    flexDirection: 'row', alignItems: 'center', borderLeftWidth: 3, borderLeftColor: theme.primary,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
+    flexDirection: 'row', alignItems: 'center',
   },
   savedCardInner: { flex: 1 },
   savedCardTitle: { fontSize: 17, fontWeight: '800', color: theme.textDark, marginBottom: 4 },
@@ -938,7 +936,7 @@ const s = StyleSheet.create({
 
   modalBackdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   detailSheet: {
-    backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: theme.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingTop: 24, maxHeight: '92%',
   },
   detailCatChip: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginBottom: 8 },
@@ -947,7 +945,11 @@ const s = StyleSheet.create({
   detailDesc: { fontSize: 14, color: theme.textFaint, marginBottom: 12, lineHeight: 20 },
   detailMeta: { flexDirection: 'row', gap: 16, marginBottom: 16, flexWrap: 'wrap' },
   detailMetaText: { fontSize: 13, color: theme.textFaint, fontWeight: '500' },
-  haveCard: { backgroundColor: theme.primaryLight, borderRadius: 14, padding: 14, marginBottom: 20 },
+  haveCard: {
+    paddingVertical: 12, marginBottom: 20,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
+  },
   haveText: { fontSize: 14, color: theme.primary, fontWeight: '700', lineHeight: 20 },
   detailSection: {
     fontSize: 12, fontWeight: '800', color: theme.textFaint, marginBottom: 10,
@@ -957,7 +959,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.bg,
   },
-  ingRow2Have: { backgroundColor: theme.bg, marginHorizontal: -4, paddingHorizontal: 4, borderRadius: 10 },
+  ingRow2Have: {},
   ingCheck: { fontSize: 16, width: 20, textAlign: 'center', color: theme.textFaint },
   ingCheckHave: { color: theme.primary, fontWeight: '800' },
   ingInfo: { flex: 1 },
@@ -966,7 +968,8 @@ const s = StyleSheet.create({
   ingAmt: { fontSize: 12, color: theme.border, marginTop: 1 },
   stepRow: { flexDirection: 'row', gap: 12, marginBottom: 14, alignItems: 'flex-start' },
   stepNum: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(138,122,170,0.12)',
+    width: 28, height: 28, borderRadius: 14,
+    borderWidth: 1, borderColor: theme.border,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
   },
   stepNumText: { fontSize: 13, fontWeight: '800', color: theme.primary },
@@ -978,8 +981,8 @@ const s = StyleSheet.create({
   },
   saveRecipeBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   alreadySavedNote: {
-    backgroundColor: theme.primaryLight, borderRadius: 14, padding: 14,
-    alignItems: 'center', marginTop: 24, marginBottom: 10,
+    paddingVertical: 14, alignItems: 'center', marginTop: 16, marginBottom: 10,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
   },
   alreadySavedText: { color: theme.primary, fontSize: 14, fontWeight: '700' },
 
@@ -990,8 +993,9 @@ const s = StyleSheet.create({
 
   // Meal plan segment
   dayCard: {
-    backgroundColor: theme.card, borderRadius: 16, padding: 16, marginBottom: 10,
-    borderLeftWidth: 3, borderLeftColor: theme.primary,
+    paddingVertical: 16,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
+    borderLeftWidth: 2, borderLeftColor: theme.primary, paddingLeft: 12,
   },
   dayName: {
     fontSize: 12, fontWeight: '800', color: theme.primary,
