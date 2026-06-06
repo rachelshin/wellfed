@@ -1,43 +1,44 @@
 const theme = {
-  // Backgrounds
-  bg: '#FEF6F0',        // petal white
-  bgTint: '#FAEAE0',
-  card: '#FFFFFF',
+  // Backgrounds — warm ivory, matching splash screen
+  bg: '#faf7f2',
+  bgTint: '#f2ede5',
+  card: '#fffdf9',
 
-  // Primary — soft violet
-  primary: '#A78BDB',
-  primaryLight: '#EDE3F8',
-  primaryShadow: '#A78BDB',
+  // Primary — warm muted lavender (matches splash wordmark)
+  primary: '#8a7aaa',
+  primaryLight: '#ede8f5',
+  primaryShadow: '#8a7aaa',
 
-  // Accent — blush
-  accent: '#F7A8C4',
-  accentLight: '#FDE0EC',
+  // Accent — warm orange (from bag's orange in splash)
+  accent: '#E87830',
+  accentLight: '#fde8d5',
 
-  // Borders
-  border: '#F0DDD5',
+  // Borders — warm tan (from bag fold tones)
+  border: '#e5d8cc',
 
-  // Hero card — medium violet (lighter than textDark so it feels friendly, not severe)
-  heroCard: '#7050BE',
+  // Hero card — deep forest green (from bag's leaves in splash)
+  heroCard: '#2d5a3d',
 
-  // Text — deep plum
+  // Text
   textDark: '#2B2040',
   textMuted: '#6B5070',
-  textFaint: '#A890B4',
-  placeholder: '#C4AED0',
-  placeholderOnHero: 'rgba(43,32,64,0.45)',
+  textFaint: '#9a8aaa',         // matches splash wordmark
+  placeholder: '#c4aec8',
+  placeholderOnHero: 'rgba(255,255,255,0.55)',  // hero is now dark green
 
   // Semantic
   negative: '#C0392B',
-  warning: '#F4CF6E',   // chamomile
+  positive: '#4d9060',          // forest green (bag leaves)
+  warning: '#d4a855',           // warm amber
 
   // Modal
   backdrop: 'rgba(43,32,64,0.5)',
-  handle: '#F0DDD5',
+  handle: '#e5d8cc',
 
   // Tab bar
-  tabActive: '#A78BDB',
-  tabInactive: '#A890B4',
-  tabBorder: '#F0DDD5',
+  tabActive: '#8a7aaa',
+  tabInactive: '#b0a4bc',
+  tabBorder: '#e5d8cc',
 };
 
 export default theme;
