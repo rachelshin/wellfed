@@ -43,8 +43,8 @@ const s = StyleSheet.create({
   left: { flex: 1 },
   rightSlot: { marginLeft: 12 },
   eyebrow: {
-    fontSize: 12, fontWeight: '700', color: 'rgba(43,32,64,0.5)',
+    fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.65)',
     letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 3,
   },
-  title: { fontSize: 24, fontWeight: '900', color: theme.textDark },
+  title: { fontSize: 24, fontWeight: '900', color: '#FFFFFF' },
 });

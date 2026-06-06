@@ -16,8 +16,11 @@ const theme = {
   // Borders — warm tan (from bag fold tones)
   border: '#e5d8cc',
 
-  // Hero card — deep forest green (from bag's leaves in splash)
-  heroCard: '#2d5a3d',
+  // Hero card colors — one per tab, all dark enough for white text
+  heroCard: '#2d5a3d',     // Budget — deep forest green
+  heroPantry: '#6a4220',   // Pantry  — warm dark amber
+  heroPrices: '#4e4068',   // Prices  — deep muted lavender
+  heroRecipes: '#7a3e20',  // Recipes — warm dark sienna
 
   // Text
   textDark: '#2B2040',

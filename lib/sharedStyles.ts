@@ -19,27 +19,27 @@ export const fab = StyleSheet.create({
 export const darkSearch = StyleSheet.create({
   wrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(43,32,64,0.07)', borderRadius: 14, paddingHorizontal: 14,
-    borderWidth: 1, borderColor: 'rgba(43,32,64,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, paddingHorizontal: 14,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
-  input: { flex: 1, fontSize: 16, color: theme.textDark, paddingVertical: 11, outlineWidth: 0, outlineStyle: 'none' },
-  clear: { color: theme.textMuted, fontSize: 15, padding: 4 },
+  input: { flex: 1, fontSize: 16, color: '#FFFFFF', paddingVertical: 11, outlineWidth: 0, outlineStyle: 'none' },
+  clear: { color: 'rgba(255,255,255,0.7)', fontSize: 15, padding: 4 },
 });
 
 // Outline button on the hero card (Scan, Recipes →, Sign in)
 export const heroOutlineBtn = StyleSheet.create({
   btn: {
-    borderWidth: 1, borderColor: 'rgba(43,32,64,0.2)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
   },
-  text: { color: theme.textDark, fontWeight: '700', fontSize: 14 },
+  text: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 });
 
 // Bottom sheet modals — backdrop, sheet container, common fields
 export const modalSheet = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: theme.card, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     padding: 24, paddingTop: 24, maxHeight: '92%',
   },
   title: { fontSize: 22, fontWeight: '800', color: theme.textDark, marginBottom: 20 },

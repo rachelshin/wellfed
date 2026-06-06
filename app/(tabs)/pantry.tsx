@@ -90,7 +90,7 @@ export default function PantryTab() {
       <HeroHeader
         eyebrow="What's in your kitchen?"
         title="Pantry 🧺"
-        cardColor="#A78BDB"
+        cardColor={theme.heroPantry}
       >
         {items.length > 0 && (
           <Text style={s.heroStats}>
@@ -199,7 +199,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   heroStats: {
-    fontSize: 12, color: 'rgba(43,32,64,0.5)',
+    fontSize: 12, color: 'rgba(255,255,255,0.65)',
     fontWeight: '500', marginBottom: 12,
   },
 
@@ -218,7 +218,7 @@ const s = StyleSheet.create({
 
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 6,
+    backgroundColor: theme.card, borderRadius: 14, padding: 14, marginBottom: 6,
     borderLeftWidth: 3, borderLeftColor: theme.accent,
   },
   itemEmoji: { fontSize: 22, marginRight: 10 },

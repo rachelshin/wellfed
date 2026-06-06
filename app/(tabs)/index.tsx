@@ -189,7 +189,6 @@ export default function BudgetTab() {
       <HeroHeader
         eyebrow={formatDate(todayStr)}
         title="Well Fed ✨"
-        cardColor="#A78BDB"
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
@@ -204,7 +203,7 @@ export default function BudgetTab() {
               onChangeText={setEditValue}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor={theme.placeholder}
+              placeholderTextColor={theme.placeholderOnHero}
               autoFocus
               onSubmitEditing={commitEdit}
               returnKeyType="done"
@@ -379,35 +378,35 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   // Big number
-  bigAmount: { fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68 },
-  bigAmountNeg: { color: theme.negative },
+  bigAmount: { fontSize: 64, fontWeight: '900', color: '#FFFFFF', lineHeight: 68 },
+  bigAmountNeg: { color: '#ffb3ad' },
   bigLabel: {
-    fontSize: 14, color: 'rgba(43,32,64,0.5)', marginBottom: 22,
+    fontSize: 14, color: 'rgba(255,255,255,0.65)', marginBottom: 22,
     fontWeight: '500', marginTop: 2,
   },
-  bigLabelNeg: { color: theme.negative },
+  bigLabelNeg: { color: '#ffb3ad' },
 
   bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
-    fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68,
+    fontSize: 64, fontWeight: '900', color: '#FFFFFF', lineHeight: 68,
     borderWidth: 0, padding: 0, margin: 0, minWidth: 80, outlineWidth: 0, outlineStyle: 'none',
   },
   bigEditDone: {
-    borderWidth: 1.5, borderColor: 'rgba(43,32,64,0.3)', borderRadius: 20,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)', borderRadius: 20,
     paddingHorizontal: 16, paddingVertical: 8,
   },
-  bigEditDoneText: { color: theme.textDark, fontSize: 18, fontWeight: '700' },
+  bigEditDoneText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
 
   // Stats
   statRow: { flexDirection: 'row', marginBottom: 18 },
   stat: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: 18, fontWeight: '800', color: theme.textDark },
-  statSpent: { color: theme.negative },
+  statVal: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  statSpent: { color: '#ffb3ad' },
   statLabel: {
-    fontSize: 10, color: 'rgba(43,32,64,0.4)', marginTop: 3,
+    fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 3,
     fontWeight: '700', letterSpacing: 0.6,
   },
-  statDivider: { width: 1, backgroundColor: 'rgba(43,32,64,0.12)', marginVertical: 4 },
+  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
   statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   // Rollover
@@ -424,10 +423,10 @@ const s = StyleSheet.create({
 
   // Progress
   progressTrack: {
-    height: 6, backgroundColor: 'rgba(43,32,64,0.1)',
+    height: 6, backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 3, overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: theme.textDark, borderRadius: 3 },
+  progressFill: { height: '100%', backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 3 },
   progressOver: { backgroundColor: theme.negative },
 
   // List
@@ -452,23 +451,23 @@ const s = StyleSheet.create({
 
   entryRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 10,
+    backgroundColor: theme.card, borderRadius: 14, padding: 14, marginBottom: 10,
     borderLeftWidth: 4,
   },
-  fundsRow: { borderLeftColor: '#4CAF50' },
+  fundsRow: { borderLeftColor: theme.positive },
   catEmoji: { fontSize: 24, marginRight: 12 },
   entryInfo: { flex: 1 },
   entryDesc: { fontSize: 15, fontWeight: '700', color: theme.textDark },
   entryCat: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
   entryAmt: { fontSize: 17, fontWeight: '800', color: theme.textDark },
   entryAmtNeg: { color: theme.negative },
-  entryAmtPos: { color: '#4CAF50' },
+  entryAmtPos: { color: theme.positive },
 
   // stat input (inline hero edit)
   statInput: {
-    fontSize: 18, fontWeight: '800', color: theme.textDark,
-    borderBottomWidth: 1, borderColor: theme.textDark,
+    fontSize: 18, fontWeight: '800', color: '#FFFFFF',
+    borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.5)',
     padding: 0, minWidth: 40,
   },
-  statDone: { fontSize: 16, fontWeight: '800', color: theme.textDark, marginLeft: 4 },
+  statDone: { fontSize: 16, fontWeight: '800', color: '#FFFFFF', marginLeft: 4 },
 });

@@ -186,7 +186,7 @@ export default function PricesTab() {
       <HeroHeader
         eyebrow="Track & Compare"
         title="Prices 🏷️"
-        cardColor="#F7A8C4"
+        cardColor={theme.heroPrices}
         right={
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => setShowScan(true)}>
             <Text style={heroOutlineBtn.text}>Scan</Text>
@@ -471,7 +471,7 @@ const s = StyleSheet.create({
   suggestChipText: { fontSize: 13, color: theme.primary, fontWeight: '700' },
 
   card: {
-    backgroundColor: '#FFFFFF', borderRadius: 18, marginBottom: 10,
+    backgroundColor: theme.card, borderRadius: 18, marginBottom: 10,
     overflow: 'hidden', borderLeftWidth: 3,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'space-between' },

@@ -242,7 +242,7 @@ export default function RecipesTab() {
 
   return (
     <View style={s.root}>
-      <HeroHeader eyebrow="What can you make?" title="Recipes 🍳" cardColor="#F4CF6E" />
+      <HeroHeader eyebrow="What can you make?" title="Recipes 🍳" cardColor={theme.heroRecipes} />
 
       <View style={s.segmentWrap}>
         <TouchableOpacity
@@ -905,7 +905,7 @@ const s = StyleSheet.create({
   goToPantryBtnText: { color: theme.bg, fontWeight: '800', fontSize: 15 },
 
   card: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10,
+    backgroundColor: theme.card, borderRadius: 16, padding: 16, marginBottom: 10,
     borderLeftWidth: 3,
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
@@ -924,11 +924,11 @@ const s = StyleSheet.create({
   progressTrack: { height: 5, backgroundColor: theme.border, borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
   progressFill: { height: '100%', borderRadius: 3 },
   ingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  ingChip: { backgroundColor: 'rgba(167,139,219,0.12)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  ingChip: { backgroundColor: theme.primaryLight, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   ingChipText: { fontSize: 11, color: theme.primary, fontWeight: '700' },
 
   savedCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10,
+    backgroundColor: theme.card, borderRadius: 16, padding: 16, marginBottom: 10,
     flexDirection: 'row', alignItems: 'center', borderLeftWidth: 3, borderLeftColor: theme.primary,
   },
   savedCardInner: { flex: 1 },
@@ -947,7 +947,7 @@ const s = StyleSheet.create({
   detailDesc: { fontSize: 14, color: theme.textFaint, marginBottom: 12, lineHeight: 20 },
   detailMeta: { flexDirection: 'row', gap: 16, marginBottom: 16, flexWrap: 'wrap' },
   detailMetaText: { fontSize: 13, color: theme.textFaint, fontWeight: '500' },
-  haveCard: { backgroundColor: 'rgba(167,139,219,0.1)', borderRadius: 14, padding: 14, marginBottom: 20 },
+  haveCard: { backgroundColor: theme.primaryLight, borderRadius: 14, padding: 14, marginBottom: 20 },
   haveText: { fontSize: 14, color: theme.primary, fontWeight: '700', lineHeight: 20 },
   detailSection: {
     fontSize: 12, fontWeight: '800', color: theme.textFaint, marginBottom: 10,
@@ -990,7 +990,7 @@ const s = StyleSheet.create({
 
   // Meal plan segment
   dayCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 10,
+    backgroundColor: theme.card, borderRadius: 16, padding: 16, marginBottom: 10,
     borderLeftWidth: 3, borderLeftColor: theme.primary,
   },
   dayName: {
