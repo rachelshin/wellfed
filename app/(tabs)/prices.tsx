@@ -21,7 +21,7 @@ import PriceEntryModal from '../../components/prices/PriceEntryModal';
 import CategoryModal from '../../components/prices/CategoryModal';
 import ReceiptScanModal, { ScannedItem, ReceiptBudgetEntry } from '../../components/prices/ReceiptScanModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, darkSearch, heroOutlineBtn, notebookArea } from '../../lib/sharedStyles';
+import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -209,10 +209,9 @@ export default function PricesTab() {
         </View>
       </HeroHeader>
 
-      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
+        contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {noRealCategories && (
@@ -336,7 +335,6 @@ export default function PricesTab() {
 
         <View style={{ height: 110 }} />
       </ScrollView>
-      </View>
 
       <TouchableOpacity
         style={[fab.btn, { bottom: insets.bottom + 72 }]}

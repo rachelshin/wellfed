@@ -24,7 +24,7 @@ import {
 import HeroHeader from '../../components/HeroHeader';
 import EditRecipeModal from '../../components/recipes/EditRecipeModal';
 import MealPlanModal from '../../components/recipes/MealPlanModal';
-import { modalSheet, notebookArea } from '../../lib/sharedStyles';
+import { modalSheet } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -270,10 +270,9 @@ export default function RecipesTab() {
         </TouchableOpacity>
       </View>
 
-      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
+        contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {segment === 'ideas' && (
@@ -709,7 +708,6 @@ export default function RecipesTab() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-      </View>
 
       {/* Prompt modal */}
       <AppModal visible={showPrompt} animationType="slide" transparent>

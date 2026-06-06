@@ -16,7 +16,7 @@ import {
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import FundsRecordModal from '../../components/budget/FundsRecordModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, heroOutlineBtn, notebookArea } from '../../lib/sharedStyles';
+import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -265,10 +265,9 @@ export default function BudgetTab() {
         )}
       </HeroHeader>
 
-      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
+        contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
         keyboardShouldPersistTaps="handled"
       >
@@ -334,7 +333,6 @@ export default function BudgetTab() {
 
         <View style={{ height: 110 }} />
       </ScrollView>
-      </View>
 
       {settings && (
         <TouchableOpacity
@@ -424,7 +422,7 @@ const s = StyleSheet.create({
 
   // List
   scroll: { flex: 1 },
-  scrollContent: {},
+  scrollContent: { paddingHorizontal: 20, paddingTop: 28 },
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
   },

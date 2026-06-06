@@ -11,7 +11,7 @@ import {
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import EditPantryModal from '../../components/pantry/EditPantryModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, darkSearch, notebookArea } from '../../lib/sharedStyles';
+import { fab, darkSearch } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -108,10 +108,9 @@ export default function PantryTab() {
         </View>
       </HeroHeader>
 
-      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
+        contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {items.length === 0 && (
@@ -160,7 +159,6 @@ export default function PantryTab() {
 
         <View style={{ height: 110 }} />
       </ScrollView>
-      </View>
 
       <TouchableOpacity
         style={[fab.btn, { bottom: insets.bottom + 72 }]}

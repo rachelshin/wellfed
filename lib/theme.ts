@@ -1,6 +1,6 @@
 export const fonts = {
-  display: 'PlayfairDisplay_700Bold',
-  serif: 'PlayfairDisplay_400Regular_Italic',
+  display: 'SpaceGrotesk_700Bold',
+  body: 'SpaceGrotesk_500Medium',
 };
 
 const theme = {
@@ -25,7 +25,7 @@ const theme = {
   heroCard: '#2d5a3d',     // Budget — deep forest green
   heroPantry: '#b06820',   // Pantry  — warm amber
   heroPrices: '#3a6ba0',   // Prices  — slate blue
-  heroRecipes: '#6b4080',  // Recipes — muted plum
+  heroRecipes: '#7a3048',  // Recipes — fig burgundy
 
   // Text
   textDark: '#2B2040',

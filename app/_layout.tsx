@@ -3,9 +3,8 @@ import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { PlayfairDisplay_700Bold, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
+import { SpaceGrotesk_700Bold, SpaceGrotesk_500Medium } from '@expo-google-fonts/space-grotesk';
 import { AuthProvider, useAuth } from '../context/auth';
-import { fonts } from '../lib/theme';
 
 const MIN_DISPLAY_MS = 2000;
 
@@ -215,7 +214,7 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ PlayfairDisplay_700Bold, PlayfairDisplay_400Regular_Italic });
+  const [fontsLoaded] = useFonts({ SpaceGrotesk_700Bold, SpaceGrotesk_500Medium });
   if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#faf7f2' }} />;
   return (
     <SafeAreaProvider>
@@ -235,10 +234,11 @@ const ss = StyleSheet.create({
     zIndex: 9999,
   },
   wordmark: {
-    marginTop: 28,
-    fontSize: 26,
-    fontFamily: fonts.serif,
+    marginTop: 32,
+    fontSize: 13,
+    fontWeight: '500',
     color: '#9a8aaa',
-    letterSpacing: 1,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
   },
 });
