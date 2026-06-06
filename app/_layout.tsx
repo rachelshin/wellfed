@@ -4,7 +4,6 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/auth';
 
-const THRESHOLD_MS = 400;
 const MIN_DISPLAY_MS = 1600;
 
 // ── Bag geometry (all px, fixed coordinate space) ────────────────────────
@@ -14,10 +13,7 @@ const ABOVE    = 52;  // space above bag where items peek out
 const TOTAL_H  = BAG_H + ABOVE;
 const FOLD_H   = 16;
 const HANDLE_C = '#8B5E3C';
-
-// Items animate from translateY=ITEM_START (hidden inside bag) to 0 (peeking out).
-// ITEM_START is chosen so each item's top + ITEM_START ≥ ABOVE (just at/inside the fold).
-const ITEM_START = 44;
+const ITEM_START = 44; // translateY items start at (inside bag, hidden)
 
 function GroceryBagScene() {
   const bagOpacity = useRef(new Animated.Value(0)).current;
@@ -31,11 +27,13 @@ function GroceryBagScene() {
   const bO = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Bag entrance
     Animated.parallel([
       Animated.spring(bagScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
       Animated.timing(bagOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
     ]).start();
 
+    // Items pop in one by one
     const popIn = (y: Animated.Value, o: Animated.Value, delay: number) =>
       Animated.sequence([
         Animated.delay(delay),
@@ -56,7 +54,7 @@ function GroceryBagScene() {
     <Animated.View style={{ opacity: bagOpacity, transform: [{ scale: bagScale }] }}>
       <View style={{ width: BAG_W, height: TOTAL_H }}>
 
-        {/* ── Bag body ──────────────────────────────────────────────────── */}
+        {/* ── Bag body ── */}
         <View style={{
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
@@ -67,14 +65,12 @@ function GroceryBagScene() {
           borderTopLeftRadius: 3,
           borderTopRightRadius: 3,
         }}>
-          {/* Top fold strip — slightly darker than the bag body */}
           <View style={{
             height: FOLD_H,
             backgroundColor: '#d4c4a8',
             borderTopLeftRadius: 3,
             borderTopRightRadius: 3,
           }} />
-          {/* Center crease line */}
           <View style={{
             position: 'absolute',
             top: FOLD_H, bottom: 16, left: BAG_W / 2 - 1,
@@ -83,7 +79,7 @@ function GroceryBagScene() {
           }} />
         </View>
 
-        {/* ── Handles (rendered before items → items appear in front) ───── */}
+        {/* ── Handles (rendered before items so items appear in front) ── */}
         <View style={{
           position: 'absolute',
           top: ABOVE - 14, left: 14,
@@ -101,7 +97,7 @@ function GroceryBagScene() {
           borderColor: HANDLE_C,
         }} />
 
-        {/* ── Items (rendered last → sit in front of handles) ──────────── */}
+        {/* ── Items (rendered last → in front of handles) ── */}
 
         {/* Leafy greens — left */}
         <Animated.View style={{
@@ -147,13 +143,14 @@ function SplashOverlay({ authReady, onDone }: { authReady: boolean; onDone: () =
   const exitOpacity = useRef(new Animated.Value(1)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
+  // Hand off from the HTML placeholder — React overlay takes over immediately.
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.getElementById('splash')?.remove();
     }
   }, []);
 
-  // Fade wordmark in after the last item has popped in.
+  // Wordmark fades in after the last item has popped in.
   useEffect(() => {
     const t = setTimeout(() => {
       Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
@@ -161,6 +158,7 @@ function SplashOverlay({ authReady, onDone }: { authReady: boolean; onDone: () =
     return () => clearTimeout(t);
   }, []);
 
+  // Exit once auth resolves AND minimum display time has elapsed.
   useEffect(() => {
     if (!authReady) return;
     const elapsed = Date.now() - mountTime.current;
@@ -186,27 +184,8 @@ function AuthGate() {
   const { user, isGuest, loading } = useAuth();
   const router   = useRouter();
   const segments = useSegments();
-  const [showSplash, setShowSplash] = useState(false);
-  const loadingRef = useRef(loading);
-
-  useEffect(() => {
-    loadingRef.current = loading;
-    if (!loading && !showSplash && Platform.OS === 'web' && typeof document !== 'undefined') {
-      const el = document.getElementById('splash');
-      if (el) {
-        el.style.transition = 'opacity 0.25s ease-out';
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 250);
-      }
-    }
-  }, [loading, showSplash]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (loadingRef.current) setShowSplash(true);
-    }, THRESHOLD_MS);
-    return () => clearTimeout(t);
-  }, []);
+  // Always show splash on first load — SplashOverlay handles minimum display time internally.
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     if (loading) return;
