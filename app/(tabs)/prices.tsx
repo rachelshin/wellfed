@@ -471,10 +471,10 @@ const s = StyleSheet.create({
   cardTitleWrap: { flex: 1 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catDot: { width: 8, height: 8, borderRadius: 4 },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: theme.textDark },
+  cardTitle: { fontSize: 16, fontWeight: '600', color: theme.textDark },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   bestWrap: { alignItems: 'flex-end' },
-  bestPrice: { fontSize: 14, fontWeight: '700', color: theme.textDark },
+  bestPrice: { fontSize: 16, fontWeight: '700', color: theme.textDark },
   bestStore: { fontSize: 11, color: theme.textFaint },
   chevron: { fontSize: 17, color: theme.textMuted },
 

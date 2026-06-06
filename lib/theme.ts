@@ -25,7 +25,7 @@ const theme = {
   heroCard: '#2d5a3d',     // Budget — deep forest green
   heroPantry: '#8a5010',   // Pantry  — deep amber
   heroPrices: '#2a5490',   // Prices  — deep slate blue
-  heroRecipes: '#c0284a',  // Recipes — cranberry
+  heroRecipes: '#9e1e36',  // Recipes — red wine
 
   // Text
   textDark: '#2B2040',

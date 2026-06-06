@@ -217,7 +217,7 @@ const s = StyleSheet.create({
   },
   itemEmoji: { fontSize: 22, marginRight: 10 },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 15, fontWeight: '700', color: theme.textDark },
+  itemName: { fontSize: 16, fontWeight: '600', color: theme.textDark },
   deleteBtn: { padding: 4 },
   deleteX: { fontSize: 14, color: theme.textFaint, fontWeight: '700' },
 });

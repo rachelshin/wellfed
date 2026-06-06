@@ -7,7 +7,7 @@ export const fab = StyleSheet.create({
   btn: {
     position: 'absolute', right: 20,
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: '#c4a882',
+    backgroundColor: '#d4c4a8',
     alignItems: 'center', justifyContent: 'center',
     shadowColor: theme.textDark, shadowOpacity: 0.2, shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 }, elevation: 8,

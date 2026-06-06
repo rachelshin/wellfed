@@ -10,6 +10,15 @@ const TABS = [
   { name: 'recipes', label: 'Recipes', color: theme.heroRecipes },
 ];
 
+function PenMark({ color }: { color: string }) {
+  return (
+    <View style={s.penWrap}>
+      <View style={[s.penBody, { backgroundColor: color }]} />
+      <View style={[s.penTip, { borderLeftColor: color }]} />
+    </View>
+  );
+}
+
 function CustomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   return (
@@ -35,9 +44,7 @@ function CustomTabBar({ state, navigation }: any) {
               {tab.label}
             </Text>
             <View style={s.underlineSlot}>
-              {focused && (
-                <View style={[s.activeBar, { backgroundColor: tab.color }]} />
-              )}
+              {focused && <PenMark color={tab.color} />}
             </View>
           </TouchableOpacity>
         );
@@ -78,19 +85,29 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
   },
   underlineSlot: {
-    height: 6,
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    height: 10,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
     marginTop: 5,
   },
-  activeBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 2,
-    right: 0,
+  penWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    transform: [{ rotate: '-1.5deg' }],
+  },
+  penBody: {
     height: 3,
-    borderRadius: 2,
-    transform: [{ rotate: '-2deg' }, { scaleX: 0.85 }],
+    width: 38,
+    borderTopLeftRadius: 2,
+    borderBottomLeftRadius: 2,
+  },
+  penTip: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderLeftWidth: 10,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
   },
 });
