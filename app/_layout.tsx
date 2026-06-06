@@ -4,7 +4,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { SpaceGrotesk_700Bold, SpaceGrotesk_500Medium } from '@expo-google-fonts/space-grotesk';
-import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
+import { Lora_600SemiBold } from '@expo-google-fonts/lora';
 import { AuthProvider, useAuth } from '../context/auth';
 
 const MIN_DISPLAY_MS = 2000;
@@ -215,7 +215,7 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ SpaceGrotesk_700Bold, SpaceGrotesk_500Medium, CormorantGaramond_600SemiBold });
+  const [fontsLoaded] = useFonts({ SpaceGrotesk_700Bold, SpaceGrotesk_500Medium, Lora_600SemiBold });
   if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#faf7f2' }} />;
   return (
     <SafeAreaProvider>
