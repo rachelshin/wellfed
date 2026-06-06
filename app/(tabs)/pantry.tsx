@@ -15,36 +15,15 @@ import { fab, darkSearch } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
-const EMOJI_MAP: [string, string][] = [
-  ['apple', '🍎'], ['banana', '🍌'], ['orange', '🍊'], ['grape', '🍇'],
-  ['strawberr', '🍓'], ['lemon', '🍋'], ['lime', '🍋'], ['watermelon', '🍉'],
-  ['peach', '🍑'], ['pear', '🍐'], ['cherr', '🍒'], ['blueberr', '🫐'],
-  ['mango', '🥭'], ['pineapple', '🍍'], ['coconut', '🥥'], ['kiwi', '🥝'],
-  ['melon', '🍈'], ['avocado', '🥑'], ['broccoli', '🥦'], ['carrot', '🥕'],
-  ['corn', '🌽'], ['cucumber', '🥒'], ['garlic', '🧄'], ['lettuce', '🥬'],
-  ['spinach', '🥬'], ['cabbage', '🥬'], ['mushroom', '🍄'], ['onion', '🧅'],
-  ['potato', '🥔'], ['tomato', '🍅'], ['eggplant', '🍆'], ['pepper', '🫑'],
-  ['celery', '🥬'], ['pea', '🫛'], ['bean', '🫘'], ['lentil', '🫘'],
-  ['bread', '🍞'], ['rice', '🍚'], ['pasta', '🍝'], ['flour', '🌾'],
-  ['oat', '🌾'], ['cereal', '🌾'], ['egg', '🥚'], ['chicken', '🍗'],
-  ['beef', '🥩'], ['bacon', '🥓'], ['sausage', '🌭'], ['turkey', '🦃'],
-  ['fish', '🐟'], ['salmon', '🐟'], ['tuna', '🐟'], ['shrimp', '🍤'],
-  ['crab', '🦀'], ['lobster', '🦞'], ['milk', '🥛'], ['cream', '🥛'],
-  ['cheese', '🧀'], ['butter', '🧈'], ['yogurt', '🫙'], ['coffee', '☕'],
-  ['tea', '🍵'], ['juice', '🧃'], ['pizza', '🍕'], ['salad', '🥗'],
-  ['soup', '🍲'], ['oil', '🫒'], ['olive', '🫒'], ['salt', '🧂'],
-  ['sugar', '🍬'], ['honey', '🍯'], ['jam', '🍯'], ['chocolate', '🍫'],
-  ['nut', '🥜'], ['peanut', '🥜'], ['almond', '🌰'], ['walnut', '🌰'],
-  ['sauce', '🥫'], ['ketchup', '🥫'], ['mayo', '🥫'], ['vinegar', '🍶'],
-  ['ice cream', '🍦'], ['cake', '🎂'], ['cookie', '🍪'],
+const DOT_PALETTE = [
+  '#8a7aaa', '#7BAFD4', '#94B8A4', '#E87830',
+  '#D4A574', '#9a8aaa', '#7CC8A4', '#F4A8A8',
 ];
 
-function getEmoji(itemName: string): string | null {
-  const lower = itemName.toLowerCase();
-  for (const [key, emoji] of EMOJI_MAP) {
-    if (lower.includes(key)) return emoji;
-  }
-  return null;
+function itemColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return DOT_PALETTE[Math.abs(h) % DOT_PALETTE.length];
 }
 
 export default function PantryTab() {
@@ -115,9 +94,9 @@ export default function PantryTab() {
       >
         {items.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyTitle}>Your pantry is empty</Text>
+            <Text style={s.emptyTitle}>Nothing stocked yet.</Text>
             <Text style={s.emptySub}>
-              Tap + to add items manually, or scan a receipt in the Prices tab — items will appear here automatically.
+              Tap + to add items, or scan a receipt in the Prices tab — they'll show up here automatically.
             </Text>
           </View>
         )}
@@ -132,7 +111,6 @@ export default function PantryTab() {
           <View key={letter}>
             <Text style={s.groupLetter}>{letter}</Text>
             {groupItems.map((item) => {
-              const emoji = getEmoji(item.itemName);
               return (
                 <TouchableOpacity
                   key={item.id}
@@ -140,7 +118,7 @@ export default function PantryTab() {
                   onPress={() => setEditing(item)}
                   activeOpacity={0.7}
                 >
-                  {emoji ? <Text style={s.itemEmoji}>{emoji}</Text> : null}
+                  <View style={[s.itemDot, { backgroundColor: itemColor(item.itemName) }]} />
                   <View style={s.itemInfo}>
                     <Text style={s.itemName}>{item.displayName}</Text>
                   </View>
@@ -215,7 +193,7 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
-  itemEmoji: { fontSize: 22, marginRight: 10 },
+  itemDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: '600', color: theme.textDark },
   deleteBtn: { padding: 4 },

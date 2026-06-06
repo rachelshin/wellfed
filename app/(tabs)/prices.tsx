@@ -216,9 +216,9 @@ export default function PricesTab() {
       >
         {noRealCategories && (
           <View style={s.empty}>
-            <Text style={s.emptyTitle}>No categories yet</Text>
+            <Text style={s.emptyTitle}>Nothing tracked yet.</Text>
             <Text style={s.emptySub}>
-              Scan a receipt, tap + to add a price, or start with a suggestion:
+              Tap + to add a price, scan a receipt, or start with a suggestion:
             </Text>
             <View style={s.suggestRow}>
               {SUGGESTED_CATEGORIES.filter(
@@ -295,29 +295,20 @@ export default function PricesTab() {
                         return (
                           <TouchableOpacity
                             key={entry.id}
-                            style={[s.entryRow, isBest && s.entryRowBest]}
+                            style={s.entryRow}
                             onPress={() => setEditing(entry)}
                             activeOpacity={0.7}
                           >
-                            <View style={s.entryLeft}>
-                              {isBest && (
-                                <View style={s.bestBadge}>
-                                  <Text style={s.bestBadgeText}>✦ Best</Text>
-                                </View>
-                              )}
-                              <Text style={s.entryName}>{entry.itemName}</Text>
-                              <Text style={s.entryStore}>{entry.store || 'Unknown store'}</Text>
-                              <Text style={s.entrySize}>{entry.size} {entry.unit} · ${entry.price.toFixed(2)}</Text>
-                            </View>
-                            <View style={s.entryRight}>
-                              <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>{formatPricePerUnit(entry, du)}</Text>
-                              <Text style={s.entryDate}>{entry.dateAdded}</Text>
-                            </View>
+                            <Text style={s.entryName} numberOfLines={1}>
+                              {isBest ? '✦ ' : ''}{entry.itemName}
+                            </Text>
+                            <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>
+                              {formatPricePerUnit(entry, du)}
+                            </Text>
                           </TouchableOpacity>
                         );
                       })
                   )}
-                  {entries.length > 0 && <Text style={s.hint}>Tap entry to edit or move</Text>}
                 </View>
               )}
             </View>
@@ -483,26 +474,13 @@ const s = StyleSheet.create({
   emptyEntriesText: { fontSize: 13, color: theme.textFaint },
 
   entryRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
-  entryRowBest: {},
-  entryLeft: { flex: 1 },
-  bestBadge: {
-    backgroundColor: theme.warning, borderRadius: 6,
-    paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 4,
-  },
-  bestBadgeText: { fontSize: 10, fontWeight: '800', color: theme.textDark },
-  entryName: { fontSize: 14, fontWeight: '700', color: theme.textDark },
-  entryStore: { fontSize: 12, color: theme.textFaint, marginTop: 1 },
-  entrySize: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
-  entryRight: { alignItems: 'flex-end' },
-  entryPPU: { fontSize: 14, fontWeight: '800', color: theme.textFaint },
+  entryName: { flex: 1, fontSize: 16, fontWeight: '600', color: theme.textDark },
+  entryPPU: { fontSize: 16, fontWeight: '700', color: theme.textFaint, fontVariant: ['tabular-nums'] },
   entryPPUBest: { color: theme.textDark },
-  entryDate: { fontSize: 11, color: theme.textFaint, opacity: 0.5, marginTop: 2 },
-
-  hint: { textAlign: 'center', fontSize: 11, color: theme.textFaint, opacity: 0.5, marginTop: 8 },
 
   addCatBtn: { alignItems: 'center', paddingVertical: 18 },
   addCatBtnText: { fontSize: 15, color: theme.primary, fontWeight: '700' },

@@ -6,7 +6,7 @@ import {
 import AppModal from '../AppModal';
 import DatePicker from '../DatePicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PriceEntry, Unit, UNITS } from '../../store/prices';
+import { PriceEntry, Unit, UNITS, pricePerUnit, formatPricePerUnit } from '../../store/prices';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
 
@@ -14,8 +14,8 @@ interface Props {
   visible: boolean;
   entry?: PriceEntry | null;
   prefill?: Partial<PriceEntry>;
-  existingCategories?: string[];  // display names, e.g. ["Beef", "Beverages"]
-  existingStores?: string[];      // past store names, e.g. ["Trader Joe's", "Costco"]
+  existingCategories?: string[];
+  existingStores?: string[];
   onClose: () => void;
   onSave: (data: Omit<PriceEntry, 'id'>, id?: string) => void;
   onDelete?: (id: string) => void;
@@ -28,8 +28,9 @@ function today() {
 
 export default function PriceEntryModal({ visible, entry, prefill, existingCategories = [], existingStores = [], onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
+  const [viewMode, setViewMode] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const [category, setCategory] = useState('');  // holds the display name while typing/selecting
+  const [category, setCategory] = useState('');
   const [store, setStore] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
@@ -40,11 +41,13 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
 
   useEffect(() => {
     if (!visible) {
+      setViewMode(false);
       setDisplayName(''); setCategory(''); setStore('');
       setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false);
       setDateAdded(today());
       return;
     }
+    setViewMode(!!entry);
     if (entry) {
       setDisplayName(entry.itemName);
       const matched = existingCategories.find((n) => n.toLowerCase() === entry.category);
@@ -87,7 +90,6 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
     const priceVal = parseFloat(price);
     const sizeVal = parseFloat(size);
     if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0) return;
-    // Resolve the category key: match display name case-insensitively, else lowercase the input
     const matched = existingCategories.find((n) => n.toLowerCase() === category.trim().toLowerCase());
     const resolvedCategory = matched
       ? matched.toLowerCase()
@@ -108,6 +110,48 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
 
   const isEdit = !!entry;
 
+  // ── INFO CARD (edit mode, initial view) ──────────────────────────────────
+  if (viewMode && entry) {
+    const ppu = pricePerUnit(entry);
+    const ppuStr = isFinite(ppu) ? formatPricePerUnit(entry, undefined) : '';
+
+    return (
+      <AppModal visible={visible} animationType="slide" transparent>
+        <View style={modalSheet.backdrop}>
+          <View style={[s.infoSheet, { paddingBottom: insets.bottom + 24 }]}>
+            <TouchableOpacity style={s.infoCard} onPress={() => setViewMode(false)} activeOpacity={0.85}>
+              <View style={s.infoTop}>
+                <View style={s.infoLeft}>
+                  <Text style={s.infoName}>{entry.itemName}</Text>
+                  <Text style={s.infoStore}>{entry.store || 'Unknown store'}</Text>
+                </View>
+                <View style={s.infoRight}>
+                  <Text style={s.infoPPU}>{ppuStr}</Text>
+                  <Text style={s.infoPackage}>{entry.size} {entry.unit} · ${entry.price.toFixed(2)}</Text>
+                </View>
+              </View>
+              <View style={s.infoFooter}>
+                <Text style={s.infoCategory}>{entry.category}</Text>
+                <Text style={s.infoDate}>{entry.dateAdded}</Text>
+              </View>
+              <Text style={s.infoHint}>Tap to edit</Text>
+            </TouchableOpacity>
+
+            {onDelete && (
+              <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(entry.id)}>
+                <Text style={s.deleteBtnText}>Remove this price</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
+              <Text style={modalSheet.cancelText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </AppModal>
+    );
+  }
+
+  // ── EDIT / ADD FORM ───────────────────────────────────────────────────────
   return (
     <AppModal visible={visible} animationType="slide" transparent>
       <View style={modalSheet.backdrop}>
@@ -117,7 +161,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
 
             <Text style={modalSheet.label}>Item Name *</Text>
             <TextInput style={modalSheet.input} value={displayName} onChangeText={setDisplayName}
-              placeholder="e.g. Organic Whole Milk" placeholderTextColor={theme.placeholder} autoFocus />
+              placeholder="e.g. Organic Whole Milk" placeholderTextColor={theme.placeholder} />
 
             <Text style={modalSheet.label}>Category *</Text>
             <TextInput
@@ -132,11 +176,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
                 {filteredCategories.map((name) => {
                   const active = name.toLowerCase() === category.trim().toLowerCase();
                   return (
-                    <TouchableOpacity
-                      key={name}
-                      style={[s.chip, active && s.chipActive]}
-                      onPress={() => setCategory(name)}
-                    >
+                    <TouchableOpacity key={name} style={[s.chip, active && s.chipActive]} onPress={() => setCategory(name)}>
                       <Text style={[s.chipText, active && s.chipTextActive]}>{name}</Text>
                     </TouchableOpacity>
                   );
@@ -152,11 +192,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
                 {filteredStores.map((name) => {
                   const active = name.toLowerCase() === store.trim().toLowerCase();
                   return (
-                    <TouchableOpacity
-                      key={name}
-                      style={[s.chip, active && s.chipActive]}
-                      onPress={() => setStore(name)}
-                    >
+                    <TouchableOpacity key={name} style={[s.chip, active && s.chipActive]} onPress={() => setStore(name)}>
                       <Text style={[s.chipText, active && s.chipTextActive]}>{name}</Text>
                     </TouchableOpacity>
                   );
@@ -195,8 +231,8 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
             <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
               <Text style={modalSheet.primaryBtnText}>Save</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
-              <Text style={modalSheet.cancelText}>Cancel</Text>
+            <TouchableOpacity style={modalSheet.cancelBtn} onPress={isEdit ? () => setViewMode(true) : onClose}>
+              <Text style={modalSheet.cancelText}>{isEdit ? 'Back' : 'Cancel'}</Text>
             </TouchableOpacity>
             {isEdit && onDelete && (
               <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(entry!.id)}>
@@ -211,6 +247,35 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
 }
 
 const s = StyleSheet.create({
+  // Info card
+  infoSheet: {
+    backgroundColor: theme.bg,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    padding: 24, paddingTop: 28,
+  },
+  infoCard: {
+    backgroundColor: theme.card,
+    borderRadius: 16, padding: 20,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border,
+    marginBottom: 8,
+  },
+  infoTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
+  infoLeft: { flex: 1, paddingRight: 12 },
+  infoName: { fontSize: 20, fontWeight: '700', color: theme.textDark, marginBottom: 4 },
+  infoStore: { fontSize: 14, color: theme.textFaint },
+  infoRight: { alignItems: 'flex-end' },
+  infoPPU: { fontSize: 22, fontWeight: '800', color: theme.textDark, fontVariant: ['tabular-nums'] },
+  infoPackage: { fontSize: 12, color: theme.textFaint, marginTop: 3 },
+  infoFooter: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
+  },
+  infoCategory: { fontSize: 12, fontWeight: '600', color: theme.textFaint, textTransform: 'uppercase', letterSpacing: 0.5 },
+  infoDate: { fontSize: 12, color: theme.textFaint },
+  infoHint: { fontSize: 11, color: theme.textFaint, opacity: 0.5, textAlign: 'center', marginTop: 12 },
+
+  // Form
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -8, marginBottom: 16 },
   chip: {
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,

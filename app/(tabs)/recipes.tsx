@@ -250,7 +250,7 @@ export default function RecipesTab() {
           onPress={() => setSegment('ideas')}
           activeOpacity={0.7}
         >
-          <Text style={[s.segBtnText, segment === 'ideas' && s.segBtnTextActive]}>Ideas ✨</Text>
+          <Text style={[s.segBtnText, segment === 'ideas' && s.segBtnTextActive]}>Ideas</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.segBtn, segment === 'saved' && s.segBtnActive]}
@@ -266,7 +266,7 @@ export default function RecipesTab() {
           onPress={() => setSegment('plan')}
           activeOpacity={0.7}
         >
-          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep 🥘</Text>
+          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep</Text>
         </TouchableOpacity>
       </View>
 
@@ -301,7 +301,7 @@ export default function RecipesTab() {
                   </View>
                 ) : (
                   <Text style={s.generateBtnText}>
-                    {aiRecipes.length > 0 ? 'Regenerate ✨' : 'Get recipe ideas ✨'}
+                    {aiRecipes.length > 0 ? 'Regenerate ✦' : 'Get recipe ideas ✦'}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -315,9 +315,9 @@ export default function RecipesTab() {
 
             {!aiLoading && aiRecipes.length === 0 && hasApiKey && !aiError && pantryCount === 0 && (
               <View style={s.empty}>
-                <Text style={s.emptyTitle}>Stock your pantry first</Text>
+                <Text style={s.emptyTitle}>Stock your pantry first.</Text>
                 <Text style={s.emptySub}>
-                  Add items to your pantry and Claude will suggest recipes based on what you actually have.
+                  Add what you have on hand and Claude will suggest recipes built around it.
                 </Text>
                 <TouchableOpacity style={s.goToPantryBtn} onPress={() => router.push('/(tabs)/pantry')}>
                   <Text style={s.goToPantryBtnText}>Go to Pantry →</Text>
@@ -327,9 +327,9 @@ export default function RecipesTab() {
 
             {!aiLoading && aiRecipes.length === 0 && hasApiKey && !aiError && pantryCount > 0 && (
               <View style={s.empty}>
-                <Text style={s.emptyTitle}>Ready when you are</Text>
+                <Text style={s.emptyTitle}>Ready when you are.</Text>
                 <Text style={s.emptySub}>
-                  Tap "Get recipe ideas" and Claude will suggest 5 personalised recipes from your {pantryCount} pantry items.
+                  Tap below and Claude will pull 5 ideas straight from your {pantryCount} pantry items.
                 </Text>
               </View>
             )}
@@ -401,9 +401,9 @@ export default function RecipesTab() {
           <>
             {savedRecipes.length === 0 ? (
               <View style={s.empty}>
-                <Text style={s.emptyTitle}>Recipe box is empty</Text>
+                <Text style={s.emptyTitle}>Recipe box is empty.</Text>
                 <Text style={s.emptySub}>
-                  Generate recipe ideas and tap "Save to Recipe Box" to keep the ones you like.
+                  Browse ideas and save the ones worth making again.
                 </Text>
                 <TouchableOpacity style={s.goToPantryBtn} onPress={() => setSegment('ideas')}>
                   <Text style={s.goToPantryBtnText}>Browse ideas →</Text>
@@ -470,7 +470,7 @@ export default function RecipesTab() {
                 </View>
               ) : (
                 <Text style={s.generateBtnText}>
-                  {mealPlan ? 'Regenerate prep plan 🥘' : 'Create meal prep plan 🥘'}
+                  {mealPlan ? 'Regenerate prep plan ✦' : 'Create meal prep plan ✦'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -494,7 +494,7 @@ export default function RecipesTab() {
               <>
                 {mealPlan.prepSessions && mealPlan.prepSessions.length > 0 && (
                   <>
-                    <Text style={s.planSectionTitle}>Prep Sessions 🥘</Text>
+                    <Text style={s.planSectionTitle}>Prep Sessions</Text>
                     {mealPlan.prepSessions.map((session: PrepSession, i: number) => (
                       <View key={i} style={s.prepCard}>
                         <View style={s.prepCardHeader}>
@@ -860,7 +860,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: theme.border,
   },
   segBtnActive: { borderBottomWidth: 2, borderBottomColor: theme.textDark },
-  segBtnText: { fontSize: 12, fontWeight: '700', color: theme.textFaint },
+  segBtnText: { fontSize: 15, fontWeight: '600', color: theme.textFaint },
   segBtnTextActive: { color: theme.textDark },
 
   scroll: { flex: 1 },

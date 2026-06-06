@@ -190,6 +190,7 @@ export default function BudgetTab() {
         eyebrow={formatDate(todayStr)}
         title="Well Fed"
         cardColor={theme.heroCard}
+        titleStyle={{ fontFamily: 'Lora_400Regular', fontWeight: 'normal', letterSpacing: 0 }}
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
@@ -282,52 +283,51 @@ export default function BudgetTab() {
 
         {allRecords.length === 0 ? (
           <View style={s.noEntries}>
-            <Text style={s.noEntriesTitle}>Nothing logged yet 🍽️</Text>
-            <Text style={s.noEntriesText}>Tap + to add your first entry today.</Text>
+            <Text style={s.noEntriesTitle}>Clean slate.</Text>
+            <Text style={s.noEntriesText}>Tap + to log your first bite today.</Text>
           </View>
-        ) : (
-          allRecords.map((item) => {
-            if (item.kind === 'spending') {
-              const { entry } = item;
-              const cat = CATEGORIES[entry.category];
-              return (
-                <TouchableOpacity
-                  key={entry.id}
-                  style={s.entryRow}
-                  onPress={() => setEditEntry(entry)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.catEmoji}>{cat.emoji}</Text>
-                  <Text style={s.entryDesc} numberOfLines={1}>
-                    {entry.description || cat.label}
-                    <Text style={s.entryDate}>{'  '}{formatDate(entry.date)}</Text>
-                  </Text>
-                  <Text style={[s.entryAmt, s.entryAmtNeg]}>-${entry.amount.toFixed(2)}</Text>
-                </TouchableOpacity>
-              );
-            } else {
-              const { record } = item;
-              const label = record.type === 'daily-increment'
-                ? 'Daily Budget'
-                : (record.note || 'Funds Added');
-              return (
-                <TouchableOpacity
-                  key={record.id}
-                  style={s.entryRow}
-                  onPress={() => { setEditFunds(record); setShowFundsModal(true); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.catEmoji}>🌱</Text>
-                  <Text style={s.entryDesc} numberOfLines={1}>
-                    {label}
-                    <Text style={s.entryDate}>{'  '}{formatDate(record.date)}</Text>
-                  </Text>
-                  <Text style={[s.entryAmt, s.entryAmtPos]}>+${record.amount.toFixed(2)}</Text>
-                </TouchableOpacity>
-              );
-            }
-          })
-        )}
+        ) : (() => {
+          const byDate: Record<string, RecordItem[]> = {};
+          for (const item of allRecords) {
+            const d = item.kind === 'spending' ? item.entry.date : item.record.date;
+            if (!byDate[d]) byDate[d] = [];
+            byDate[d].push(item);
+          }
+          const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+          const dateLabel = (d: string) => {
+            if (d === todayStr) return 'Today';
+            if (d === yesterday()) return 'Yesterday';
+            return formatDate(d);
+          };
+          return sortedDates.map((date) => (
+            <View key={date}>
+              <Text style={s.dateGroupHeader}>{dateLabel(date)}</Text>
+              {byDate[date].map((item) => {
+                if (item.kind === 'spending') {
+                  const { entry } = item;
+                  const cat = CATEGORIES[entry.category];
+                  return (
+                    <TouchableOpacity key={entry.id} style={s.entryRow} onPress={() => setEditEntry(entry)} activeOpacity={0.7}>
+                      <View style={[s.catDot, { backgroundColor: cat.color }]} />
+                      <Text style={s.entryDesc} numberOfLines={1}>{entry.description || cat.label}</Text>
+                      <Text style={[s.entryAmt, s.entryAmtNeg]}>-${entry.amount.toFixed(2)}</Text>
+                    </TouchableOpacity>
+                  );
+                } else {
+                  const { record } = item;
+                  const label = record.type === 'daily-increment' ? 'Daily Budget' : (record.note || 'Funds Added');
+                  return (
+                    <TouchableOpacity key={record.id} style={s.entryRow} onPress={() => { setEditFunds(record); setShowFundsModal(true); }} activeOpacity={0.7}>
+                      <View style={[s.catDot, { backgroundColor: theme.positive }]} />
+                      <Text style={s.entryDesc} numberOfLines={1}>{label}</Text>
+                      <Text style={[s.entryAmt, s.entryAmtPos]}>+${record.amount.toFixed(2)}</Text>
+                    </TouchableOpacity>
+                  );
+                }
+              })}
+            </View>
+          ));
+        })()}
 
         <View style={{ height: 110 }} />
       </ScrollView>
@@ -389,7 +389,7 @@ const s = StyleSheet.create({
   // Stats
   statRow: { flexDirection: 'row', marginBottom: 18 },
   stat: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: 18, fontWeight: '800', color: theme.textDark },
+  statVal: { fontSize: 18, fontWeight: '800', color: theme.textDark, fontVariant: ['tabular-nums'] },
   statSpent: { color: theme.negative },
   statLabel: {
     fontSize: 10, color: theme.textFaint, marginTop: 3,
@@ -438,15 +438,22 @@ const s = StyleSheet.create({
   noEntriesTitle: { fontSize: 17, fontWeight: '800', color: theme.textDark, marginBottom: 6 },
   noEntriesText: { fontSize: 14, color: theme.textFaint },
 
+  dateGroupHeader: {
+    fontSize: 11, fontWeight: '700', color: theme.textFaint,
+    letterSpacing: 0.8, textTransform: 'uppercase',
+    marginTop: 20, marginBottom: 2, paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
+  },
+
   entryRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
-  catEmoji: { fontSize: 18, marginRight: 10 },
+  catDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   entryDesc: { flex: 1, fontSize: 16, fontWeight: '600', color: theme.textDark },
   entryDate: { fontSize: 14, fontWeight: '400', color: theme.textFaint },
-  entryAmt: { fontSize: 16, fontWeight: '700', color: theme.textDark, marginLeft: 8 },
+  entryAmt: { fontSize: 16, fontWeight: '700', color: theme.textDark, marginLeft: 8, fontVariant: ['tabular-nums'] },
   entryAmtNeg: { color: theme.negative },
   entryAmtPos: { color: theme.positive },
   fundsRow: {},
