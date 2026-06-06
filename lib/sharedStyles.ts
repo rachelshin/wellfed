@@ -18,24 +18,24 @@ export const fab = StyleSheet.create({
   },
 });
 
-// Search bar that sits inside the hero card
+// Search bar that sits in the page header
 export const darkSearch = StyleSheet.create({
   wrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, paddingHorizontal: 14,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.bgTint, borderRadius: 14, paddingHorizontal: 14,
+    borderWidth: 1, borderColor: theme.border,
   },
-  input: { flex: 1, fontSize: 16, color: '#FFFFFF', paddingVertical: 11, outlineWidth: 0 },
-  clear: { color: 'rgba(255,255,255,0.7)', fontSize: 15, padding: 4 },
+  input: { flex: 1, fontSize: 16, color: theme.textDark, paddingVertical: 11, outlineWidth: 0 },
+  clear: { color: theme.textFaint, fontSize: 15, padding: 4 },
 });
 
-// Outline button on the hero card (Scan, Recipes →, Sign in)
+// Outline button in the page header (Scan, Sign in)
 export const heroOutlineBtn = StyleSheet.create({
   btn: {
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+    borderWidth: 1, borderColor: theme.border,
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
   },
-  text: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  text: { color: theme.textMuted, fontWeight: '700', fontSize: 14 },
 });
 
 // Bottom sheet modals — backdrop, sheet container, common fields

@@ -103,7 +103,7 @@ export default function PantryTab() {
             value={search}
             onChangeText={setSearch}
             placeholder="Search your pantry…"
-            placeholderTextColor={theme.placeholderOnHero}
+            placeholderTextColor={theme.placeholder}
             returnKeyType="search"
           />
           {search.length > 0 && (
@@ -199,7 +199,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   heroStats: {
-    fontSize: 12, color: 'rgba(255,255,255,0.65)',
+    fontSize: 12, color: theme.textFaint,
     fontWeight: '500', marginBottom: 12,
   },
 
