@@ -401,7 +401,7 @@ const s = StyleSheet.create({
   statRow: { flexDirection: 'row', marginBottom: 18 },
   stat: { flex: 1, alignItems: 'center' },
   statVal: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
-  statSpent: { color: '#ffb3ad' },
+  statSpent: { color: '#ffd4a0' },
   statLabel: {
     fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 3,
     fontWeight: '700', letterSpacing: 0.6,

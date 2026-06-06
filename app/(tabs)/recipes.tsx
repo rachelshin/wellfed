@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, ActivityIndicator, Alert,
@@ -883,12 +883,12 @@ const s = StyleSheet.create({
   surpriseBtnText: { fontSize: 16, fontWeight: '700', color: theme.textDark },
 
   generateBtn: {
-    backgroundColor: theme.textDark, borderRadius: 16, padding: 18,
+    backgroundColor: theme.primary, borderRadius: 16, padding: 18,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   generateBtnDisabled: { opacity: 0.5 },
   generateBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  generateBtnText: { color: theme.bg, fontSize: 17, fontWeight: '800' },
+  generateBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
 
   errorCard: {
     backgroundColor: '#FEF2F2', borderRadius: 14, padding: 14,
