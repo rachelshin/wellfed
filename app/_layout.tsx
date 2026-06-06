@@ -4,20 +4,25 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/auth';
 
-const MIN_DISPLAY_MS = 1600;
+const MIN_DISPLAY_MS = 2000;
 
-// ── Bag geometry (all px, fixed coordinate space) ────────────────────────
+// ── Bag geometry ──────────────────────────────────────────────────────────
+// ABOVE = vertical space above the bag where items peek out.
+// Fold strip is rendered ON TOP of items, clipping them at the bag opening.
 const BAG_W    = 96;
-const BAG_H    = 112;
-const ABOVE    = 52;  // space above bag where items peek out
-const TOTAL_H  = BAG_H + ABOVE;
-const FOLD_H   = 16;
+const BAG_H    = 115;
+const ABOVE    = 60;          // y of bag opening in the container
+const TOTAL_H  = BAG_H + ABOVE; // 175
+const FOLD_H   = 20;          // fold strip clips this many px of items at the opening
 const HANDLE_C = '#8B5E3C';
-const ITEM_START = 44; // translateY items start at (inside bag, hidden)
+
+// Items animate from ITEM_START (fully inside bag) to 0 (half in / half out).
+// Must be ≥ (ABOVE - topmost item's top) so every item starts below the fold.
+const ITEM_START = 58;
 
 function GroceryBagScene() {
   const bagOpacity = useRef(new Animated.Value(0)).current;
-  const bagScale   = useRef(new Animated.Value(0.82)).current;
+  const bagScale   = useRef(new Animated.Value(0.85)).current;
 
   const gY = useRef(new Animated.Value(ITEM_START)).current; // greens
   const gO = useRef(new Animated.Value(0)).current;
@@ -27,26 +32,24 @@ function GroceryBagScene() {
   const bO = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Bag entrance
     Animated.parallel([
       Animated.spring(bagScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
       Animated.timing(bagOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
     ]).start();
 
-    // Items pop in one by one
     const popIn = (y: Animated.Value, o: Animated.Value, delay: number) =>
       Animated.sequence([
         Animated.delay(delay),
         Animated.parallel([
-          Animated.spring(y, { toValue: 0, friction: 5, tension: 160, useNativeDriver: true }),
-          Animated.timing(o, { toValue: 1, duration: 180, useNativeDriver: true }),
+          Animated.spring(y, { toValue: 0, friction: 5, tension: 120, useNativeDriver: true }),
+          Animated.timing(o, { toValue: 1, duration: 200, useNativeDriver: true }),
         ]),
       ]);
 
     Animated.parallel([
-      popIn(gY, gO, 380),
-      popIn(oY, oO, 560),
-      popIn(bY, bO, 720),
+      popIn(gY, gO, 380),  // greens — leftmost, front
+      popIn(oY, oO, 570),  // orange — center
+      popIn(bY, bO, 740),  // baguette — right, back
     ]).start();
   }, []);
 
@@ -54,32 +57,71 @@ function GroceryBagScene() {
     <Animated.View style={{ opacity: bagOpacity, transform: [{ scale: bagScale }] }}>
       <View style={{ width: BAG_W, height: TOTAL_H }}>
 
-        {/* ── Bag body ── */}
+        {/* ── 1. Bag body (behind everything) ────────────────────────── */}
         <View style={{
           position: 'absolute',
-          bottom: 0, left: 0, right: 0,
-          height: BAG_H,
+          top: ABOVE, left: 0, right: 0, bottom: 0,
           backgroundColor: '#e8d9c0',
           borderBottomLeftRadius: 14,
           borderBottomRightRadius: 14,
           borderTopLeftRadius: 3,
           borderTopRightRadius: 3,
         }}>
-          <View style={{
-            height: FOLD_H,
-            backgroundColor: '#d4c4a8',
-            borderTopLeftRadius: 3,
-            borderTopRightRadius: 3,
-          }} />
+          {/* Center crease */}
           <View style={{
             position: 'absolute',
-            top: FOLD_H, bottom: 16, left: BAG_W / 2 - 1,
-            width: 1.5,
-            backgroundColor: 'rgba(0,0,0,0.07)',
+            top: FOLD_H + 4, bottom: 16, left: BAG_W / 2 - 1,
+            width: 1.5, backgroundColor: 'rgba(0,0,0,0.07)',
           }} />
         </View>
 
-        {/* ── Handles (rendered before items so items appear in front) ── */}
+        {/* ── 2. Items — rendered behind fold strip so fold clips them ── */}
+
+        {/* Baguette — right side, behind orange (rendered first = lowest z) */}
+        <Animated.View style={{
+          position: 'absolute', top: 5, left: 65,
+          width: 16, height: 72, borderRadius: 8,
+          backgroundColor: '#c8963c',
+          opacity: bO, transform: [{ translateY: bY }],
+        }} />
+
+        {/* Orange — center, behind greens (rendered second) */}
+        <Animated.View style={{
+          position: 'absolute', top: 22, left: 22,
+          width: 42, height: 42, borderRadius: 21,
+          backgroundColor: '#E87830',
+          opacity: oO, transform: [{ translateY: oY }],
+        }} />
+
+        {/* Leafy greens — left, in front (rendered third = highest item z) */}
+        <Animated.View style={{
+          position: 'absolute', top: 4, left: 4,
+          opacity: gO, transform: [{ translateY: gY }],
+        }}>
+          <View style={{
+            width: 26, height: 58, borderRadius: 13,
+            backgroundColor: '#3a7a48',
+            transform: [{ rotate: '-18deg' }],
+          }} />
+          <View style={{
+            position: 'absolute', top: 6, left: 12,
+            width: 22, height: 50, borderRadius: 11,
+            backgroundColor: '#4d9060',
+            transform: [{ rotate: '18deg' }],
+          }} />
+        </Animated.View>
+
+        {/* ── 3. Fold strip — clips the lower portion of items ─────────
+             Rendered AFTER items so it paints on top of them.
+             This is what creates the "half in / half out" illusion.    */}
+        <View style={{
+          position: 'absolute',
+          top: ABOVE, left: 0, right: 0,
+          height: FOLD_H,
+          backgroundColor: '#d4c4a8',
+        }} />
+
+        {/* ── 4. Handles (top layer) ───────────────────────────────────── */}
         <View style={{
           position: 'absolute',
           top: ABOVE - 14, left: 14,
@@ -97,42 +139,6 @@ function GroceryBagScene() {
           borderColor: HANDLE_C,
         }} />
 
-        {/* ── Items (rendered last → in front of handles) ── */}
-
-        {/* Leafy greens — left */}
-        <Animated.View style={{
-          position: 'absolute', top: 8, left: 8,
-          opacity: gO, transform: [{ translateY: gY }],
-        }}>
-          <View style={{
-            width: 22, height: 34, borderRadius: 11,
-            backgroundColor: '#4a8a56',
-            transform: [{ rotate: '-18deg' }],
-          }} />
-          <View style={{
-            position: 'absolute', top: 4, left: 9,
-            width: 18, height: 30, borderRadius: 9,
-            backgroundColor: '#5c9e68',
-            transform: [{ rotate: '18deg' }],
-          }} />
-        </Animated.View>
-
-        {/* Orange — centre */}
-        <Animated.View style={{
-          position: 'absolute', top: 22, left: 35,
-          width: 26, height: 26, borderRadius: 13,
-          backgroundColor: '#F08030',
-          opacity: oO, transform: [{ translateY: oY }],
-        }} />
-
-        {/* Baguette — right */}
-        <Animated.View style={{
-          position: 'absolute', top: 4, right: 10,
-          width: 13, height: 46, borderRadius: 6.5,
-          backgroundColor: '#c8963c',
-          opacity: bO, transform: [{ translateY: bY }],
-        }} />
-
       </View>
     </Animated.View>
   );
@@ -143,22 +149,19 @@ function SplashOverlay({ authReady, onDone }: { authReady: boolean; onDone: () =
   const exitOpacity = useRef(new Animated.Value(1)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
-  // Hand off from the HTML placeholder — React overlay takes over immediately.
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.getElementById('splash')?.remove();
     }
   }, []);
 
-  // Wordmark fades in after the last item has popped in.
   useEffect(() => {
     const t = setTimeout(() => {
       Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    }, 900);
+    }, 950);
     return () => clearTimeout(t);
   }, []);
 
-  // Exit once auth resolves AND minimum display time has elapsed.
   useEffect(() => {
     if (!authReady) return;
     const elapsed = Date.now() - mountTime.current;
@@ -184,7 +187,6 @@ function AuthGate() {
   const { user, isGuest, loading } = useAuth();
   const router   = useRouter();
   const segments = useSegments();
-  // Always show splash on first load — SplashOverlay handles minimum display time internally.
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
