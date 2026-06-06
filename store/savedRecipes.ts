@@ -17,6 +17,9 @@ export interface SavedRecipe {
 
 const KEY = '@saved_recipes';
 
+let _memSavedRecipes: SavedRecipe[] | null = null;
+export function getSavedRecipesSync(): SavedRecipe[] | null { return _memSavedRecipes; }
+
 function col(uid: string) {
   return collection(db, 'users', uid, 'savedRecipes');
 }
@@ -24,10 +27,14 @@ function col(uid: string) {
 export async function loadSavedRecipes(uid?: string | null): Promise<SavedRecipe[]> {
   if (uid) {
     const snap = await getDocs(col(uid));
-    return snap.docs.map((d) => d.data() as SavedRecipe);
+    const result = snap.docs.map((d) => d.data() as SavedRecipe);
+    _memSavedRecipes = result;
+    return result;
   }
   const json = await AsyncStorage.getItem(KEY);
-  return json ? JSON.parse(json) : [];
+  const result = json ? JSON.parse(json) : [];
+  _memSavedRecipes = result;
+  return result;
 }
 
 export async function saveRecipe(

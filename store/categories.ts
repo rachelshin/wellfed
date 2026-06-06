@@ -12,6 +12,9 @@ export interface PriceCategory {
 
 const KEY = '@price_categories';
 
+let _memCategories: PriceCategory[] | null = null;
+export function getCategoriesSync(): PriceCategory[] | null { return _memCategories; }
+
 const DEFAULTS: Omit<PriceCategory, 'id'>[] = [
   { name: 'Uncategorized', category: 'uncategorized' },
 ];
@@ -35,7 +38,9 @@ export async function loadCategoriesFromCache(uid?: string | null): Promise<Pric
   if (!uid) return [];
   try {
     const snap = await getDocsFromCache(col(uid));
-    return snap.docs.map((d) => d.data() as PriceCategory);
+    const result = snap.docs.map((d) => d.data() as PriceCategory);
+    if (result.length > 0) _memCategories = result;
+    return result;
   } catch {
     return [];
   }
@@ -44,10 +49,14 @@ export async function loadCategoriesFromCache(uid?: string | null): Promise<Pric
 export async function loadCategories(uid?: string | null): Promise<PriceCategory[]> {
   if (uid) {
     const snap = await getDocs(col(uid));
-    return snap.docs.map((d) => d.data() as PriceCategory);
+    const result = snap.docs.map((d) => d.data() as PriceCategory);
+    _memCategories = result;
+    return result;
   }
   const json = await AsyncStorage.getItem(KEY);
-  return json ? JSON.parse(json) : [];
+  const result = json ? JSON.parse(json) : [];
+  _memCategories = result;
+  return result;
 }
 
 export async function saveCategory(

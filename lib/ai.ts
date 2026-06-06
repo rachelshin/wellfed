@@ -77,23 +77,39 @@ export function hashItems(items: string[]): string {
   return items.slice().sort().join(',');
 }
 
+let _memAiRecipes: AIRecipe[] | null = null;
+let _memAiPantryHash: string | null = null;
+let _memMealPlan: MealPlan | null = null;
+
+export function getAiRecipesSync(): { recipes: AIRecipe[]; hash: string } | null {
+  if (_memAiRecipes === null || _memAiPantryHash === null) return null;
+  return { recipes: _memAiRecipes, hash: _memAiPantryHash };
+}
+export function getMealPlanSync(): MealPlan | null { return _memMealPlan; }
+
 export async function loadCachedRecipes(): Promise<AIRecipe[] | null> {
   try {
     const json = await AsyncStorage.getItem(CACHE_KEY);
-    return json ? JSON.parse(json) : null;
+    const result = json ? JSON.parse(json) : null;
+    if (result) _memAiRecipes = result;
+    return result;
   } catch {
     return null;
   }
 }
 
 export async function getCachedPantryHash(): Promise<string> {
-  return (await AsyncStorage.getItem(CACHE_PANTRY_KEY)) ?? '';
+  const hash = (await AsyncStorage.getItem(CACHE_PANTRY_KEY)) ?? '';
+  _memAiPantryHash = hash;
+  return hash;
 }
 
 export async function loadCachedMealPlan(): Promise<MealPlan | null> {
   try {
     const json = await AsyncStorage.getItem(MEAL_PLAN_CACHE_KEY);
-    return json ? JSON.parse(json) : null;
+    const result = json ? JSON.parse(json) : null;
+    if (result) _memMealPlan = result;
+    return result;
   } catch {
     return null;
   }
@@ -116,6 +132,7 @@ export async function generateMealPlan(
   }
 
   const plan: MealPlan = await response.json();
+  _memMealPlan = plan;
   await AsyncStorage.setItem(MEAL_PLAN_CACHE_KEY, JSON.stringify(plan));
   return plan;
 }
@@ -135,8 +152,10 @@ export async function generateRecipes(pantryItems: string[], userPrompt?: string
   const parsed = await response.json();
   const recipes: AIRecipe[] = parsed.recipes;
 
+  _memAiRecipes = recipes;
+  _memAiPantryHash = hashItems(pantryItems);
   await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(recipes));
-  await AsyncStorage.setItem(CACHE_PANTRY_KEY, hashItems(pantryItems));
+  await AsyncStorage.setItem(CACHE_PANTRY_KEY, _memAiPantryHash);
 
   return recipes;
 }

@@ -20,6 +20,9 @@ const PRICES_KEY = '@price_entries';
 
 export const UNITS: Unit[] = ['oz', 'lb', 'g', 'kg', 'ml', 'L', 'fl oz', 'count'];
 
+let _memPrices: PriceEntry[] | null = null;
+export function getPricesSync(): PriceEntry[] | null { return _memPrices; }
+
 function pricesCol(uid: string) {
   return collection(db, 'users', uid, 'prices');
 }
@@ -28,7 +31,9 @@ export async function loadPricesFromCache(uid?: string | null): Promise<PriceEnt
   if (!uid) return [];
   try {
     const snap = await getDocsFromCache(pricesCol(uid));
-    return snap.docs.map((d) => d.data() as PriceEntry);
+    const result = snap.docs.map((d) => d.data() as PriceEntry);
+    if (result.length > 0) _memPrices = result;
+    return result;
   } catch {
     return [];
   }
@@ -37,10 +42,14 @@ export async function loadPricesFromCache(uid?: string | null): Promise<PriceEnt
 export async function loadPrices(uid?: string | null): Promise<PriceEntry[]> {
   if (uid) {
     const snap = await getDocs(pricesCol(uid));
-    return snap.docs.map((d) => d.data() as PriceEntry);
+    const result = snap.docs.map((d) => d.data() as PriceEntry);
+    _memPrices = result;
+    return result;
   }
   const json = await AsyncStorage.getItem(PRICES_KEY);
-  return json ? JSON.parse(json) : [];
+  const result = json ? JSON.parse(json) : [];
+  _memPrices = result;
+  return result;
 }
 
 export async function addPrice(

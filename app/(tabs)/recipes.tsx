@@ -7,19 +7,19 @@ import {
 import AppModal from '../../components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { loadPantry, addPantryItem, todayDate, PantryItem } from '../../store/pantry';
+import { loadPantry, addPantryItem, todayDate, PantryItem, getPantrySync } from '../../store/pantry';
 import { loadPrices, groupByItem, bestPrice } from '../../store/prices';
 import {
   generateRecipes, loadCachedRecipes, getCachedPantryHash, hashItems,
-  generateMealPlan, loadCachedMealPlan,
+  generateMealPlan, loadCachedMealPlan, getAiRecipesSync, getMealPlanSync,
   AIRecipe, MealPlan, MealPlanMeal, MealPlanOptions, PrepSession, PrepDish, GroceryListItem,
 } from '../../lib/ai';
 import {
   loadSavedRecipes, saveRecipe, updateSavedRecipe, deleteSavedRecipe,
-  SavedRecipe,
+  getSavedRecipesSync, SavedRecipe,
 } from '../../store/savedRecipes';
 import {
-  loadSavedMealPlans, saveMealPlan, deleteSavedMealPlan, SavedMealPlan,
+  loadSavedMealPlans, saveMealPlan, deleteSavedMealPlan, getSavedMealPlansSync, SavedMealPlan,
 } from '../../store/savedMealPlans';
 import HeroHeader from '../../components/HeroHeader';
 import EditRecipeModal from '../../components/recipes/EditRecipeModal';
@@ -60,8 +60,11 @@ export default function RecipesTab() {
   const { user } = useAuth();
 
   const [segment, setSegment] = useState<Segment>('ideas');
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
-  const [aiRecipes, setAiRecipes] = useState<AIRecipe[]>([]);
+  const [pantryItems, setPantryItems] = useState<PantryItem[]>(() => getPantrySync() ?? []);
+  const [aiRecipes, setAiRecipes] = useState<AIRecipe[]>(() => {
+    const mem = getAiRecipesSync();
+    return mem ? mem.recipes : [];
+  });
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -70,16 +73,17 @@ export default function RecipesTab() {
   const [promptText, setPromptText] = useState('');
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
-  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(() => getSavedRecipesSync() ?? []);
   const [editingRecipe, setEditingRecipe] = useState<SavedRecipe | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(() => getMealPlanSync());
   const [mealPlanLoading, setMealPlanLoading] = useState(false);
   const [mealPlanError, setMealPlanError] = useState('');
   const [showMealPlanPrompt, setShowMealPlanPrompt] = useState(false);
-  const [savedMealPlans, setSavedMealPlans] = useState<SavedMealPlan[]>([]);
+  const [savedMealPlans, setSavedMealPlans] = useState<SavedMealPlan[]>(() => getSavedMealPlansSync() ?? []);
   const [planSaving, setPlanSaving] = useState(false);
+  const [loaded, setLoaded] = useState(() => getPantrySync() !== null);
 
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
   const [expandedPrepDishes, setExpandedPrepDishes] = useState<Set<string>>(new Set());
@@ -111,6 +115,7 @@ export default function RecipesTab() {
     const cachedPlan = await loadCachedMealPlan();
     if (cachedPlan) setMealPlan(cachedPlan);
     setSavedMealPlans(await loadSavedMealPlans(user?.uid));
+    setLoaded(true);
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -341,7 +346,7 @@ export default function RecipesTab() {
               </View>
             ) : null}
 
-            {!aiLoading && aiRecipes.length === 0 && hasApiKey && !aiError && pantryCount === 0 && (
+            {loaded && !aiLoading && aiRecipes.length === 0 && hasApiKey && !aiError && pantryCount === 0 && (
               <View style={s.empty}>
                 <Text style={s.emptyTitle}>Stock your pantry first.</Text>
                 <Text style={s.emptySub}>
@@ -501,7 +506,7 @@ export default function RecipesTab() {
               </View>
             ) : null}
 
-            {!mealPlanLoading && !mealPlan && !mealPlanError && (
+            {loaded && !mealPlanLoading && !mealPlan && !mealPlanError && (
               <View style={s.empty}>
                 <Text style={s.emptyTitle}>Prep your week 🥘</Text>
                 <Text style={s.emptySub}>

@@ -12,6 +12,9 @@ export interface PantryItem {
 
 const PANTRY_KEY = '@pantry_items';
 
+let _memPantry: PantryItem[] | null = null;
+export function getPantrySync(): PantryItem[] | null { return _memPantry; }
+
 function pantryCol(uid: string) {
   return collection(db, 'users', uid, 'pantry');
 }
@@ -24,10 +27,14 @@ export function todayDate(): string {
 export async function loadPantry(uid?: string | null): Promise<PantryItem[]> {
   if (uid) {
     const snap = await getDocs(pantryCol(uid));
-    return snap.docs.map((d) => d.data() as PantryItem);
+    const result = snap.docs.map((d) => d.data() as PantryItem);
+    _memPantry = result;
+    return result;
   }
   const json = await AsyncStorage.getItem(PANTRY_KEY);
-  return json ? JSON.parse(json) : [];
+  const result = json ? JSON.parse(json) : [];
+  _memPantry = result;
+  return result;
 }
 
 export async function addPantryItem(

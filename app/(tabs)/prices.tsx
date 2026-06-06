@@ -7,13 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadPrices, loadPricesFromCache, saveNewPrices, addPrice, updatePrice, deletePrice,
-  pricePerUnit, formatPricePerUnit, bestPrice, unitGroup,
+  pricePerUnit, formatPricePerUnit, bestPrice, unitGroup, getPricesSync,
   PriceEntry, Unit,
 } from '../../store/prices';
 import {
   loadCategories, loadCategoriesFromCache, seedDefaultCategories,
   saveCategory, saveNewCategories, updateCategory, deleteCategory, setCategoryDisplayUnit,
-  PriceCategory,
+  getCategoriesSync, PriceCategory,
 } from '../../store/categories';
 import { loadPantry, addPantryItemsFromReceipt, todayDate } from '../../store/pantry';
 import { addSingleEntry } from '../../store/budget';
@@ -61,8 +61,8 @@ function categoryColor(category: string): string {
 export default function PricesTab() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const [prices, setPrices] = useState<PriceEntry[]>([]);
-  const [categories, setCategories] = useState<PriceCategory[]>([]);
+  const [prices, setPrices] = useState<PriceEntry[]>(() => getPricesSync() ?? []);
+  const [categories, setCategories] = useState<PriceCategory[]>(() => getCategoriesSync() ?? []);
   const [search, setSearch] = useState('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [showAdd, setShowAdd] = useState(false);
@@ -71,6 +71,7 @@ export default function PricesTab() {
   const [editingCategory, setEditingCategory] = useState<PriceCategory | null>(null);
   const [editing, setEditing] = useState<PriceEntry | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loaded, setLoaded] = useState(() => getPricesSync() !== null);
   const loadGen = useRef(0);
 
   const load = async () => {
@@ -85,6 +86,7 @@ export default function PricesTab() {
       setPrices(cachedP);
       setCategories(cachedC);
     }
+    setLoaded(true);
 
     const [p, c] = await Promise.all([loadPrices(user?.uid), loadCategories(user?.uid)]);
     if (gen !== loadGen.current) return;
@@ -237,7 +239,7 @@ export default function PricesTab() {
         contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
-        {noRealCategories && (
+        {loaded && noRealCategories && (
           <View style={s.empty}>
             <Text style={s.emptyTitle}>Nothing tracked yet.</Text>
             <Text style={s.emptySub}>

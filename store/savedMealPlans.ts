@@ -12,6 +12,9 @@ export interface SavedMealPlan {
 
 const KEY = '@saved_meal_plans';
 
+let _memSavedMealPlans: SavedMealPlan[] | null = null;
+export function getSavedMealPlansSync(): SavedMealPlan[] | null { return _memSavedMealPlans; }
+
 function col(uid: string) {
   return collection(db, 'users', uid, 'savedMealPlans');
 }
@@ -19,10 +22,14 @@ function col(uid: string) {
 export async function loadSavedMealPlans(uid?: string | null): Promise<SavedMealPlan[]> {
   if (uid) {
     const snap = await getDocs(col(uid));
-    return snap.docs.map((d) => d.data() as SavedMealPlan);
+    const result = snap.docs.map((d) => d.data() as SavedMealPlan);
+    _memSavedMealPlans = result;
+    return result;
   }
   const json = await AsyncStorage.getItem(KEY);
-  return json ? JSON.parse(json) : [];
+  const result = json ? JSON.parse(json) : [];
+  _memSavedMealPlans = result;
+  return result;
 }
 
 export async function saveMealPlan(
