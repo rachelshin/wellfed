@@ -34,8 +34,9 @@ export default function PantryTab() {
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<PantryItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  const load = async () => setItems(await loadPantry(user?.uid));
+  const load = async () => { setItems(await loadPantry(user?.uid)); setLoaded(true); };
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
@@ -93,7 +94,7 @@ export default function PantryTab() {
         contentContainerStyle={s.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
-        {items.length === 0 && (
+        {loaded && items.length === 0 && (
           <View style={s.empty}>
             <Text style={s.emptyTitle}>Nothing stocked yet.</Text>
             <Text style={s.emptySub}>
