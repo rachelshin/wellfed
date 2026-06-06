@@ -188,7 +188,7 @@ export default function BudgetTab() {
     <View style={s.root}>
       <HeroHeader
         eyebrow={formatDate(todayStr)}
-        title="Well Fed 🌿"
+        title="Well Fed"
         cardColor={theme.heroCard}
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>

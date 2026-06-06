@@ -242,7 +242,7 @@ export default function RecipesTab() {
 
   return (
     <View style={s.root}>
-      <HeroHeader title="Recipes 🍳" cardColor={theme.heroRecipes} />
+      <HeroHeader title="Recipes" cardColor={theme.heroRecipes} />
 
       <View style={s.segmentWrap}>
         <TouchableOpacity

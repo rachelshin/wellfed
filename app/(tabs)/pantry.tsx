@@ -88,7 +88,7 @@ export default function PantryTab() {
   return (
     <View style={s.root}>
       <HeroHeader
-        title="Pantry 🧺"
+        title="Pantry"
         cardColor={theme.heroPantry}
       >
         <View style={darkSearch.wrap}>
