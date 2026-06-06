@@ -1,13 +1,18 @@
+export const fonts = {
+  display: 'PlayfairDisplay_700Bold',
+  serif: 'PlayfairDisplay_400Regular_Italic',
+};
+
 const theme = {
   // Backgrounds — warm ivory, matching splash screen
   bg: '#faf7f2',
   bgTint: '#f2ede5',
   card: '#fffdf9',
 
-  // Primary — warm muted lavender (matches splash wordmark)
-  primary: '#8a7aaa',
-  primaryLight: '#ede8f5',
-  primaryShadow: '#8a7aaa',
+  // Primary — deep plum (action color, ties to text undertones)
+  primary: '#5a3870',
+  primaryLight: '#e8dff2',
+  primaryShadow: '#5a3870',
 
   // Accent — warm orange (from bag's orange in splash)
   accent: '#E87830',
@@ -20,13 +25,13 @@ const theme = {
   heroCard: '#2d5a3d',     // Budget — deep forest green
   heroPantry: '#b06820',   // Pantry  — warm amber
   heroPrices: '#3a6ba0',   // Prices  — slate blue
-  heroRecipes: '#7a2840',  // Recipes — deep cranberry
+  heroRecipes: '#6b4080',  // Recipes — muted plum
 
   // Text
   textDark: '#2B2040',
   textMuted: '#6B5070',
   textFaint: '#9a8aaa',         // matches splash wordmark
-  placeholder: '#c4aec8',
+  placeholder: '#c0aac8',
   placeholderOnHero: 'rgba(255,255,255,0.55)',  // hero is now dark green
 
   // Semantic
@@ -39,8 +44,8 @@ const theme = {
   handle: '#e5d8cc',
 
   // Tab bar
-  tabActive: '#8a7aaa',
-  tabInactive: '#b0a4bc',
+  tabActive: '#5a3870',
+  tabInactive: '#a890b8',
   tabBorder: '#e5d8cc',
 };
 

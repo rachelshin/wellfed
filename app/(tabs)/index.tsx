@@ -16,7 +16,7 @@ import {
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import FundsRecordModal from '../../components/budget/FundsRecordModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
+import { fab, heroOutlineBtn, notebookArea } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -197,33 +197,26 @@ export default function BudgetTab() {
         ) : null}
       >
         {showBigEdit ? (
-          <View style={s.bigEditRow}>
-            <TextInput
-              style={s.bigInput}
-              value={editValue}
-              onChangeText={setEditValue}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={theme.placeholder}
-              autoFocus
-              onSubmitEditing={commitEdit}
-              returnKeyType="done"
-            />
-            <TouchableOpacity onPress={commitEdit} style={s.bigEditDone}>
-              <Text style={s.bigEditDoneText}>✓</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <Text style={[s.bigAmount, remaining < 0 && s.bigAmountNeg]}>
-            {settings ? `$${Math.abs(remaining).toFixed(2)}` : '—'}
-          </Text>
-        )}
-
-        <Text style={[s.bigLabel, remaining < 0 && s.bigLabelNeg]}>
-          {bigLabel()}
-        </Text>
-
-        {settings && (
+          <>
+            <View style={s.bigEditRow}>
+              <TextInput
+                style={s.bigInput}
+                value={editValue}
+                onChangeText={setEditValue}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={theme.placeholder}
+                autoFocus
+                onSubmitEditing={commitEdit}
+                returnKeyType="done"
+              />
+              <TouchableOpacity onPress={commitEdit} style={s.bigEditDone}>
+                <Text style={s.bigEditDoneText}>✓</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={s.bigLabel}>set your daily budget</Text>
+          </>
+        ) : settings ? (
           <>
             <View style={s.statRow}>
               {editMode === 'daily' ? (
@@ -242,31 +235,40 @@ export default function BudgetTab() {
                       <Text style={s.statDone}>✓</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={s.statLabel}>DAILY BUDGET</Text>
+                  <Text style={s.statLabel}>DAILY</Text>
                 </View>
               ) : (
                 <TouchableOpacity style={s.stat} onPress={startEditDaily} activeOpacity={0.6}>
                   <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
-                  <Text style={s.statLabel}>DAILY BUDGET</Text>
+                  <Text style={s.statLabel}>DAILY</Text>
                 </TouchableOpacity>
               )}
+              <View style={s.statDivider} />
+              <View style={s.stat}>
+                <Text style={[s.statVal, remaining < 0 && s.bigAmountNeg]}>
+                  ${Math.abs(remaining).toFixed(2)}
+                </Text>
+                <Text style={s.statLabel}>AVAILABLE TODAY</Text>
+              </View>
               <View style={s.statDivider} />
               <View style={s.stat}>
                 <Text style={[s.statVal, s.statSpent]}>${todaySpent.toFixed(2)}</Text>
                 <Text style={s.statLabel}>SPENT TODAY</Text>
               </View>
             </View>
-
             <View style={s.progressTrack}>
               <View style={[s.progressFill, { width: `${pct * 100}%` as any }, pct >= 1 && s.progressOver]} />
             </View>
           </>
+        ) : (
+          <Text style={s.bigLabel}>tap to set your daily budget</Text>
         )}
       </HeroHeader>
 
+      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
         keyboardShouldPersistTaps="handled"
       >
@@ -318,7 +320,7 @@ export default function BudgetTab() {
                   onPress={() => { setEditFunds(record); setShowFundsModal(true); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.catEmoji}>↑</Text>
+                  <Text style={s.catEmoji}>🌱</Text>
                   <View style={s.entryInfo}>
                     <Text style={s.entryDesc} numberOfLines={1}>{label}</Text>
                     <Text style={s.entryCat}>{formatDate(record.date)}</Text>
@@ -332,6 +334,7 @@ export default function BudgetTab() {
 
         <View style={{ height: 110 }} />
       </ScrollView>
+      </View>
 
       {settings && (
         <TouchableOpacity
@@ -421,7 +424,7 @@ const s = StyleSheet.create({
 
   // List
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 28 },
+  scrollContent: {},
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
   },

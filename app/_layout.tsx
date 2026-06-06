@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
+import { PlayfairDisplay_700Bold, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { AuthProvider, useAuth } from '../context/auth';
+import { fonts } from '../lib/theme';
 
 const MIN_DISPLAY_MS = 2000;
 
@@ -212,6 +215,8 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ PlayfairDisplay_700Bold, PlayfairDisplay_400Regular_Italic });
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#faf7f2' }} />;
   return (
     <SafeAreaProvider>
       <AuthProvider>
@@ -230,11 +235,10 @@ const ss = StyleSheet.create({
     zIndex: 9999,
   },
   wordmark: {
-    marginTop: 32,
-    fontSize: 13,
-    fontWeight: '500',
+    marginTop: 28,
+    fontSize: 26,
+    fontFamily: fonts.serif,
     color: '#9a8aaa',
-    letterSpacing: 4,
-    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

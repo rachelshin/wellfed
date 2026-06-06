@@ -38,6 +38,21 @@ export const heroOutlineBtn = StyleSheet.create({
   text: { color: theme.textMuted, fontWeight: '700', fontSize: 14 },
 });
 
+// Notebook-style content area — applies left margin rule below the header
+export const notebookArea = StyleSheet.create({
+  container: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(200, 140, 100, 0.28)',
+    marginLeft: 40,
+  },
+  scrollContent: {
+    paddingLeft: 14,
+    paddingRight: 20,
+    paddingTop: 28,
+  },
+});
+
 // Bottom sheet modals — backdrop, sheet container, common fields
 export const modalSheet = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: theme.backdrop, justifyContent: 'flex-end' },

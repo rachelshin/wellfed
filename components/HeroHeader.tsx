@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import theme from '../lib/theme';
+import theme, { fonts } from '../lib/theme';
 
 interface Props {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   cardColor?: string;
   right?: React.ReactNode;
@@ -16,7 +16,7 @@ export default function HeroHeader({ eyebrow, title, cardColor, right, children 
     <View style={[s.hero, { paddingTop: insets.top + 16 }]}>
       <View style={s.row}>
         <View style={s.left}>
-          <Text style={s.eyebrow}>{eyebrow}</Text>
+          {eyebrow ? <Text style={s.eyebrow}>{eyebrow}</Text> : null}
           <Text style={[s.title, cardColor ? { color: cardColor } : null]}>{title}</Text>
         </View>
         {right != null && <View style={s.rightSlot}>{right}</View>}
@@ -43,5 +43,5 @@ const s = StyleSheet.create({
     fontSize: 11, fontWeight: '700', color: theme.textFaint,
     letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4,
   },
-  title: { fontSize: 28, fontWeight: '900', color: theme.textDark },
+  title: { fontSize: 30, fontFamily: fonts.display, color: theme.textDark },
 });

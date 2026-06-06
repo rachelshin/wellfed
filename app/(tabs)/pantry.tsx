@@ -11,7 +11,7 @@ import {
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import EditPantryModal from '../../components/pantry/EditPantryModal';
 import HeroHeader from '../../components/HeroHeader';
-import { fab, darkSearch } from '../../lib/sharedStyles';
+import { fab, darkSearch, notebookArea } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -88,15 +88,9 @@ export default function PantryTab() {
   return (
     <View style={s.root}>
       <HeroHeader
-        eyebrow="What's in your kitchen?"
         title="Pantry 🧺"
         cardColor={theme.heroPantry}
       >
-        {items.length > 0 && (
-          <Text style={s.heroStats}>
-            {items.length} items{receiptCount > 0 ? ` · ${receiptCount} from receipts` : ''}
-          </Text>
-        )}
         <View style={darkSearch.wrap}>
           <TextInput
             style={darkSearch.input}
@@ -114,9 +108,10 @@ export default function PantryTab() {
         </View>
       </HeroHeader>
 
+      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {items.length === 0 && (
@@ -165,6 +160,7 @@ export default function PantryTab() {
 
         <View style={{ height: 110 }} />
       </ScrollView>
+      </View>
 
       <TouchableOpacity
         style={[fab.btn, { bottom: insets.bottom + 72 }]}

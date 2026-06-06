@@ -24,7 +24,7 @@ import {
 import HeroHeader from '../../components/HeroHeader';
 import EditRecipeModal from '../../components/recipes/EditRecipeModal';
 import MealPlanModal from '../../components/recipes/MealPlanModal';
-import { modalSheet } from '../../lib/sharedStyles';
+import { modalSheet, notebookArea } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -242,7 +242,7 @@ export default function RecipesTab() {
 
   return (
     <View style={s.root}>
-      <HeroHeader eyebrow="What can you make?" title="Recipes 🍳" cardColor={theme.heroRecipes} />
+      <HeroHeader title="Recipes 🍳" cardColor={theme.heroRecipes} />
 
       <View style={s.segmentWrap}>
         <TouchableOpacity
@@ -270,9 +270,10 @@ export default function RecipesTab() {
         </TouchableOpacity>
       </View>
 
+      <View style={notebookArea.container}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[s.scrollContent, notebookArea.scrollContent]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {segment === 'ideas' && (
@@ -708,6 +709,7 @@ export default function RecipesTab() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+      </View>
 
       {/* Prompt modal */}
       <AppModal visible={showPrompt} animationType="slide" transparent>
