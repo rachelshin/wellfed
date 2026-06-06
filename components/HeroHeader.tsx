@@ -31,7 +31,7 @@ export default function HeroHeader({ eyebrow, title, cardColor, titleStyle, hide
 const s = StyleSheet.create({
   hero: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.border,
   },
