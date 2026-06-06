@@ -8,6 +8,7 @@ import DatePicker from '../DatePicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { PriceEntry, Unit } from '../../store/prices';
+import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
 
@@ -174,7 +175,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       : undefined;
     onAddItems(active.map((it) => ({
       entry: {
-        itemName: it.name.trim(),
+        itemName: toTitleCase(it.name.trim()),
         category: it.category.trim().toLowerCase() || 'uncategorized',
         store: storeName.trim() || it.store.trim(),
         price: parseFloat(it.price) || 0,

@@ -116,7 +116,7 @@ const s = StyleSheet.create({
     marginTop: 1,
   },
   penWrap: {
-    transform: [{ rotate: '-1.5deg' }],
+    transform: [{ translateX: 8 }, { rotate: '-1.5deg' }],
   },
   // Native fallback only
   penBody: {

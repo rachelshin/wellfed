@@ -7,6 +7,7 @@ import AppModal from '../AppModal';
 import DatePicker from '../DatePicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PriceEntry, Unit, UNITS, pricePerUnit, formatPricePerUnit } from '../../store/prices';
+import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
 import theme from '../../lib/theme';
 
@@ -97,7 +98,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
     onSave(
       {
         category: resolvedCategory,
-        itemName: displayName.trim(),
+        itemName: toTitleCase(displayName.trim()),
         store: store.trim(),
         price: priceVal,
         size: isNaN(sizeVal) ? 1 : sizeVal,

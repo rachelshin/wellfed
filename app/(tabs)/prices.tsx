@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl,
+  TextInput, RefreshControl, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -24,6 +24,28 @@ import HeroHeader from '../../components/HeroHeader';
 import { fab, darkSearch, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
+import { toTitleCase } from '../../lib/utils';
+
+const Svg = 'svg' as any;
+const Path = 'path' as any;
+
+// Three slightly-offset strokes (3°, 63°, 123°) so it reads as handwritten
+const ASTERISK_STROKE = 'M 10,1.5 Q 13.5,8 10.5,18.5 L 9.5,18.5 Q 6,12 10,1.5 Z';
+
+function HandwrittenAsterisk({ color }: { color: string }) {
+  if (Platform.OS !== 'web') {
+    return <Text style={{ color, fontSize: 13, marginRight: 4, fontWeight: '700' }}>*</Text>;
+  }
+  return (
+    <View style={{ width: 14, height: 14, marginRight: 5 }}>
+      <Svg width="14" height="14" viewBox="0 0 20 20">
+        <Path d={ASTERISK_STROKE} fill={color} transform="rotate(3 10 10)" />
+        <Path d={ASTERISK_STROKE} fill={color} transform="rotate(63 10 10)" />
+        <Path d={ASTERISK_STROKE} fill={color} transform="rotate(123 10 10)" />
+      </Svg>
+    </View>
+  );
+}
 
 const CAT_PALETTE = [
   '#8a7aaa', '#7BAFD4', '#94B8A4', '#E87830',
@@ -299,9 +321,13 @@ export default function PricesTab() {
                             onPress={() => setEditing(entry)}
                             activeOpacity={0.7}
                           >
-                            <Text style={s.entryName} numberOfLines={1}>
-                              {isBest ? '✦ ' : ''}{entry.itemName}
-                            </Text>
+                            <View style={s.entryLeft}>
+                              <View style={s.entryNameRow}>
+                                {isBest && <HandwrittenAsterisk color={catColor} />}
+                                <Text style={s.entryName} numberOfLines={1}>{toTitleCase(entry.itemName)}</Text>
+                              </View>
+                              <Text style={s.entryStore}>{toTitleCase(entry.store || 'Unknown store')}</Text>
+                            </View>
                             <Text style={[s.entryPPU, isBest && s.entryPPUBest]}>
                               {formatPricePerUnit(entry, du)}
                             </Text>
@@ -462,7 +488,7 @@ const s = StyleSheet.create({
   cardTitleWrap: { flex: 1 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catDot: { width: 8, height: 8, borderRadius: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: theme.textDark },
+  cardTitle: { fontSize: 16, fontWeight: '400', color: theme.textDark },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   bestWrap: { alignItems: 'flex-end' },
   bestPrice: { fontSize: 16, fontWeight: '700', color: theme.textDark },
@@ -475,10 +501,13 @@ const s = StyleSheet.create({
 
   entryRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
-  entryName: { flex: 1, fontSize: 16, fontWeight: '600', color: theme.textDark },
+  entryLeft: { flex: 1, paddingRight: 12 },
+  entryNameRow: { flexDirection: 'row', alignItems: 'center' },
+  entryName: { flex: 1, fontSize: 16, fontWeight: '400', color: theme.textDark },
+  entryStore: { fontSize: 12, color: theme.textFaint, marginTop: 2 },
   entryPPU: { fontSize: 16, fontWeight: '700', color: theme.textFaint, fontVariant: ['tabular-nums'] },
   entryPPUBest: { color: theme.textDark },
 

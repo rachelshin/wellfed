@@ -195,7 +195,7 @@ const s = StyleSheet.create({
   },
   itemDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 16, fontWeight: '600', color: theme.textDark },
+  itemName: { fontSize: 16, fontWeight: '400', color: theme.textDark },
   deleteBtn: { padding: 4 },
   deleteX: { fontSize: 14, color: theme.textFaint, fontWeight: '700' },
 });

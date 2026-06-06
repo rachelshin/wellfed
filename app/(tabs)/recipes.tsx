@@ -242,37 +242,59 @@ export default function RecipesTab() {
 
   return (
     <View style={s.root}>
-      <HeroHeader title="Recipes" cardColor={theme.heroRecipes} />
-
-      <View style={s.segmentWrap}>
-        <TouchableOpacity
-          style={[s.segBtn, segment === 'ideas' && s.segBtnActive]}
-          onPress={() => setSegment('ideas')}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.segBtnText, segment === 'ideas' && s.segBtnTextActive]}>Ideas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.segBtn, segment === 'saved' && s.segBtnActive]}
-          onPress={() => setSegment('saved')}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.segBtnText, segment === 'saved' && s.segBtnTextActive]}>
-            Recipe Box {savedRecipes.length > 0 ? `(${savedRecipes.length})` : ''}
+      <HeroHeader title="Recipes" cardColor={theme.heroRecipes}>
+        {segment === 'ideas' && pantryCount > 0 && (
+          <Text style={s.headerSub}>
+            From your {pantryCount} pantry item{pantryCount !== 1 ? 's' : ''}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.segBtn, segment === 'plan' && s.segBtnActive]}
-          onPress={() => setSegment('plan')}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep</Text>
-        </TouchableOpacity>
-      </View>
+        )}
+      </HeroHeader>
+
+      {segment === 'saved' ? (
+        <View style={s.savedBar}>
+          <TouchableOpacity onPress={() => setSegment('ideas')} activeOpacity={0.7}>
+            <Text style={s.savedBarBack}>← Ideas</Text>
+          </TouchableOpacity>
+          <Text style={s.savedBarTitle}>Recipe Box</Text>
+          <View style={{ width: 52 }} />
+        </View>
+      ) : (
+        <View style={s.segmentRow}>
+          <View style={s.segmentWrap}>
+            <TouchableOpacity
+              style={[s.segBtn, segment === 'ideas' && s.segBtnActive]}
+              onPress={() => setSegment('ideas')}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.segBtnText, segment === 'ideas' && s.segBtnTextActive]}>Ideas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.segBtn, segment === 'plan' && s.segBtnActive]}
+              onPress={() => setSegment('plan')}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={s.savedDotBtn}
+            onPress={() => setSegment('saved')}
+            activeOpacity={0.7}
+          >
+            <Text style={s.savedDotText}>···</Text>
+            {savedRecipes.length > 0 && (
+              <View style={s.savedBadgeDot} />
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[
+          s.scrollContent,
+          segment === 'ideas' && hasApiKey && !aiLoading && !aiError && aiRecipes.length === 0 && pantryCount > 0 && s.scrollContentCentered,
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {segment === 'ideas' && (
@@ -325,14 +347,6 @@ export default function RecipesTab() {
               </View>
             )}
 
-            {!aiLoading && aiRecipes.length === 0 && hasApiKey && !aiError && pantryCount > 0 && (
-              <View style={s.empty}>
-                <Text style={s.emptyTitle}>Ready when you are.</Text>
-                <Text style={s.emptySub}>
-                  Tap below and Claude will pull 5 ideas straight from your {pantryCount} pantry items.
-                </Text>
-              </View>
-            )}
 
             {aiRecipes.map((recipe, i) => {
               const haveCount = recipe.ingredients.filter((ing) => ing.have).length;
@@ -852,9 +866,10 @@ export default function RecipesTab() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
-  segmentWrap: {
-    flexDirection: 'row', marginHorizontal: 20, marginTop: 16, marginBottom: 0,
+  segmentRow: {
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 16,
   },
+  segmentWrap: { flex: 1, flexDirection: 'row' },
   segBtn: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
     borderBottomWidth: 1, borderBottomColor: theme.border,
@@ -863,8 +878,31 @@ const s = StyleSheet.create({
   segBtnText: { fontSize: 15, fontWeight: '600', color: theme.textFaint },
   segBtnTextActive: { color: theme.textDark },
 
+  savedDotBtn: {
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: theme.border,
+    alignItems: 'center',
+  },
+  savedDotText: { fontSize: 18, color: theme.textFaint, letterSpacing: 3 },
+  savedBadgeDot: {
+    position: 'absolute', top: 8, right: 8,
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: theme.primary,
+  },
+
+  savedBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 20, marginTop: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: theme.border,
+  },
+  savedBarBack: { fontSize: 14, fontWeight: '600', color: theme.primary, width: 52 },
+  savedBarTitle: { fontSize: 15, fontWeight: '600', color: theme.textDark },
+
+  headerSub: { fontSize: 13, color: theme.textFaint, marginTop: 4 },
+
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
+  scrollContentCentered: { flex: 1, justifyContent: 'center' },
 
 
   infoCard: {

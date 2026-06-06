@@ -190,7 +190,7 @@ export default function BudgetTab() {
         eyebrow={formatDate(todayStr)}
         title="Well Fed"
         cardColor={theme.heroCard}
-        titleStyle={{ fontFamily: 'Lora_400Regular', fontWeight: 'normal', letterSpacing: 0 }}
+        titleStyle={{ fontFamily: 'CormorantGaramond_300Light', fontWeight: 'normal', letterSpacing: 0.5 }}
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
@@ -451,7 +451,7 @@ const s = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
   catDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
-  entryDesc: { flex: 1, fontSize: 16, fontWeight: '600', color: theme.textDark },
+  entryDesc: { flex: 1, fontSize: 16, fontWeight: '400', color: theme.textDark },
   entryDate: { fontSize: 14, fontWeight: '400', color: theme.textFaint },
   entryAmt: { fontSize: 16, fontWeight: '700', color: theme.textDark, marginLeft: 8, fontVariant: ['tabular-nums'] },
   entryAmtNeg: { color: theme.negative },
