@@ -190,7 +190,7 @@ export default function BudgetTab() {
         eyebrow={formatDate(todayStr)}
         title="Well Fed"
         cardColor={theme.heroCard}
-        titleStyle={{ fontFamily: 'CormorantGaramond_300Light', fontWeight: 'normal', letterSpacing: 0.5 }}
+        titleStyle={{ fontFamily: 'CormorantGaramond_600SemiBold', fontWeight: 'normal', fontSize: 44, letterSpacing: 0.5 }}
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>

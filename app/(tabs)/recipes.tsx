@@ -38,6 +38,22 @@ function categoryColor(cat: string) { return CATEGORY_COLORS[cat] ?? theme.prima
 
 type Segment = 'ideas' | 'saved' | 'plan';
 
+const Svg = 'svg' as any;
+const Path = 'path' as any;
+
+function BoxIcon({ color }: { color: string }) {
+  return (
+    <Svg width="22" height="22" viewBox="0 0 22 22">
+      <Path d="M 3,10 L 3,4 L 19,4 L 19,10"
+        stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M 1,10 L 21,10"
+        stroke={color} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <Path d="M 3,10 L 3,18 L 19,18 L 19,10"
+        stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+  );
+}
+
 export default function RecipesTab() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -242,7 +258,19 @@ export default function RecipesTab() {
 
   return (
     <View style={s.root}>
-      <HeroHeader title="Recipes" cardColor={theme.heroRecipes}>
+      <HeroHeader
+        title="Recipes"
+        cardColor={theme.heroRecipes}
+        right={
+          <TouchableOpacity
+            onPress={() => setSegment(segment === 'saved' ? 'ideas' : 'saved')}
+            activeOpacity={0.7}
+            style={s.boxIconBtn}
+          >
+            <BoxIcon color={segment === 'saved' ? theme.heroRecipes : theme.textMuted} />
+          </TouchableOpacity>
+        }
+      >
         {segment === 'ideas' && pantryCount > 0 && (
           <Text style={s.headerSub}>
             From your {pantryCount} pantry item{pantryCount !== 1 ? 's' : ''}
@@ -250,44 +278,22 @@ export default function RecipesTab() {
         )}
       </HeroHeader>
 
-      {segment === 'saved' ? (
-        <View style={s.savedBar}>
-          <TouchableOpacity onPress={() => setSegment('ideas')} activeOpacity={0.7}>
-            <Text style={s.savedBarBack}>← Ideas</Text>
-          </TouchableOpacity>
-          <Text style={s.savedBarTitle}>Recipe Box</Text>
-          <View style={{ width: 52 }} />
-        </View>
-      ) : (
-        <View style={s.segmentRow}>
-          <View style={s.segmentWrap}>
-            <TouchableOpacity
-              style={[s.segBtn, segment === 'ideas' && s.segBtnActive]}
-              onPress={() => setSegment('ideas')}
-              activeOpacity={0.7}
-            >
-              <Text style={[s.segBtnText, segment === 'ideas' && s.segBtnTextActive]}>Ideas</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.segBtn, segment === 'plan' && s.segBtnActive]}
-              onPress={() => setSegment('plan')}
-              activeOpacity={0.7}
-            >
-              <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={s.savedDotBtn}
-            onPress={() => setSegment('saved')}
-            activeOpacity={0.7}
-          >
-            <Text style={s.savedDotText}>···</Text>
-            {savedRecipes.length > 0 && (
-              <View style={s.savedBadgeDot} />
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={s.segmentWrap}>
+        <TouchableOpacity
+          style={[s.segBtn, segment === 'ideas' && s.segBtnActive]}
+          onPress={() => setSegment('ideas')}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.segBtnText, segment === 'ideas' && s.segBtnTextActive]}>Ideas</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.segBtn, segment === 'plan' && s.segBtnActive]}
+          onPress={() => setSegment('plan')}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.segBtnText, segment === 'plan' && s.segBtnTextActive]}>Meal Prep</Text>
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
         style={s.scroll}
@@ -866,10 +872,9 @@ export default function RecipesTab() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
-  segmentRow: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 16,
-  },
-  segmentWrap: { flex: 1, flexDirection: 'row' },
+  boxIconBtn: { padding: 4 },
+
+  segmentWrap: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16 },
   segBtn: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
     borderBottomWidth: 1, borderBottomColor: theme.border,

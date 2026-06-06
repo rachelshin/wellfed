@@ -69,6 +69,7 @@ export default function PantryTab() {
       <HeroHeader
         title="Pantry"
         cardColor={theme.heroPantry}
+        hideBorder
       >
         <View style={darkSearch.wrap}>
           <TextInput

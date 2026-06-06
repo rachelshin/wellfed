@@ -7,14 +7,15 @@ interface Props {
   title: string;
   cardColor?: string;
   titleStyle?: TextStyle;
+  hideBorder?: boolean;
   right?: React.ReactNode;
   children?: React.ReactNode;
 }
 
-export default function HeroHeader({ eyebrow, title, cardColor, titleStyle, right, children }: Props) {
+export default function HeroHeader({ eyebrow, title, cardColor, titleStyle, hideBorder, right, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[s.hero, { paddingTop: insets.top + 16 }]}>
+    <View style={[s.hero, { paddingTop: insets.top + 16 }, hideBorder && { borderBottomWidth: 0 }]}>
       <View style={s.row}>
         <View style={s.left}>
           {eyebrow ? <Text style={s.eyebrow}>{eyebrow}</Text> : null}

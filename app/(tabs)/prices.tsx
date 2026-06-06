@@ -208,6 +208,7 @@ export default function PricesTab() {
       <HeroHeader
         title="Prices"
         cardColor={theme.heroPrices}
+        hideBorder
         right={
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => setShowScan(true)}>
             <Text style={heroOutlineBtn.text}>Scan</Text>
