@@ -23,9 +23,9 @@ const theme = {
 
   // Hero card colors — one per tab, all dark enough for white text
   heroCard: '#2d5a3d',     // Budget — deep forest green
-  heroPantry: '#b06820',   // Pantry  — warm amber
-  heroPrices: '#3a6ba0',   // Prices  — slate blue
-  heroRecipes: '#7a3048',  // Recipes — fig burgundy
+  heroPantry: '#8a5010',   // Pantry  — deep amber
+  heroPrices: '#2a5490',   // Prices  — deep slate blue
+  heroRecipes: '#c0284a',  // Recipes — cranberry
 
   // Text
   textDark: '#2B2040',

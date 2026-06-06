@@ -293,17 +293,15 @@ export default function BudgetTab() {
               return (
                 <TouchableOpacity
                   key={entry.id}
-                  style={[s.entryRow, { borderLeftColor: cat.color }]}
+                  style={s.entryRow}
                   onPress={() => setEditEntry(entry)}
                   activeOpacity={0.7}
                 >
                   <Text style={s.catEmoji}>{cat.emoji}</Text>
-                  <View style={s.entryInfo}>
-                    <Text style={s.entryDesc} numberOfLines={1}>
-                      {entry.description || cat.label}
-                    </Text>
-                    <Text style={s.entryCat}>{cat.label} · {formatDate(entry.date)}</Text>
-                  </View>
+                  <Text style={s.entryDesc} numberOfLines={1}>
+                    {entry.description || cat.label}
+                    <Text style={s.entryDate}>{'  '}{formatDate(entry.date)}</Text>
+                  </Text>
                   <Text style={[s.entryAmt, s.entryAmtNeg]}>-${entry.amount.toFixed(2)}</Text>
                 </TouchableOpacity>
               );
@@ -315,15 +313,15 @@ export default function BudgetTab() {
               return (
                 <TouchableOpacity
                   key={record.id}
-                  style={[s.entryRow, s.fundsRow]}
+                  style={s.entryRow}
                   onPress={() => { setEditFunds(record); setShowFundsModal(true); }}
                   activeOpacity={0.7}
                 >
                   <Text style={s.catEmoji}>🌱</Text>
-                  <View style={s.entryInfo}>
-                    <Text style={s.entryDesc} numberOfLines={1}>{label}</Text>
-                    <Text style={s.entryCat}>{formatDate(record.date)}</Text>
-                  </View>
+                  <Text style={s.entryDesc} numberOfLines={1}>
+                    {label}
+                    <Text style={s.entryDate}>{'  '}{formatDate(record.date)}</Text>
+                  </Text>
                   <Text style={[s.entryAmt, s.entryAmtPos]}>+${record.amount.toFixed(2)}</Text>
                 </TouchableOpacity>
               );
@@ -442,17 +440,16 @@ const s = StyleSheet.create({
 
   entryRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
-  fundsRow: { borderLeftColor: theme.positive },
-  catEmoji: { fontSize: 24, marginRight: 12 },
-  entryInfo: { flex: 1 },
-  entryDesc: { fontSize: 15, fontWeight: '700', color: theme.textDark },
-  entryCat: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
-  entryAmt: { fontSize: 17, fontWeight: '800', color: theme.textDark },
+  catEmoji: { fontSize: 18, marginRight: 10 },
+  entryDesc: { flex: 1, fontSize: 14, fontWeight: '600', color: theme.textDark },
+  entryDate: { fontSize: 13, fontWeight: '400', color: theme.textFaint },
+  entryAmt: { fontSize: 14, fontWeight: '700', color: theme.textDark, marginLeft: 8 },
   entryAmtNeg: { color: theme.negative },
   entryAmtPos: { color: theme.positive },
+  fundsRow: {},
 
   // stat input (inline hero edit)
   statInput: {

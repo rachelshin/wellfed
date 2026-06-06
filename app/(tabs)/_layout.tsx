@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import theme, { fonts } from '../../lib/theme';
+import theme from '../../lib/theme';
 
 const TABS = [
   { name: 'index',   label: 'Budget',  color: theme.heroCard },
@@ -13,7 +13,7 @@ const TABS = [
 function CustomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[s.tabBar, { paddingBottom: insets.bottom }]}>
+    <View style={[s.tabBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
       {TABS.map((tab, index) => {
         const focused = state.index === index;
         const onPress = () => {
@@ -28,12 +28,17 @@ function CustomTabBar({ state, navigation }: any) {
           <TouchableOpacity
             key={tab.name}
             onPress={onPress}
-            style={[s.tabBtn, { borderTopColor: focused ? tab.color : theme.border }]}
+            style={s.tabBtn}
             activeOpacity={0.7}
           >
             <Text style={[s.tabLabel, { color: focused ? tab.color : theme.textFaint }]}>
               {tab.label}
             </Text>
+            <View style={s.underlineSlot}>
+              {focused && (
+                <View style={[s.activeBar, { backgroundColor: tab.color }]} />
+              )}
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -59,17 +64,33 @@ const s = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: theme.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.border,
+    paddingTop: 16,
   },
   tabBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 14,
-    paddingBottom: 10,
-    borderTopWidth: 2,
   },
   tabLabel: {
     fontSize: 13,
-    fontFamily: fonts.display,
-    letterSpacing: 0.2,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  underlineSlot: {
+    height: 6,
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 5,
+  },
+  activeBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 2,
+    right: 0,
+    height: 3,
+    borderRadius: 2,
+    transform: [{ rotate: '-2deg' }, { scaleX: 0.85 }],
   },
 });

@@ -251,23 +251,18 @@ export default function PricesTab() {
           const catUnitGroup = entryGroups.has('weight') ? 'weight' : entryGroups.has('volume') ? 'volume' : entryGroups.size > 0 ? 'count' : undefined;
 
           return (
-            <View key={cat.id} style={[s.card, { borderLeftColor: catColor }]}>
-              <TouchableOpacity
-                style={s.cardHeader}
-                onPress={() => toggleExpand(cat.category)}
-                activeOpacity={0.7}
-              >
-                <View style={s.cardTitleWrap}>
+            <View key={cat.id} style={s.card}>
+              <View style={s.cardHeader}>
+                <TouchableOpacity
+                  style={s.cardTitleWrap}
+                  onPress={() => setEditingCategory(cat)}
+                  activeOpacity={0.7}
+                >
                   <View style={s.cardTitleRow}>
                     <View style={[s.catDot, { backgroundColor: catColor }]} />
                     <Text style={s.cardTitle}>{cat.name}</Text>
                   </View>
-                  <Text style={s.cardCount}>
-                    {entries.length === 0
-                      ? 'No entries'
-                      : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
-                  </Text>
-                </View>
+                </TouchableOpacity>
                 <View style={s.cardRight}>
                   {best && (
                     <View style={s.bestWrap}>
@@ -276,14 +271,14 @@ export default function PricesTab() {
                     </View>
                   )}
                   <TouchableOpacity
-                    onPress={() => setEditingCategory(cat)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 4 }}
+                    onPress={() => toggleExpand(cat.category)}
+                    hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+                    activeOpacity={0.6}
                   >
-                    <Text style={s.editIcon}>✎</Text>
+                    <Text style={s.chevron}>{isExpanded ? '▲' : '▼'}</Text>
                   </TouchableOpacity>
-                  <Text style={s.chevron}>{isExpanded ? '▲' : '▼'}</Text>
                 </View>
-              </TouchableOpacity>
+              </View>
 
               {isExpanded && (
                 <View style={s.cardBody}>
@@ -472,18 +467,16 @@ const s = StyleSheet.create({
   card: {
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, justifyContent: 'space-between' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, justifyContent: 'space-between' },
   cardTitleWrap: { flex: 1 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catDot: { width: 8, height: 8, borderRadius: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark },
-  cardCount: { fontSize: 12, color: theme.textFaint, marginTop: 2, fontWeight: '500' },
-  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  cardTitle: { fontSize: 14, fontWeight: '600', color: theme.textDark },
+  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   bestWrap: { alignItems: 'flex-end' },
-  bestPrice: { fontSize: 15, fontWeight: '800', color: theme.textDark },
+  bestPrice: { fontSize: 14, fontWeight: '700', color: theme.textDark },
   bestStore: { fontSize: 11, color: theme.textFaint },
-  editIcon: { fontSize: 15, color: theme.textFaint },
-  chevron: { fontSize: 11, color: theme.textFaint },
+  chevron: { fontSize: 17, color: theme.textMuted },
 
   cardBody: { paddingBottom: 8 },
   emptyEntries: { paddingVertical: 16, alignItems: 'center' },

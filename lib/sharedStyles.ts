@@ -7,14 +7,15 @@ export const fab = StyleSheet.create({
   btn: {
     position: 'absolute', right: 20,
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: theme.accent,
+    backgroundColor: '#c4a882',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: theme.textDark, shadowOpacity: 0.25, shadowRadius: 12,
+    shadowColor: theme.textDark, shadowOpacity: 0.2, shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
   label: {
-    color: '#FFFFFF', fontSize: 28, fontWeight: '300',
-    lineHeight: 32, textAlign: 'center', includeFontPadding: false,
+    color: theme.textDark, fontSize: 30, fontWeight: '300',
+    lineHeight: 30, textAlign: 'center', includeFontPadding: false,
+    marginTop: -1,
   },
 });
 

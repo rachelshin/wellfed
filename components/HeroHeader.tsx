@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import theme, { fonts } from '../lib/theme';
+import theme from '../lib/theme';
 
 interface Props {
   eyebrow?: string;
@@ -43,5 +43,5 @@ const s = StyleSheet.create({
     fontSize: 11, fontWeight: '700', color: theme.textFaint,
     letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4,
   },
-  title: { fontSize: 30, fontFamily: fonts.display, color: theme.textDark },
+  title: { fontSize: 34, fontWeight: '300', letterSpacing: 0.5, color: theme.textDark },
 });

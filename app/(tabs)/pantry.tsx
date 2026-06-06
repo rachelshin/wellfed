@@ -212,7 +212,7 @@ const s = StyleSheet.create({
 
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
   itemEmoji: { fontSize: 22, marginRight: 10 },
