@@ -26,16 +26,17 @@ function PenMark({ color }: { color: string }) {
   }
   return (
     <View style={s.penWrap}>
-      <Svg width="66" height="12" viewBox="0 0 66 12">
+      <Svg width="68" height="12" viewBox="0 0 68 12">
         {/*
-          M 1,4 L 1,8  — left edge: 4px thick
-          Q 44,7 60,6  — bottom edge: gently curls inward toward tip
-          L 66,6       — tip point
-          Q 30,0 1,4   — top edge: arches upward through the middle, giving the bow
-          Z            — close
+          M 3,4         — start at top of left cap
+          A 2 2 0 0 0 3,8 — semicircle arc curving left (rounded pen nib)
+          Q 46,7 62,6   — bottom edge curling toward tip
+          L 68,6        — tip point
+          Q 32,0 3,4    — top edge arching upward back to start
+          Z
         */}
         <Path
-          d="M 1,4 L 1,8 Q 44,7 60,6 L 66,6 Q 30,0 1,4 Z"
+          d="M 3,4 A 2 2 0 0 0 3,8 Q 46,7 62,6 L 68,6 Q 32,0 3,4 Z"
           fill={color}
         />
       </Svg>
