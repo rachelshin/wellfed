@@ -185,7 +185,7 @@ export default function PricesTab() {
     <View style={s.root}>
       <HeroHeader
         eyebrow="Track & Compare"
-        title="Prices 🏷️"
+        title="Prices 🧾"
         cardColor={theme.heroPrices}
         right={
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => setShowScan(true)}>

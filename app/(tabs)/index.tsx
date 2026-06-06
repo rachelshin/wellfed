@@ -188,7 +188,7 @@ export default function BudgetTab() {
     <View style={s.root}>
       <HeroHeader
         eyebrow={formatDate(todayStr)}
-        title="Well Fed ✨"
+        title="Well Fed 🌿"
         cardColor={theme.heroCard}
         right={isGuest ? (
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
@@ -257,17 +257,6 @@ export default function BudgetTab() {
               </View>
             </View>
 
-            {rollover > 0 && (
-              <View style={s.rolloverBadge}>
-                <Text style={s.rolloverText}>+${rollover.toFixed(2)} saved from before 🎉</Text>
-              </View>
-            )}
-            {rollover < 0 && (
-              <View style={s.rolloverBadgeNeg}>
-                <Text style={s.rolloverTextNeg}>${Math.abs(rollover).toFixed(2)} carried over 😅</Text>
-              </View>
-            )}
-
             <View style={s.progressTrack}>
               <View style={[s.progressFill, { width: `${pct * 100}%` as any }, pct >= 1 && s.progressOver]} />
             </View>
@@ -329,7 +318,7 @@ export default function BudgetTab() {
                   onPress={() => { setEditFunds(record); setShowFundsModal(true); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.catEmoji}>💰</Text>
+                  <Text style={s.catEmoji}>↑</Text>
                   <View style={s.entryInfo}>
                     <Text style={s.entryDesc} numberOfLines={1}>{label}</Text>
                     <Text style={s.entryCat}>{formatDate(record.date)}</Text>
@@ -379,7 +368,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
   // Big number
-  bigAmount: { fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68 },
+  bigAmount: { fontSize: 32, fontWeight: '700', color: theme.textDark },
   bigAmountNeg: { color: theme.negative },
   bigLabel: {
     fontSize: 14, color: theme.textFaint, marginBottom: 22,
@@ -389,8 +378,8 @@ const s = StyleSheet.create({
 
   bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bigInput: {
-    fontSize: 64, fontWeight: '900', color: theme.textDark, lineHeight: 68,
-    borderWidth: 0, padding: 0, margin: 0, minWidth: 80, outlineWidth: 0,
+    fontSize: 32, fontWeight: '700', color: theme.textDark,
+    borderWidth: 0, padding: 0, margin: 0, minWidth: 60, outlineWidth: 0,
   },
   bigEditDone: {
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 20,

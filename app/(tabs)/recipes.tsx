@@ -883,7 +883,7 @@ const s = StyleSheet.create({
   surpriseBtnText: { fontSize: 16, fontWeight: '700', color: theme.textDark },
 
   generateBtn: {
-    backgroundColor: theme.primary, borderRadius: 16, padding: 18,
+    backgroundColor: theme.heroRecipes, borderRadius: 16, padding: 18,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   generateBtnDisabled: { opacity: 0.5 },
@@ -1053,7 +1053,7 @@ const s = StyleSheet.create({
   prepCardDish: { fontSize: 14, color: theme.textDark, fontWeight: '600', marginBottom: 4 },
 
   savePlanBtn: {
-    backgroundColor: theme.primary, borderRadius: 16, padding: 16,
+    backgroundColor: theme.heroRecipes, borderRadius: 16, padding: 16,
     alignItems: 'center', marginTop: 16, marginBottom: 8,
   },
   savePlanBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
