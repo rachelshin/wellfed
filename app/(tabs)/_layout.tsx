@@ -113,7 +113,7 @@ const s = StyleSheet.create({
     height: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
+    marginTop: 1,
   },
   penWrap: {
     transform: [{ rotate: '-1.5deg' }],
