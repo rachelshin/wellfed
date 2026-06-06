@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../../lib/theme';
 
@@ -10,11 +10,35 @@ const TABS = [
   { name: 'recipes', label: 'Recipes', color: theme.heroRecipes },
 ];
 
+// Cast to any so TypeScript doesn't complain about SVG elements in RN context.
+// On web (PWA) these render as real SVG; on native falls back to View-based mark.
+const Svg = 'svg' as any;
+const Path = 'path' as any;
+
 function PenMark({ color }: { color: string }) {
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={s.penWrap}>
+        <View style={[s.penBody, { backgroundColor: color }]} />
+        <View style={[s.penTip, { borderLeftColor: color }]} />
+      </View>
+    );
+  }
   return (
     <View style={s.penWrap}>
-      <View style={[s.penBody, { backgroundColor: color }]} />
-      <View style={[s.penTip, { borderLeftColor: color }]} />
+      <Svg width="66" height="12" viewBox="0 0 66 12">
+        {/*
+          M 1,4 L 1,8  — left edge: 4px thick
+          Q 44,7 60,6  — bottom edge: gently curls inward toward tip
+          L 66,6       — tip point
+          Q 30,0 1,4   — top edge: arches upward through the middle, giving the bow
+          Z            — close
+        */}
+        <Path
+          d="M 1,4 L 1,8 Q 44,7 60,6 L 66,6 Q 30,0 1,4 Z"
+          fill={color}
+        />
+      </Svg>
     </View>
   );
 }
@@ -85,19 +109,18 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
   },
   underlineSlot: {
-    height: 10,
-    alignItems: 'flex-start',
+    height: 14,
+    alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 5,
+    marginTop: 4,
   },
   penWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
     transform: [{ rotate: '-1.5deg' }],
   },
+  // Native fallback only
   penBody: {
     height: 3,
-    width: 38,
+    width: 44,
     borderTopLeftRadius: 2,
     borderBottomLeftRadius: 2,
   },
@@ -106,7 +129,7 @@ const s = StyleSheet.create({
     height: 0,
     borderTopWidth: 1.5,
     borderBottomWidth: 1.5,
-    borderLeftWidth: 10,
+    borderLeftWidth: 11,
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
   },
