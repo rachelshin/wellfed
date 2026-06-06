@@ -405,7 +405,7 @@ export const CATEGORIES: Record<
   groceries: { label: 'Groceries', emoji: '🛒', color: '#7AAB87' },
   delivery: { label: 'Delivery', emoji: '🚚', color: '#3B82F6' },
   'fast-food': { label: 'Fast Food', emoji: '🍔', color: '#F97316' },
-  restaurants: { label: 'Restaurants', emoji: '🍽️', color: '#A78BFA' },
-  snacks: { label: 'Snacks', emoji: '🍿', color: '#FB923C' },
-  drinks: { label: 'Drinks', emoji: '🧃', color: '#06B6D4' },
+  restaurants: { label: 'Restaurants', emoji: '🍽️', color: '#8a7aaa' },
+  snacks: { label: 'Snacks & Drinks', emoji: '🍿', color: '#FB923C' },
+  drinks: { label: 'Snacks & Drinks', emoji: '🍿', color: '#FB923C' },
 };

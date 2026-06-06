@@ -64,8 +64,9 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
             <Text style={modalSheet.title}>{isEdit ? 'Edit entry' : 'What did you spend on?'}</Text>
 
             <View style={s.categoryGrid}>
-              {(Object.entries(CATEGORIES) as [Category, typeof CATEGORIES[Category]][]).map(
-                ([key, cat]) => (
+              {(Object.entries(CATEGORIES) as [Category, typeof CATEGORIES[Category]][])
+                .filter(([key]) => key !== 'drinks')
+                .map(([key, cat]) => (
                   <TouchableOpacity
                     key={key}
                     style={[

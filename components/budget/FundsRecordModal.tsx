@@ -120,7 +120,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 16,
     backgroundColor: theme.bgTint, paddingHorizontal: 16, marginBottom: 20,
   },
-  plus: { fontSize: 28, fontWeight: '800', color: '#4CAF50', marginRight: 2 },
+  plus: { fontSize: 28, fontWeight: '800', color: theme.positive, marginRight: 2 },
   dollar: { fontSize: 28, fontWeight: '800', color: theme.textFaint, marginRight: 4 },
   amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14 },
 

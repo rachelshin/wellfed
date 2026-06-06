@@ -411,15 +411,15 @@ const s = StyleSheet.create({
 
   // Rollover
   rolloverBadge: {
-    backgroundColor: theme.primaryLight, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
   },
   rolloverBadgeNeg: {
-    backgroundColor: theme.accentLight, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
   },
-  rolloverText: { fontSize: 12, color: theme.textDark, fontWeight: '700' },
-  rolloverTextNeg: { fontSize: 12, color: theme.textDark, fontWeight: '700' },
+  rolloverText: { fontSize: 12, color: '#FFFFFF', fontWeight: '700' },
+  rolloverTextNeg: { fontSize: 12, color: '#ffb3ad', fontWeight: '700' },
 
   // Progress
   progressTrack: {
@@ -440,10 +440,10 @@ const s = StyleSheet.create({
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   addFundsBtn: {
-    backgroundColor: theme.primaryLight, borderRadius: 20,
+    backgroundColor: theme.accentLight, borderRadius: 20,
     paddingHorizontal: 12, paddingVertical: 5,
   },
-  addFundsBtnText: { fontSize: 12, fontWeight: '700', color: theme.primary },
+  addFundsBtnText: { fontSize: 12, fontWeight: '700', color: theme.accent },
 
   noEntries: { alignItems: 'center', paddingVertical: 48 },
   noEntriesTitle: { fontSize: 17, fontWeight: '800', color: theme.textDark, marginBottom: 6 },

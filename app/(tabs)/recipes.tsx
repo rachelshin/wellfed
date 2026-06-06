@@ -29,10 +29,10 @@ import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Italian: '#A78BDB', Asian: '#7BAFD4', Mexican: '#F4CF6E',
-  American: '#94B8A4', Mediterranean: '#F7A8C4', Breakfast: '#F4CF6E',
+  Italian: '#8a7aaa', Asian: '#7BAFD4', Mexican: '#d4a855',
+  American: '#94B8A4', Mediterranean: '#E87830', Breakfast: '#d4a855',
   Indian: '#D4A574', Seafood: '#7BAFD4', Vegetarian: '#94B8A4',
-  Comfort: '#C4A8D4',
+  Comfort: '#9a8aaa',
 };
 function categoryColor(cat: string) { return CATEGORY_COLORS[cat] ?? theme.primary; }
 
@@ -966,7 +966,7 @@ const s = StyleSheet.create({
   ingAmt: { fontSize: 12, color: theme.border, marginTop: 1 },
   stepRow: { flexDirection: 'row', gap: 12, marginBottom: 14, alignItems: 'flex-start' },
   stepNum: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(167,139,219,0.12)',
+    width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(138,122,170,0.12)',
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
   },
   stepNumText: { fontSize: 13, fontWeight: '800', color: theme.primary },
@@ -984,9 +984,9 @@ const s = StyleSheet.create({
   alreadySavedText: { color: theme.primary, fontSize: 14, fontWeight: '700' },
 
   closeBtn: {
-    backgroundColor: theme.textDark, borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 10,
+    backgroundColor: theme.primary, borderRadius: 16, padding: 18, alignItems: 'center', marginTop: 10,
   },
-  closeBtnText: { color: theme.bg, fontSize: 17, fontWeight: '800' },
+  closeBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
 
   // Meal plan segment
   dayCard: {
@@ -1072,7 +1072,7 @@ const s = StyleSheet.create({
   },
   expandChevron: { fontSize: 11, color: theme.primary, fontWeight: '700', marginLeft: 8 },
   expandBody: {
-    backgroundColor: 'rgba(167,139,219,0.07)', borderRadius: 12,
+    backgroundColor: 'rgba(138,122,170,0.07)', borderRadius: 12,
     padding: 12, marginTop: 8, marginBottom: 4,
   },
   expandLabel: {

@@ -26,8 +26,8 @@ import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
 const CAT_PALETTE = [
-  '#A78BDB', '#7BAFD4', '#94B8A4', '#F7A8C4',
-  '#D4A574', '#C4A8D4', '#7CC8A4', '#F4A8A8',
+  '#8a7aaa', '#7BAFD4', '#94B8A4', '#E87830',
+  '#D4A574', '#9a8aaa', '#7CC8A4', '#F4A8A8',
 ];
 
 function categoryColor(category: string): string {

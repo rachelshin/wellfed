@@ -12,7 +12,10 @@ export const fab = StyleSheet.create({
     shadowColor: theme.textDark, shadowOpacity: 0.25, shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
-  label: { color: theme.textDark, fontSize: 28, fontWeight: '400', includeFontPadding: false },
+  label: {
+    color: '#FFFFFF', fontSize: 28, fontWeight: '300',
+    lineHeight: 32, textAlign: 'center', includeFontPadding: false,
+  },
 });
 
 // Search bar that sits inside the hero card
@@ -22,7 +25,7 @@ export const darkSearch = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, paddingHorizontal: 14,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
-  input: { flex: 1, fontSize: 16, color: '#FFFFFF', paddingVertical: 11, outlineWidth: 0, outlineStyle: 'none' },
+  input: { flex: 1, fontSize: 16, color: '#FFFFFF', paddingVertical: 11, outlineWidth: 0 },
   clear: { color: 'rgba(255,255,255,0.7)', fontSize: 15, padding: 4 },
 });
 
@@ -50,13 +53,13 @@ export const modalSheet = StyleSheet.create({
   input: {
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 14,
     padding: 14, fontSize: 16, color: theme.textDark,
-    backgroundColor: theme.bgTint, marginBottom: 16, outlineWidth: 0, outlineStyle: 'none',
+    backgroundColor: theme.bgTint, marginBottom: 16, outlineWidth: 0,
   },
   primaryBtn: {
-    backgroundColor: theme.textDark, borderRadius: 16, padding: 18,
+    backgroundColor: theme.primary, borderRadius: 16, padding: 18,
     alignItems: 'center', marginBottom: 12,
   },
-  primaryBtnText: { color: theme.bg, fontSize: 17, fontWeight: '800' },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   cancelBtn: { padding: 12, alignItems: 'center' },
   cancelText: { color: theme.textFaint, fontSize: 15 },
 });
