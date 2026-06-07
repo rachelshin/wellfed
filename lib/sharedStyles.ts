@@ -26,7 +26,7 @@ export const darkSearch = StyleSheet.create({
     backgroundColor: theme.bgTint, borderRadius: 14, paddingHorizontal: 14,
     borderWidth: 1, borderColor: theme.border,
   },
-  input: { flex: 1, fontSize: 16, color: theme.textDark, paddingVertical: 11, outlineWidth: 0 },
+  input: { flex: 1, fontSize: 16, color: theme.textDark, paddingVertical: 11, outlineWidth: 0, outlineStyle: 'none' },
   clear: { color: theme.textFaint, fontSize: 15, padding: 4 },
 });
 
@@ -69,7 +69,7 @@ export const modalSheet = StyleSheet.create({
   input: {
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 14,
     padding: 14, fontSize: 16, color: theme.textDark,
-    backgroundColor: theme.bgTint, marginBottom: 16, outlineWidth: 0,
+    backgroundColor: theme.bgTint, marginBottom: 16, outlineWidth: 0, outlineStyle: 'none',
   },
   primaryBtn: {
     backgroundColor: theme.primary, borderRadius: 16, padding: 18,

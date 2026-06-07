@@ -115,6 +115,7 @@ export default function BudgetTab() {
 
   const handleSaveDailyBudget = async (val: number) => {
     const newSettings: BudgetSettings = {
+      ...settings,
       dailyBudget: val,
       startDate: settings?.startDate ?? today(),
     };

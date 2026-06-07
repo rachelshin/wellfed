@@ -122,7 +122,7 @@ const s = StyleSheet.create({
   },
   plus: { fontSize: 28, fontWeight: '800', color: theme.positive, marginRight: 2 },
   dollar: { fontSize: 28, fontWeight: '800', color: theme.textFaint, marginRight: 4 },
-  amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14 },
+  amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14, outlineWidth: 0, outlineStyle: 'none' },
 
   deleteBtn: { padding: 14, alignItems: 'center', marginBottom: 4 },
   deleteBtnText: { color: theme.negative, fontSize: 15, fontWeight: '600' },
