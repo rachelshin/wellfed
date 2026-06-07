@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, TextInput, Platform,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -15,6 +15,7 @@ import {
 } from '../../store/budget';
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import FundsRecordModal from '../../components/budget/FundsRecordModal';
+import EditDailyBudgetModal from '../../components/budget/EditDailyBudgetModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
@@ -35,9 +36,7 @@ export default function BudgetTab() {
   const [showFundsModal, setShowFundsModal] = useState(false);
   const [editFunds, setEditFunds] = useState<FundsRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [editMode, setEditMode] = useState<'daily' | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const [showEditBudget, setShowEditBudget] = useState(false);
 
   const todayStr = today();
 
@@ -75,8 +74,7 @@ export default function BudgetTab() {
     setEntries(e);
     if (!s) {
       setSettings(null);
-      setEditMode('daily');
-      setEditValue('');
+      setShowEditBudget(true);
       return;
     }
     const updated = refreshCarry(e, s, yesterday());
@@ -115,40 +113,15 @@ export default function BudgetTab() {
     return tsB - tsA;
   });
 
-  const startEditDaily = () => {
-    setEditValue(settings ? String(settings.dailyBudget) : '');
-    setEditMode('daily');
+  const handleSaveDailyBudget = async (val: number) => {
+    const newSettings: BudgetSettings = {
+      dailyBudget: val,
+      startDate: settings?.startDate ?? today(),
+    };
+    await saveSettings(newSettings, user?.uid);
+    setSettings(newSettings);
+    setShowEditBudget(false);
   };
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
-
-  const commitEdit = async () => {
-    const val = parseFloat(editValue);
-    if (!isNaN(val) && val > 0 && editMode === 'daily') {
-      const newSettings: BudgetSettings = {
-        dailyBudget: val,
-        startDate: settings?.startDate ?? today(),
-      };
-      await saveSettings(newSettings, user?.uid);
-      setSettings(newSettings);
-    }
-    setEditMode(null);
-  };
-
-  const bigLabel = () => {
-    if (editMode === 'daily' && !settings) return 'set your daily budget 🌟';
-    if (!settings) return 'tap to set your daily budget 🌟';
-    return 'Total available today';
-  };
-
-  const showBigEdit = editMode === 'daily' && !settings;
 
   const handleSaveEntry = async (entryData: Omit<SpendingEntry, 'id' | 'timestamp'>) => {
     if (editEntry) {
@@ -198,53 +171,13 @@ export default function BudgetTab() {
           </TouchableOpacity>
         ) : null}
       >
-        {showBigEdit ? (
-          <>
-            <View style={s.bigEditRow}>
-              <TextInput
-                style={s.bigInput}
-                value={editValue}
-                onChangeText={setEditValue}
-                keyboardType="decimal-pad"
-                placeholder="0"
-                placeholderTextColor={theme.placeholder}
-                autoFocus
-                onSubmitEditing={commitEdit}
-                returnKeyType="done"
-              />
-              <TouchableOpacity onPress={commitEdit} style={s.bigEditDone}>
-                <Text style={s.bigEditDoneText}>✓</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={s.bigLabel}>set your daily budget</Text>
-          </>
-        ) : settings ? (
+        {settings ? (
           <>
             <View style={s.statRow}>
-              {editMode === 'daily' ? (
-                <View style={s.stat}>
-                  <View style={s.statEditRow}>
-                    <TextInput
-                      style={s.statInput}
-                      value={editValue}
-                      onChangeText={setEditValue}
-                      keyboardType="decimal-pad"
-                      autoFocus
-                      onSubmitEditing={commitEdit}
-                      returnKeyType="done"
-                    />
-                    <TouchableOpacity onPress={commitEdit}>
-                      <Text style={s.statDone}>✓</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={s.statLabel}>DAILY</Text>
-                </View>
-              ) : (
-                <TouchableOpacity style={s.stat} onPress={startEditDaily} activeOpacity={0.6}>
-                  <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
-                  <Text style={s.statLabel}>DAILY</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={s.stat} onPress={() => setShowEditBudget(true)} activeOpacity={0.6}>
+                <Text style={s.statVal}>${settings.dailyBudget.toFixed(2)}</Text>
+                <Text style={s.statLabel}>DAILY BUDGET</Text>
+              </TouchableOpacity>
               <View style={s.statDivider} />
               <View style={s.stat}>
                 <Text style={[s.statVal, remaining < 0 && s.bigAmountNeg]}>
@@ -262,9 +195,7 @@ export default function BudgetTab() {
               <View style={[s.progressFill, { width: `${pct * 100}%` as any }, pct >= 1 && s.progressOver]} />
             </View>
           </>
-        ) : (
-          <Text style={s.bigLabel}>tap to set your daily budget</Text>
-        )}
+        ) : null}
       </HeroHeader>
 
       <ScrollView
@@ -359,7 +290,12 @@ export default function BudgetTab() {
         onDelete={editFunds ? handleDeleteFunds : undefined}
       />
 
-
+      <EditDailyBudgetModal
+        visible={showEditBudget}
+        onClose={() => setShowEditBudget(false)}
+        currentValue={settings?.dailyBudget ?? null}
+        onSave={handleSaveDailyBudget}
+      />
     </View>
   );
 }
@@ -370,23 +306,6 @@ const s = StyleSheet.create({
   // Big number
   bigAmount: { fontSize: 32, fontWeight: '700', color: theme.textDark },
   bigAmountNeg: { color: theme.negative },
-  bigLabel: {
-    fontSize: 14, color: theme.textFaint, marginBottom: 22,
-    fontWeight: '500', marginTop: 2,
-  },
-  bigLabelNeg: { color: theme.negative },
-
-  bigEditRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bigInput: {
-    fontSize: 32, fontWeight: '700', color: theme.textDark,
-    borderWidth: 0, padding: 0, margin: 0, minWidth: 60, outlineWidth: 0,
-  },
-  bigEditDone: {
-    borderWidth: 1.5, borderColor: theme.border, borderRadius: 20,
-    paddingHorizontal: 16, paddingVertical: 8,
-  },
-  bigEditDoneText: { color: theme.textDark, fontSize: 18, fontWeight: '700' },
-
   // Stats
   statRow: { flexDirection: 'row', marginBottom: 18 },
   stat: { flex: 1, alignItems: 'center' },
@@ -397,7 +316,6 @@ const s = StyleSheet.create({
     fontWeight: '700', letterSpacing: 0.6,
   },
   statDivider: { width: 1, backgroundColor: theme.border, marginVertical: 4 },
-  statEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   // Rollover
   rolloverBadge: {
@@ -459,11 +377,4 @@ const s = StyleSheet.create({
   entryAmtPos: { color: theme.positive },
   fundsRow: {},
 
-  // stat input (inline hero edit)
-  statInput: {
-    fontSize: 18, fontWeight: '800', color: theme.textDark,
-    borderBottomWidth: 1, borderColor: theme.border,
-    padding: 0, minWidth: 40,
-  },
-  statDone: { fontSize: 16, fontWeight: '800', color: theme.textDark, marginLeft: 4 },
 });
