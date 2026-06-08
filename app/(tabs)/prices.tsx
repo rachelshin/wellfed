@@ -438,16 +438,12 @@ export default function PricesTab() {
             const pantry = await loadPantry(user?.uid);
             await addPantryItemsFromReceipt(
               pantry,
-              pantryItems.map(({ entry }) => {
-                const cat = allCategories.find((c) => c.category === entry.category);
-                const catName = cat?.name ?? (entry.category.charAt(0).toUpperCase() + entry.category.slice(1));
-                return {
-                  displayName: catName,
-                  itemName: entry.category,
-                  addedDate: todayDate(),
-                  source: 'receipt' as const,
-                };
-              }),
+              pantryItems.map(({ entry }) => ({
+                displayName: entry.itemName,
+                itemName: entry.itemName.toLowerCase(),
+                addedDate: todayDate(),
+                source: 'receipt' as const,
+              })),
               user?.uid,
             );
           }

@@ -245,13 +245,11 @@ export default function RecipesTab() {
     const toBuy = mealPlan.groceryList
       .filter((i) => !i.inPantry || addedFromPantrySet.has(i.item));
     const text = toBuy
-      .map((i) => `• ${i.item} — ${i.amount}${i.estimatedCost ? ` (~$${i.estimatedCost.toFixed(2)})` : ''}`)
+      .map((i) => `${i.item} — ${i.amount}${i.estimatedCost ? ` (~$${i.estimatedCost.toFixed(2)})` : ''}`)
       .join('\n');
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try { await navigator.share({ title: 'Grocery List', text }); } catch {}
-    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(text);
-      Alert.alert('Copied!', 'Grocery list copied to your clipboard.');
+      Alert.alert('Copied!', 'Open Reminders, tap into a list, then paste — each item will be added as a separate reminder.');
     } else {
       Alert.alert('Grocery List', text);
     }
