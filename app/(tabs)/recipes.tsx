@@ -71,6 +71,7 @@ export default function RecipesTab() {
   const [selected, setSelected] = useState<AIRecipe | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [promptText, setPromptText] = useState('');
+  const [allowExtra, setAllowExtra] = useState(false);
   const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
 
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(() => getSavedRecipesSync() ?? []);
@@ -135,7 +136,7 @@ export default function RecipesTab() {
     setAiLoading(true);
     setAiError('');
     try {
-      const recipes = await generateRecipes(pantryItems.map((i) => i.displayName), prompt);
+      const recipes = await generateRecipes(pantryItems.map((i) => i.displayName), prompt, allowExtra);
       setAiRecipes(recipes);
     } catch (e: unknown) {
       const msg = String((e as Error)?.message ?? '');
@@ -391,6 +392,12 @@ export default function RecipesTab() {
                     <Text style={[s.metaText, haveCount > 0 && s.metaHave]}>
                       {haveCount}/{recipe.ingredients.length} in pantry
                     </Text>
+                    {recipe.groceryList && recipe.groceryList.length > 0 && (
+                      <>
+                        <Text style={s.metaDot}>·</Text>
+                        <Text style={s.metaBuy}>🛒 {recipe.groceryList.length} to buy</Text>
+                      </>
+                    )}
                   </View>
 
                   <View style={s.progressTrack}>
@@ -743,6 +750,23 @@ export default function RecipesTab() {
             >
               <Text style={modalSheet.title}>What are you in the mood for? 🍽️</Text>
 
+              <View style={s.scopeToggle}>
+                <TouchableOpacity
+                  style={[s.scopeBtn, !allowExtra && s.scopeBtnActive]}
+                  onPress={() => setAllowExtra(false)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.scopeBtnText, !allowExtra && s.scopeBtnTextActive]}>Pantry only</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.scopeBtn, allowExtra && s.scopeBtnActive]}
+                  onPress={() => setAllowExtra(true)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.scopeBtnText, allowExtra && s.scopeBtnTextActive]}>Allow extras + list</Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
                 style={s.surpriseBtn}
                 onPress={() => handleGenerate(undefined)}
@@ -817,6 +841,21 @@ export default function RecipesTab() {
                     </View>
                   </View>
                 ))}
+
+                {selected.groceryList && selected.groceryList.length > 0 && (
+                  <>
+                    <Text style={[s.detailSection, { marginTop: 24 }]}>To Buy</Text>
+                    {selected.groceryList.map((item) => (
+                      <View key={item.name} style={s.ingRow2}>
+                        <Text style={s.ingCheck}>🛒</Text>
+                        <View style={s.ingInfo}>
+                          <Text style={s.ingName}>{item.name}</Text>
+                          <Text style={s.ingAmt}>{item.amount}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
 
                 <Text style={[s.detailSection, { marginTop: 24 }]}>Instructions</Text>
                 {selected.steps.map((step, i) => (
@@ -963,6 +1002,19 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
   metaText: { fontSize: 12, color: theme.textFaint, fontWeight: '500' },
   metaHave: { color: theme.accent, fontWeight: '700' },
+  metaBuy: { fontSize: 12, color: theme.warning, fontWeight: '700' },
+
+  scopeToggle: {
+    flexDirection: 'row', borderRadius: 12, overflow: 'hidden',
+    borderWidth: 1, borderColor: theme.border, marginBottom: 16,
+  },
+  scopeBtn: {
+    flex: 1, paddingVertical: 10, alignItems: 'center',
+    backgroundColor: theme.bg,
+  },
+  scopeBtnActive: { backgroundColor: theme.heroRecipes },
+  scopeBtnText: { fontSize: 14, fontWeight: '700', color: theme.textFaint },
+  scopeBtnTextActive: { color: '#FFFFFF' },
   metaDot: { color: theme.border },
   progressTrack: { height: 5, backgroundColor: theme.border, borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
   progressFill: { height: '100%', borderRadius: 3 },

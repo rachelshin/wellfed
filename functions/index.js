@@ -187,7 +187,7 @@ exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
 
-  const { pantryItems, userPrompt } = req.body;
+  const { pantryItems, userPrompt, allowExtra } = req.body;
   if (!pantryItems?.length) { res.status(400).json({ error: 'pantryItems required' }); return; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -204,11 +204,21 @@ exports.generateRecipes = functions.https.onRequest(async (req, res) => {
     ? `The user is in the mood for: "${userPrompt}". Lean into this preference while still using their pantry.`
     : `Surprise them — be creative and pick interesting, unexpected combinations!`;
 
+  const scopeInstructions = allowExtra
+    ? `You may use any ingredients needed to make great recipes. Mark "have": true for ingredients found in the pantry list above. For each recipe, include a "groceryList" array of ONLY the non-pantry ingredients the user would need to buy.`
+    : `You MUST ONLY use the exact pantry items listed above. Do not include any ingredient not in the pantry list. Be creative with what's available. Mark "have": true for all ingredients.`;
+
+  const groceryListField = allowExtra
+    ? `\n      "groceryList": [\n        { "name": "ingredient name", "amount": "1 cup" }\n      ],`
+    : '';
+
   const prompt = `I have these items in my pantry: ${pantryItems.join(', ')}.
 
 ${moodLine}
 
-Suggest 5 delicious recipes I can make, prioritising ones where I have more ingredients. Be creative and encouraging!
+${scopeInstructions}
+
+Suggest 5 delicious recipes. Be creative and encouraging!
 
 Return ONLY this JSON (no other text, no markdown fences):
 {
@@ -221,7 +231,7 @@ Return ONLY this JSON (no other text, no markdown fences):
       "description": "One warm, encouraging sentence about why this dish is great.",
       "ingredients": [
         { "name": "ingredient name", "amount": "1 cup", "have": true }
-      ],
+      ],${groceryListField}
       "steps": [
         "Step 1 description.",
         "Step 2 description."
@@ -230,7 +240,7 @@ Return ONLY this JSON (no other text, no markdown fences):
   ]
 }
 
-Mark "have": true only for ingredients clearly matching my pantry list. Write friendly, practical steps.`;
+Write friendly, practical steps.`;
 
   const message = await client.messages.create({
     model: 'claude-opus-4-8',

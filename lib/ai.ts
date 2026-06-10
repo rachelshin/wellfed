@@ -71,6 +71,7 @@ export interface AIRecipe {
   description: string;
   ingredients: AIRecipeIngredient[];
   steps: string[];
+  groceryList?: { name: string; amount: string }[];
 }
 
 export function hashItems(items: string[]): string {
@@ -137,11 +138,11 @@ export async function generateMealPlan(
   return plan;
 }
 
-export async function generateRecipes(pantryItems: string[], userPrompt?: string): Promise<AIRecipe[]> {
+export async function generateRecipes(pantryItems: string[], userPrompt?: string, allowExtra?: boolean): Promise<AIRecipe[]> {
   const response = await fetch(FUNCTION_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pantryItems, userPrompt: userPrompt || undefined }),
+    body: JSON.stringify({ pantryItems, userPrompt: userPrompt || undefined, allowExtra: !!allowExtra }),
   });
 
   if (!response.ok) {
