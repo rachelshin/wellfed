@@ -4,13 +4,15 @@ import {
   StyleSheet, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
 import useIosPWAKeyboard from '../lib/useIosPWAKeyboard';
 import theme from '../lib/theme';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
-  const { signIn, signUp, signInWithGoogle, enterGuestMode } = useAuth();
+  const router = useRouter();
+  const { signIn, signUp, signInWithGoogle, enterGuestMode, isGuest } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +36,7 @@ export default function SignInScreen() {
       const code = (e as { code?: string })?.code ?? '';
       if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) {
         setError('Incorrect email or password.');
-      } else if (code.includes('email-already-in-use')) {
+      } else if (code.includes('email-already-in-use') || code.includes('credential-already-in-use')) {
         setError('An account with this email already exists.');
       } else if (code.includes('invalid-email')) {
         setError('Please enter a valid email address.');
@@ -129,9 +131,15 @@ export default function SignInScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={enterGuestMode} style={s.guestWrap}>
-          <Text style={s.guestText}>Continue as guest</Text>
-        </TouchableOpacity>
+        {isGuest ? (
+          <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={s.guestWrap}>
+            <Text style={s.guestText}>Not now</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={enterGuestMode} style={s.guestWrap}>
+            <Text style={s.guestText}>Continue as guest</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );

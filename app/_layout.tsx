@@ -194,10 +194,11 @@ function AuthGate() {
 
   useEffect(() => {
     if (loading) return;
-    const isAuthed = !!user || isGuest;
     const inAuthScreen = segments[0] === 'sign-in';
-    if (!isAuthed && !inAuthScreen) router.replace('/sign-in');
-    else if (isAuthed && inAuthScreen) router.replace('/(tabs)');
+    // Guests are anonymous Firebase users now, so they count as authed —
+    // but they may still visit /sign-in to upgrade to a real account.
+    if (!user && !inAuthScreen) router.replace('/sign-in');
+    else if (user && !isGuest && inAuthScreen) router.replace('/(tabs)');
   }, [user, isGuest, loading]);
 
   // Stack must not render until auth resolves — screens capture user uid at mount time.

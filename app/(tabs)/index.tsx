@@ -4,7 +4,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry, updateEntry,
   getCachedEntries, getCachedSettings, getLocalCachedEntries, getLocalCachedSettings,
@@ -27,7 +27,8 @@ type RecordItem =
 
 export default function BudgetTab() {
   const insets = useSafeAreaInsets();
-  const { isGuest, exitGuestMode, user } = useAuth();
+  const router = useRouter();
+  const { isGuest, user } = useAuth();
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [fundsRecords, setFundsRecords] = useState<FundsRecord[]>([]);
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
@@ -166,7 +167,7 @@ export default function BudgetTab() {
         hideBorder
         titleStyle={{ fontFamily: 'Lora_400Regular', fontWeight: 'normal', fontSize: 44, letterSpacing: 0.5 }}
         right={isGuest ? (
-          <TouchableOpacity style={heroOutlineBtn.btn} onPress={exitGuestMode}>
+          <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => router.push('/sign-in')}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
           </TouchableOpacity>
         ) : null}

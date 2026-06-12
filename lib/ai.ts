@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuthHeaders } from './firebase';
 
 const CACHE_KEY = '@ai_recipes_cache';
 const CACHE_PANTRY_KEY = '@ai_recipes_pantry_hash';
@@ -123,7 +124,7 @@ export async function generateMealPlan(
 ): Promise<MealPlan> {
   const response = await fetch(MEAL_PLAN_FUNCTION_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
     body: JSON.stringify({ pantryItems, priceData, ...options }),
   });
 
@@ -141,7 +142,7 @@ export async function generateMealPlan(
 export async function generateRecipes(pantryItems: string[], userPrompt?: string, allowExtra?: boolean): Promise<AIRecipe[]> {
   const response = await fetch(FUNCTION_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
     body: JSON.stringify({ pantryItems, userPrompt: userPrompt || undefined, allowExtra: !!allowExtra }),
   });
 

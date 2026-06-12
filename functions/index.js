@@ -1,13 +1,31 @@
 const functions = require('firebase-functions');
+const admin = require('firebase-admin');
 const { default: Anthropic } = require('@anthropic-ai/sdk');
+
+admin.initializeApp();
+
+// All endpoints require a Firebase ID token (guests have one too — they're
+// anonymous Firebase users). Returns the decoded token, or null after
+// sending a 401.
+async function requireAuth(req, res) {
+  const match = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+  if (!match) { res.status(401).json({ error: 'Unauthorized' }); return null; }
+  try {
+    return await admin.auth().verifyIdToken(match[1]);
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' });
+    return null;
+  }
+}
 
 exports.scanReceipt = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
+  if (!(await requireAuth(req, res))) return;
 
   const { imageBase64, mediaType, existingCategories } = req.body;
   if (!imageBase64) { res.status(400).json({ error: 'imageBase64 required' }); return; }
@@ -62,10 +80,11 @@ exports.scanReceipt = functions.https.onRequest(async (req, res) => {
 exports.generateMealPlan = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
+  if (!(await requireAuth(req, res))) return;
 
   const { pantryItems, priceData, people, dietaryRestrictions, weeklyBudget, notes } = req.body;
 
@@ -182,10 +201,11 @@ Return ONLY this JSON (no markdown, no extra text):
 exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
+  if (!(await requireAuth(req, res))) return;
 
   const { pantryItems, userPrompt, allowExtra } = req.body;
   if (!pantryItems?.length) { res.status(400).json({ error: 'pantryItems required' }); return; }

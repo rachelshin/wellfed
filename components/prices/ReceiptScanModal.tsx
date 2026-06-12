@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { PriceEntry, Unit } from '../../store/prices';
 import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
+import { getAuthHeaders } from '../../lib/firebase';
 import { showAlert } from '../../lib/dialogs';
 import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
@@ -107,7 +108,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
 
       const res = await fetch('https://us-central1-well-fed-66136.cloudfunctions.net/scanReceipt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
         body: JSON.stringify({ imageBase64: base64, mediaType, existingCategories }),
       });
       if (!res.ok) throw new Error('Server error');
