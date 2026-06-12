@@ -188,17 +188,20 @@ export default function PricesTab() {
     'Bread', 'Milk', 'Eggs', 'Produce', 'Meat', 'Dairy', 'Snacks', 'Beverages',
   ];
 
-  // Build display list from categories only; hide Uncategorized when it has no entries
-  let displayList = categories
-    .map((cat) => ({
-      cat,
-      entries: prices.filter((p) => p.category === cat.category),
-    }))
-    .filter(({ cat, entries }) => {
+  // Build display list from categories; hide Uncategorized when it has no entries.
+  // Search matches the category name OR the item names of its price entries.
+  const q = search.toLowerCase().trim();
+  const displayList = categories
+    .map((cat) => {
+      const entries = prices.filter((p) => p.category === cat.category);
+      const nameMatch = !!q && (cat.category.includes(q) || cat.name.toLowerCase().includes(q));
+      const entryMatches = q ? entries.filter((p) => p.itemName.toLowerCase().includes(q)) : [];
+      return { cat, entries, nameMatch, entryMatches };
+    })
+    .filter(({ cat, entries, nameMatch, entryMatches }) => {
       if (cat.category === 'uncategorized' && entries.length === 0) return false;
-      if (!search.trim()) return true;
-      const q = search.toLowerCase().trim();
-      return cat.category.includes(q) || cat.name.toLowerCase().includes(q);
+      if (!q) return true;
+      return nameMatch || entryMatches.length > 0;
     })
     .sort((a, b) => a.cat.name.localeCompare(b.cat.name));
 
@@ -222,7 +225,7 @@ export default function PricesTab() {
             style={darkSearch.input}
             value={search}
             onChangeText={setSearch}
-            placeholder="Search categories…"
+            placeholder="Search items or categories…"
             placeholderTextColor={theme.placeholder}
             returnKeyType="search"
           />
@@ -263,13 +266,17 @@ export default function PricesTab() {
 
         {search.trim().length > 0 && displayList.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyText}>No categories match "{search}"</Text>
+            <Text style={s.emptyText}>Nothing matches "{search}"</Text>
           </View>
         )}
 
-        {displayList.map(({ cat, entries }) => {
+        {displayList.map(({ cat, entries, nameMatch, entryMatches }) => {
           const best = bestPrice(entries);
-          const isExpanded = expandedItems.has(cat.category);
+          // Matched via item names (not the category name): auto-expand and
+          // show only the matching items so the hit is visible.
+          const matchedViaItems = !!q && !nameMatch && entryMatches.length > 0;
+          const isExpanded = expandedItems.has(cat.category) || matchedViaItems;
+          const shownEntries = matchedViaItems ? entryMatches : entries;
           const catColor = categoryColor(cat.category);
           const du = cat.displayUnit;
           const entryGroups = new Set(entries.map((e) => unitGroup(e.unit)));
@@ -307,12 +314,12 @@ export default function PricesTab() {
 
               {isExpanded && (
                 <View style={s.cardBody}>
-                  {entries.length === 0 ? (
+                  {shownEntries.length === 0 ? (
                     <View style={s.emptyEntries}>
                       <Text style={s.emptyEntriesText}>No price entries yet — tap + to add one.</Text>
                     </View>
                   ) : (
-                    entries
+                    shownEntries
                       .slice()
                       .sort((a, b) => pricePerUnit(a) - pricePerUnit(b))
                       .map((entry) => {

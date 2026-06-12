@@ -34,10 +34,26 @@
         outline-width: 0 !important;
         box-shadow: none !important;
       }
+      /* RNW buttons/touchables are focusable divs — kill Safari's native focus
+         ring on EVERY element, not just form fields (box-shadow deliberately
+         not touched here so card/FAB shadows survive focus) */
+      *:focus, *:focus-visible {
+        outline: none !important;
+      }
       /* -webkit-appearance:none strips date-input text rendering on iOS;
          textfield keeps the picker working while letting our border/bg styles apply */
       input[type="date"] {
         -webkit-appearance: textfield;
+      }
+      /* iOS highlights the focused day/month/year segment inside date inputs
+         with a system-blue pill. That's not an outline — it can only be styled
+         via the WebKit datetime pseudo-elements. Recolor it to the app's plum. */
+      input[type="date"]::-webkit-datetime-edit-day-field:focus,
+      input[type="date"]::-webkit-datetime-edit-month-field:focus,
+      input[type="date"]::-webkit-datetime-edit-year-field:focus {
+        background-color: #e8dff2;
+        color: #2B2040;
+        outline: none;
       }
 
       html, body {
