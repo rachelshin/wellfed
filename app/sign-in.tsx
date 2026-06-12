@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform, ScrollView,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
+import useIosPWAKeyboard from '../lib/useIosPWAKeyboard';
 import theme from '../lib/theme';
 
 export default function SignInScreen() {
@@ -16,16 +17,7 @@ export default function SignInScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) { setError('Please fill in both fields.'); return; }
@@ -169,7 +161,7 @@ const s = StyleSheet.create({
   input: {
     backgroundColor: theme.card, borderRadius: 14, borderWidth: 1.5,
     borderColor: theme.border, padding: 15, fontSize: 16,
-    color: theme.textDark, marginBottom: 12, outlineWidth: 0, outlineStyle: 'none',
+    color: theme.textDark, marginBottom: 12, outlineWidth: 0,
   },
 
   error: { color: theme.negative, fontSize: 13, fontWeight: '600', marginBottom: 10, textAlign: 'center' },

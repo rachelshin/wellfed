@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform, ScrollView, Alert,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SavedRecipe, SavedIngredient } from '../../store/savedRecipes';
 import { modalSheet } from '../../lib/sharedStyles';
+import { showAlert, confirmAction } from '../../lib/dialogs';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 
 interface Props {
@@ -21,7 +23,7 @@ export default function EditRecipeModal({ recipe, onClose, onSave, onDelete }: P
   const [title, setTitle] = useState('');
   const [ingredients, setIngredients] = useState<SavedIngredient[]>([]);
   const [steps, setSteps] = useState<string[]>([]);
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (recipe) {
@@ -31,19 +33,10 @@ export default function EditRecipeModal({ recipe, onClose, onSave, onDelete }: P
     }
   }, [recipe?.id]);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
-
   const handleSave = () => {
     if (!recipe) return;
     const cleanTitle = title.trim();
-    if (!cleanTitle) { Alert.alert('', 'Recipe needs a title.'); return; }
+    if (!cleanTitle) { showAlert('', 'Recipe needs a title.'); return; }
     onSave(recipe.id, {
       title: cleanTitle,
       ingredients: ingredients.filter((ing) => ing.name.trim()),
@@ -53,10 +46,8 @@ export default function EditRecipeModal({ recipe, onClose, onSave, onDelete }: P
 
   const handleDelete = () => {
     if (!recipe) return;
-    Alert.alert('Delete recipe?', `"${recipe.title}" will be removed.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onDelete(recipe.id) },
-    ]);
+    confirmAction('Delete recipe?', `"${recipe.title}" will be removed.`, 'Delete',
+      () => onDelete(recipe.id));
   };
 
   const updateIngredient = (index: number, field: keyof SavedIngredient, value: string) =>
@@ -73,8 +64,9 @@ export default function EditRecipeModal({ recipe, onClose, onSave, onDelete }: P
     setSteps((prev) => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
 
   return (
-    <AppModal visible={!!recipe} animationType="slide" transparent>
+    <AppModal visible={!!recipe} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, s.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
             <Text style={modalSheet.title}>Edit Recipe</Text>

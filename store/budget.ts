@@ -82,13 +82,6 @@ export async function getLocalCachedFunds(uid: string): Promise<FundsRecord[] | 
   } catch { return null; }
 }
 
-// Returns the earliest date we need entries from, given the current carry state.
-// This lets us skip fetching the full history when carry is already up to date.
-export function entriesNeededFrom(settings: BudgetSettings | null, todayStr: string): string {
-  if (!settings?.carry?.date) return settings?.startDate ?? todayStr;
-  return addDay(settings.carry.date);
-}
-
 function entriesCol(uid: string) {
   return collection(db, 'users', uid, 'entries');
 }
@@ -367,35 +360,6 @@ export function refreshCarry(
   }
 
   return { ...settings, carry: { date: throughDate, amount } };
-}
-
-export function getAvailableBudget(
-  entries: SpendingEntry[],
-  settings: BudgetSettings,
-  forDate: string
-): number {
-  const { dailyBudget, startDate, carry } = settings;
-
-  // Fast path: carry is cached through the day before forDate
-  const prevDate = (() => {
-    const [y, m, d] = forDate.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    date.setDate(date.getDate() - 1);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  })();
-  if (carry?.date === prevDate) {
-    return dailyBudget + carry.amount;
-  }
-
-  // Fallback: iterate from carry date (or startDate) forward
-  let amount = carry?.amount ?? 0;
-  let cursor = carry && carry.date >= startDate ? addDay(carry.date) : startDate;
-  while (cursor < forDate) {
-    amount = dailyBudget + amount - getDaySpent(entries, cursor);
-    cursor = addDay(cursor);
-  }
-
-  return dailyBudget + amount;
 }
 
 export const CATEGORIES: Record<

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform, ScrollView,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Category, CATEGORIES, SpendingEntry, today } from '../../store/budget';
 import { modalSheet } from '../../lib/sharedStyles';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 import DateField from './DateField';
 
@@ -25,7 +26,7 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(today());
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (visible) {
@@ -41,15 +42,6 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
     }
   }, [visible, entry]);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
-
   const handleSave = () => {
     const val = parseFloat(amount);
     if (isNaN(val) || val <= 0) return;
@@ -57,8 +49,9 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
   };
 
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
             <Text style={modalSheet.title}>{isEdit ? 'Edit entry' : 'What did you spend on?'}</Text>
@@ -146,7 +139,7 @@ const s = StyleSheet.create({
     backgroundColor: theme.bgTint, paddingHorizontal: 16, marginBottom: 20,
   },
   dollar: { fontSize: 28, fontWeight: '800', color: theme.textFaint, marginRight: 4 },
-  amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14, outlineWidth: 0, outlineStyle: 'none' },
+  amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14, outlineWidth: 0 },
 
   deleteBtn: { padding: 14, alignItems: 'center', marginBottom: 4 },
   deleteBtnText: { color: theme.negative, fontSize: 15, fontWeight: '600' },

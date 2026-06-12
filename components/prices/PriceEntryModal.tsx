@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform, ScrollView,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import AppModal from '../AppModal';
 import DatePicker from '../DatePicker';
@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PriceEntry, Unit, UNITS, pricePerUnit, formatPricePerUnit } from '../../store/prices';
 import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 
 interface Props {
@@ -38,7 +39,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
   const [unit, setUnit] = useState<Unit>('oz');
   const [dateAdded, setDateAdded] = useState(today());
   const [showUnitPicker, setShowUnitPicker] = useState(false);
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (!visible) {
@@ -69,15 +70,6 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
       setDateAdded(prefill.dateAdded ?? today());
     }
   }, [visible, entry, prefill]);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
 
   const filteredCategories = category.trim()
     ? existingCategories.filter((n) => n.toLowerCase().includes(category.trim().toLowerCase())).slice(0, 6)
@@ -117,8 +109,9 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
     const ppuStr = isFinite(ppu) ? formatPricePerUnit(entry, undefined) : '';
 
     return (
-      <AppModal visible={visible} animationType="slide" transparent>
+      <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
         <View style={modalSheet.backdrop}>
+          <Pressable style={modalSheet.backdropTap} onPress={onClose} />
           <View style={[s.infoSheet, { paddingBottom: insets.bottom + 24 }]}>
             <TouchableOpacity style={s.infoCard} onPress={() => setViewMode(false)} activeOpacity={0.85}>
               <View style={s.infoTop}>
@@ -154,8 +147,9 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
 
   // ── EDIT / ADD FORM ───────────────────────────────────────────────────────
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
             <Text style={modalSheet.title}>{isEdit ? 'Edit price' : 'Track a price'}</Text>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform, ScrollView,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
 export default function EditDailyBudgetModal({ visible, onClose, currentValue, onSave }: Props) {
   const insets = useSafeAreaInsets();
   const [value, setValue] = useState('');
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (visible) {
@@ -28,15 +29,6 @@ export default function EditDailyBudgetModal({ visible, onClose, currentValue, o
     }
   }, [visible, currentValue]);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
-
   const handleSave = () => {
     const val = parseFloat(value);
     if (isNaN(val) || val <= 0) return;
@@ -44,10 +36,13 @@ export default function EditDailyBudgetModal({ visible, onClose, currentValue, o
   };
 
   const isFirstTime = currentValue == null;
+  // First-time setup is mandatory — only dismissible once a budget exists
+  const dismiss = !isFirstTime && onClose ? onClose : undefined;
 
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={dismiss}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={dismiss} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
             <Text style={modalSheet.title}>
@@ -93,5 +88,5 @@ const s = StyleSheet.create({
     backgroundColor: theme.bgTint, paddingHorizontal: 16, marginBottom: 24,
   },
   dollar: { fontSize: 28, fontWeight: '800', color: theme.textFaint, marginRight: 4 },
-  amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14, outlineWidth: 0, outlineStyle: 'none' },
+  amountInput: { flex: 1, fontSize: 36, fontWeight: '800', color: theme.textDark, paddingVertical: 14, outlineWidth: 0 },
 });

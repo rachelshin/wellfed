@@ -228,7 +228,7 @@ export default function RootLayout() {
 
 const ss = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: '#faf7f2',
     alignItems: 'center',
     justifyContent: 'center',

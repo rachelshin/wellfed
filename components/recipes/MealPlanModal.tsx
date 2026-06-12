@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, Platform, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, Pressable, ScrollView, Platform, StyleSheet,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
 import { MealPlanOptions } from '../../lib/ai';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 
 const PROFILES_KEY = '@meal_plan_profiles';
@@ -32,7 +33,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   const [dietary, setDietary] = useState('');
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(0);
   const contentH = useRef(0);
@@ -46,15 +47,6 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
     AsyncStorage.getItem(PROFILES_KEY).then(raw => {
       if (raw) setProfiles(JSON.parse(raw));
     });
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
   }, []);
 
   useEffect(() => {
@@ -105,8 +97,9 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   };
 
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView
             ref={scrollRef}

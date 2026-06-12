@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform, ScrollView, Image, ActivityIndicator, Alert,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  StyleSheet, ScrollView, Image, ActivityIndicator,
 } from 'react-native';
 import AppModal from '../AppModal';
 import DatePicker from '../DatePicker';
@@ -10,6 +10,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { PriceEntry, Unit } from '../../store/prices';
 import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
+import { showAlert } from '../../lib/dialogs';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 
 interface DetectedItem {
@@ -64,7 +66,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const [receiptTotal, setReceiptTotal] = useState<number | null>(null);
   const [addToBudget, setAddToBudget] = useState(false);
   const [manualTotal, setManualTotal] = useState('');
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (!visible) {
@@ -80,15 +82,6 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
   const filteredCats = catSearch.trim()
     ? existingCategories.filter((c) => c.toLowerCase().includes(catSearch.toLowerCase())).slice(0, 6)
     : existingCategories.slice(0, 6);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
 
   const pickImage = async (useCamera: boolean) => {
     const fn = useCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
@@ -155,7 +148,7 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
       setItems(detected);
       setStep('review');
     } catch {
-      Alert.alert('', 'Couldn\'t read the receipt clearly. You can add items manually.');
+      showAlert('', 'Couldn\'t read the receipt clearly. You can add items manually.');
       setItems([]); setStep('review');
     } finally {
       setScanning(false);
@@ -197,8 +190,9 @@ export default function ReceiptScanModal({ visible, onClose, onAddItems, existin
     .reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0);
 
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
 
@@ -513,7 +507,7 @@ const s = StyleSheet.create({
   itemNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   itemName: {
     fontSize: 16, fontWeight: '700', color: theme.textDark,
-    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, outlineWidth: 0, outlineStyle: 'none',
+    borderBottomWidth: 1.5, borderBottomColor: theme.border, paddingBottom: 6, outlineWidth: 0,
   },
   removeBtn: { paddingLeft: 10, paddingBottom: 6 },
   removeBtnText: { fontSize: 16, color: theme.textFaint, fontWeight: '600' },
@@ -524,11 +518,11 @@ const s = StyleSheet.create({
   itemPrice: {
     fontSize: 16, color: theme.textDark, fontWeight: '700',
     borderWidth: 1.5, borderColor: theme.border, borderRadius: 8,
-    paddingHorizontal: 6, paddingVertical: 3, width: 64, outlineWidth: 0, outlineStyle: 'none',
+    paddingHorizontal: 6, paddingVertical: 3, width: 64, outlineWidth: 0,
   },
   itemSize: {
     fontSize: 16, color: theme.textDark, borderWidth: 1.5, borderColor: theme.border,
-    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48, outlineWidth: 0, outlineStyle: 'none',
+    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, width: 48, outlineWidth: 0,
   },
   miniUnit: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: theme.border },
   unitDropBtn: { paddingHorizontal: 10 },
@@ -557,7 +551,7 @@ const s = StyleSheet.create({
   catInput: {
     fontSize: 16, borderWidth: 1.5, borderColor: theme.border, borderRadius: 10,
     paddingHorizontal: 10, paddingVertical: 6, color: theme.textDark,
-    backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0, outlineStyle: 'none',
+    backgroundColor: theme.bg, marginTop: 4, outlineWidth: 0,
   },
 
   destRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
@@ -582,7 +576,7 @@ const s = StyleSheet.create({
   manualTotalInput: {
     fontSize: 16, fontWeight: '700', color: theme.primary,
     minWidth: 70, textAlign: 'right',
-    outlineWidth: 0, outlineStyle: 'none',
+    outlineWidth: 0,
   },
 
   budgetToggle: {

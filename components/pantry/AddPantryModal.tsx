@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  Platform, ScrollView,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  ScrollView,
 } from 'react-native';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PantryItem, todayDate } from '../../store/pantry';
 import { modalSheet } from '../../lib/sharedStyles';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 
 interface Props {
@@ -18,20 +19,11 @@ interface Props {
 export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (!visible) { setName(''); }
   }, [visible]);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
 
   const handleAdd = () => {
     if (!name.trim()) return;
@@ -44,8 +36,9 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
   };
 
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
             <Text style={modalSheet.title}>Add to Pantry</Text>

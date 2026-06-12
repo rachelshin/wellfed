@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, ActivityIndicator, Alert,
-  TextInput, Platform,
+  RefreshControl, ActivityIndicator, TextInput, Pressable,
 } from 'react-native';
 import AppModal from '../../components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +24,8 @@ import HeroHeader from '../../components/HeroHeader';
 import EditRecipeModal from '../../components/recipes/EditRecipeModal';
 import MealPlanModal from '../../components/recipes/MealPlanModal';
 import { modalSheet } from '../../lib/sharedStyles';
+import { showAlert } from '../../lib/dialogs';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
 
@@ -72,7 +73,7 @@ export default function RecipesTab() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [promptText, setPromptText] = useState('');
   const [allowExtra, setAllowExtra] = useState(false);
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
 
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(() => getSavedRecipesSync() ?? []);
   const [editingRecipe, setEditingRecipe] = useState<SavedRecipe | null>(null);
@@ -90,17 +91,6 @@ export default function RecipesTab() {
   const [expandedPrepDishes, setExpandedPrepDishes] = useState<Set<string>>(new Set());
   const [addedToPantrySet, setAddedToPantrySet] = useState<Set<string>>(new Set());
   const [addedFromPantrySet, setAddedFromPantrySet] = useState<Set<string>>(new Set());
-
-  const hasApiKey = true;
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
 
   const load = async () => {
     const items = await loadPantry(user?.uid);
@@ -124,7 +114,7 @@ export default function RecipesTab() {
 
   const openPrompt = () => {
     if (pantryItems.length === 0) {
-      Alert.alert('Pantry is empty', 'Add some items to your pantry first.');
+      showAlert('Pantry is empty', 'Add some items to your pantry first.');
       return;
     }
     setPromptText('');
@@ -138,15 +128,8 @@ export default function RecipesTab() {
     try {
       const recipes = await generateRecipes(pantryItems.map((i) => i.displayName), prompt, allowExtra);
       setAiRecipes(recipes);
-    } catch (e: unknown) {
-      const msg = String((e as Error)?.message ?? '');
-      if (msg.includes('EXPO_PUBLIC_ANTHROPIC_API_KEY')) {
-        setAiError('Add EXPO_PUBLIC_ANTHROPIC_API_KEY to your .env file to enable AI recipes.');
-      } else if (msg.includes('401')) {
-        setAiError('Invalid API key — check EXPO_PUBLIC_ANTHROPIC_API_KEY in your .env file.');
-      } else {
-        setAiError('Couldn\'t reach the AI right now. Check your connection and try again.');
-      }
+    } catch {
+      setAiError('Couldn\'t reach the AI right now. Check your connection and try again.');
     } finally {
       setAiLoading(false);
     }
@@ -193,6 +176,8 @@ export default function RecipesTab() {
         .filter((x): x is NonNullable<typeof x> => x !== null);
       const plan = await generateMealPlan(pantryItems.map((i) => i.displayName), priceData, opts);
       setMealPlan(plan);
+      setAddedToPantrySet(new Set());
+      setAddedFromPantrySet(new Set());
     } catch (e: unknown) {
       const msg = String((e as Error)?.message ?? '');
       setMealPlanError(`Couldn't build the meal plan right now. ${msg ? `Error: ${msg}` : 'Check your connection and try again.'}`);
@@ -250,9 +235,9 @@ export default function RecipesTab() {
       .join('\n');
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(text);
-      Alert.alert('Copied!', 'Open Reminders, tap into a list, then paste — each item will be added as a separate reminder.');
+      showAlert('Copied!', 'Open Reminders, tap into a list, then paste — each item will be added as a separate reminder.');
     } else {
-      Alert.alert('Grocery List', text);
+      showAlert('Grocery List', text);
     }
   };
 
@@ -303,41 +288,29 @@ export default function RecipesTab() {
         style={s.scroll}
         contentContainerStyle={[
           s.scrollContent,
-          segment === 'ideas' && hasApiKey && !aiLoading && !aiError && aiRecipes.length === 0 && pantryCount > 0 && s.scrollContentCentered,
+          segment === 'ideas' && !aiLoading && !aiError && aiRecipes.length === 0 && pantryCount > 0 && s.scrollContentCentered,
         ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} colors={[theme.accent]} />}
       >
         {segment === 'ideas' && (
           <>
-
-            {!hasApiKey && (
-              <View style={s.infoCard}>
-                <Text style={s.infoTitle}>API key needed</Text>
-                <Text style={s.infoText}>
-                  Add <Text style={s.mono}>EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...</Text> to your <Text style={s.mono}>.env</Text> file and restart the dev server.
+            <TouchableOpacity
+              style={[s.generateBtn, aiLoading && s.generateBtnDisabled]}
+              onPress={openPrompt}
+              disabled={aiLoading}
+              activeOpacity={0.85}
+            >
+              {aiLoading ? (
+                <View style={s.generateBtnInner}>
+                  <ActivityIndicator size="small" color={theme.bg} />
+                  <Text style={s.generateBtnText}>Thinking up recipes…</Text>
+                </View>
+              ) : (
+                <Text style={s.generateBtnText}>
+                  {aiRecipes.length > 0 ? 'Regenerate ✦' : 'Get recipe ideas ✦'}
                 </Text>
-              </View>
-            )}
-
-            {hasApiKey && (
-              <TouchableOpacity
-                style={[s.generateBtn, aiLoading && s.generateBtnDisabled]}
-                onPress={openPrompt}
-                disabled={aiLoading}
-                activeOpacity={0.85}
-              >
-                {aiLoading ? (
-                  <View style={s.generateBtnInner}>
-                    <ActivityIndicator size="small" color={theme.bg} />
-                    <Text style={s.generateBtnText}>Thinking up recipes…</Text>
-                  </View>
-                ) : (
-                  <Text style={s.generateBtnText}>
-                    {aiRecipes.length > 0 ? 'Regenerate ✦' : 'Get recipe ideas ✦'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )}
+              )}
+            </TouchableOpacity>
 
             {aiError ? (
               <View style={s.errorCard}>
@@ -345,7 +318,7 @@ export default function RecipesTab() {
               </View>
             ) : null}
 
-            {loaded && !aiLoading && aiRecipes.length === 0 && hasApiKey && !aiError && pantryCount === 0 && (
+            {loaded && !aiLoading && aiRecipes.length === 0 && !aiError && pantryCount === 0 && (
               <View style={s.empty}>
                 <Text style={s.emptyTitle}>Stock your pantry first.</Text>
                 <Text style={s.emptySub}>
@@ -740,8 +713,9 @@ export default function RecipesTab() {
       </ScrollView>
 
       {/* Prompt modal */}
-      <AppModal visible={showPrompt} animationType="slide" transparent>
+      <AppModal visible={showPrompt} animationType="slide" transparent onRequestClose={() => setShowPrompt(false)}>
         <View style={modalSheet.backdrop}>
+          <Pressable style={modalSheet.backdropTap} onPress={() => setShowPrompt(false)} />
           <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
             <ScrollView
               bounces={false}
@@ -803,9 +777,10 @@ export default function RecipesTab() {
       </AppModal>
 
       {/* AI recipe detail modal */}
-      <AppModal visible={!!selected} animationType="slide" transparent>
+      <AppModal visible={!!selected} animationType="slide" transparent onRequestClose={() => setSelected(null)}>
         {selected && (
           <View style={s.modalBackdrop}>
+            <Pressable style={modalSheet.backdropTap} onPress={() => setSelected(null)} />
             <View style={[s.detailSheet, { paddingBottom: insets.bottom + 24 }]}>
               <ScrollView key={selected.name} bounces={false} keyboardShouldPersistTaps="handled">
                 <View style={[s.detailCatChip, { backgroundColor: categoryColor(selected.category) + '20' }]}>
@@ -925,40 +900,12 @@ const s = StyleSheet.create({
   segBtnText: { fontSize: 15, fontWeight: '600', color: theme.textFaint },
   segBtnTextActive: { color: theme.textDark },
 
-  savedDotBtn: {
-    paddingHorizontal: 12, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: theme.border,
-    alignItems: 'center',
-  },
-  savedDotText: { fontSize: 18, color: theme.textFaint, letterSpacing: 3 },
-  savedBadgeDot: {
-    position: 'absolute', top: 8, right: 8,
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: theme.primary,
-  },
-
-  savedBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginHorizontal: 20, marginTop: 16, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: theme.border,
-  },
-  savedBarBack: { fontSize: 14, fontWeight: '600', color: theme.primary, width: 52 },
-  savedBarTitle: { fontSize: 15, fontWeight: '600', color: theme.textDark },
-
   headerSub: { fontSize: 13, color: theme.textFaint, marginTop: 4 },
 
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
   scrollContentCentered: { flex: 1, justifyContent: 'center' },
 
-
-  infoCard: {
-    paddingVertical: 16, marginBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
-  },
-  infoTitle: { fontSize: 16, fontWeight: '800', color: theme.textDark, marginBottom: 6 },
-  infoText: { fontSize: 13, color: theme.textFaint, lineHeight: 20 },
-  mono: { fontFamily: 'monospace', color: theme.primary },
 
   promptSub: { fontSize: 15, fontWeight: '600', color: theme.textFaint, marginVertical: 14, lineHeight: 20, textAlign: 'center' },
   surpriseBtn: {

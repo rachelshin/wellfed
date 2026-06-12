@@ -97,7 +97,6 @@ export default function BudgetTab() {
   const totalFunds = fundsRecords.reduce((sum, r) => sum + r.amount, 0);
   const totalSpent = entries.reduce((sum, e) => sum + e.amount, 0);
   const remaining = settings ? totalFunds - totalSpent : 0;
-  const rollover = settings ? remaining + todaySpent - settings.dailyBudget : 0;
   const pct = settings ? Math.min(totalSpent / Math.max(totalFunds, 1), 1) : 0;
 
   // Unified sorted list: spending entries + funds records, most recent first
@@ -304,8 +303,6 @@ export default function BudgetTab() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
 
-  // Big number
-  bigAmount: { fontSize: 32, fontWeight: '700', color: theme.textDark },
   bigAmountNeg: { color: theme.negative },
   // Stats
   statRow: { flexDirection: 'row', marginBottom: 18 },
@@ -317,18 +314,6 @@ const s = StyleSheet.create({
     fontWeight: '700', letterSpacing: 0.6,
   },
   statDivider: { width: 1, backgroundColor: theme.border, marginVertical: 4 },
-
-  // Rollover
-  rolloverBadge: {
-    backgroundColor: theme.primaryLight, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
-  },
-  rolloverBadgeNeg: {
-    backgroundColor: theme.accentLight, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16, alignSelf: 'flex-start',
-  },
-  rolloverText: { fontSize: 12, color: theme.primary, fontWeight: '700' },
-  rolloverTextNeg: { fontSize: 12, color: theme.accent, fontWeight: '700' },
 
   // Progress
   progressTrack: {
@@ -372,10 +357,7 @@ const s = StyleSheet.create({
   },
   catDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   entryDesc: { flex: 1, fontSize: 16, fontWeight: '400', color: theme.textDark },
-  entryDate: { fontSize: 14, fontWeight: '400', color: theme.textFaint },
   entryAmt: { fontSize: 16, fontWeight: '700', color: theme.textDark, marginLeft: 8, fontVariant: ['tabular-nums'] },
   entryAmtNeg: { color: theme.negative },
   entryAmtPos: { color: theme.positive },
-  fundsRow: {},
-
 });

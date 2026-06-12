@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Platform,
+  View, Text, TextInput, TouchableOpacity, Pressable,
+  StyleSheet,
 } from 'react-native';
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
+import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
 import { Unit } from '../../store/prices';
 
@@ -54,7 +55,7 @@ export default function CategoryModal({
   const [name, setName] = useState('');
   const [selectedDisplayUnit, setSelectedDisplayUnit] = useState<Unit | undefined>(undefined);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [iosPWAKeyboard, setIosPWAKeyboard] = useState(0);
+  const iosPWAKeyboard = useIosPWAKeyboard();
   const isEdit = !!initialName;
 
   useEffect(() => {
@@ -68,15 +69,6 @@ export default function CategoryModal({
       setConfirmingDelete(false);
     }
   }, [visible, initialName]);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    if (!window.navigator?.standalone || !window.visualViewport) return;
-    const onResize = () =>
-      setIosPWAKeyboard(Math.max(0, window.innerHeight - window.visualViewport!.height));
-    window.visualViewport.addEventListener('resize', onResize);
-    return () => window.visualViewport!.removeEventListener('resize', onResize);
-  }, []);
 
   const isDuplicate = existingNames.some(
     (n) => n.toLowerCase() === name.trim().toLowerCase() && n.toLowerCase() !== initialName?.toLowerCase(),
@@ -92,8 +84,9 @@ export default function CategoryModal({
     : ALL_UNITS;
 
   return (
-    <AppModal visible={visible} animationType="slide" transparent>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalSheet.backdrop}>
+        <Pressable style={modalSheet.backdropTap} onPress={onClose} />
         <View style={[modalSheet.sheet, { paddingBottom: insets.bottom + 24 + iosPWAKeyboard }]}>
           {confirmingDelete ? (
             <>
