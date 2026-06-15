@@ -5,7 +5,20 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+const Svg = 'svg' as any;
+const Path = 'path' as any;
+const Polyline = 'polyline' as any;
+
+function LogoutIcon({ size = 22, color = '#999' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <Polyline points="16 17 21 12 16 7" />
+      <Path d="M21 12H9" />
+    </Svg>
+  );
+}
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry, updateEntry,
   getCachedEntries, getCachedSettings, getLocalCachedEntries, getLocalCachedSettings,
@@ -173,7 +186,7 @@ export default function BudgetTab() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={signOut} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="log-out-outline" size={22} color={theme.textFaint} />
+            <LogoutIcon size={22} color={theme.textFaint} />
           </TouchableOpacity>
         )}
       >
