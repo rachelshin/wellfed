@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
   loadEntries, loadSettings, saveSettings, addEntry, deleteEntry, updateEntry,
   getCachedEntries, getCachedSettings, getLocalCachedEntries, getLocalCachedSettings,
@@ -28,7 +29,7 @@ type RecordItem =
 export default function BudgetTab() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isGuest, user } = useAuth();
+  const { isGuest, user, signOut } = useAuth();
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [fundsRecords, setFundsRecords] = useState<FundsRecord[]>([]);
   const [settings, setSettings] = useState<BudgetSettings | null>(null);
@@ -170,7 +171,11 @@ export default function BudgetTab() {
           <TouchableOpacity style={heroOutlineBtn.btn} onPress={() => router.push('/sign-in')}>
             <Text style={heroOutlineBtn.text}>Sign in</Text>
           </TouchableOpacity>
-        ) : null}
+        ) : (
+          <TouchableOpacity onPress={signOut} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="log-out-outline" size={22} color={theme.textFaint} />
+          </TouchableOpacity>
+        )}
       >
         {settings ? (
           <>
