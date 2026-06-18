@@ -127,15 +127,15 @@ export default function BudgetTab() {
     return tsB - tsA;
   });
 
-  const handleSaveDailyBudget = async (val: number) => {
+  const handleSaveDailyBudget = (val: number) => {
     const newSettings: BudgetSettings = {
       ...settings,
       dailyBudget: val,
       startDate: settings?.startDate ?? today(),
     };
-    await saveSettings(newSettings, user?.uid);
     setSettings(newSettings);
     setShowEditBudget(false);
+    saveSettings(newSettings, user?.uid);
   };
 
   const handleSaveEntry = async (entryData: Omit<SpendingEntry, 'id' | 'timestamp'>) => {

@@ -26,6 +26,7 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(today());
+  const [saving, setSaving] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
@@ -39,13 +40,16 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
       setAmount('');
       setDescription('');
       setDate(today());
+      setSaving(false);
     }
   }, [visible, entry]);
 
   const handleSave = () => {
     const val = parseFloat(amount);
-    if (isNaN(val) || val <= 0) return;
+    if (isNaN(val) || val <= 0 || saving) return;
+    setSaving(true);
     onSave({ date, amount: val, category, description: description.trim() });
+    onClose();
   };
 
   return (
@@ -103,8 +107,8 @@ export default function AddEntryModal({ visible, onClose, entry, onSave, onDelet
               returnKeyType="done"
             />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-              <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add'}</Text>
+            <TouchableOpacity style={[modalSheet.primaryBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
+              <Text style={modalSheet.primaryBtnText}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Add'}</Text>
             </TouchableOpacity>
 
             {isEdit && onDelete && (

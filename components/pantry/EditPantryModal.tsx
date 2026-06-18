@@ -20,15 +20,19 @@ interface Props {
 export default function EditPantryModal({ item, onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
     if (item) setName(item.displayName);
+    else setSaving(false);
   }, [item]);
 
   const handleSave = () => {
-    if (!name.trim() || !item) return;
+    if (!name.trim() || !item || saving) return;
+    setSaving(true);
     onSave(item.id, name.trim(), name.trim().toLowerCase());
+    onClose();
   };
 
   return (
@@ -51,8 +55,8 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
               onSubmitEditing={handleSave}
             />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-              <Text style={modalSheet.primaryBtnText}>Save</Text>
+            <TouchableOpacity style={[modalSheet.primaryBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
+              <Text style={modalSheet.primaryBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
             </TouchableOpacity>
           </ScrollView>
           <TouchableOpacity style={s.cancelBtn} onPress={onClose}>

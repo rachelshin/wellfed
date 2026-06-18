@@ -19,6 +19,7 @@ interface Props {
 export default function EditDailyBudgetModal({ visible, onClose, currentValue, onSave }: Props) {
   const insets = useSafeAreaInsets();
   const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
@@ -26,13 +27,16 @@ export default function EditDailyBudgetModal({ visible, onClose, currentValue, o
       setValue(currentValue != null ? String(currentValue) : '');
     } else {
       setValue('');
+      setSaving(false);
     }
   }, [visible, currentValue]);
 
   const handleSave = () => {
     const val = parseFloat(value);
-    if (isNaN(val) || val <= 0) return;
+    if (isNaN(val) || val <= 0 || saving) return;
+    setSaving(true);
     onSave(val);
+    onClose?.();
   };
 
   const isFirstTime = currentValue == null;
@@ -65,8 +69,8 @@ export default function EditDailyBudgetModal({ visible, onClose, currentValue, o
               />
             </View>
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-              <Text style={modalSheet.primaryBtnText}>{isFirstTime ? 'Set budget' : 'Save'}</Text>
+            <TouchableOpacity style={[modalSheet.primaryBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
+              <Text style={modalSheet.primaryBtnText}>{saving ? 'Saving…' : isFirstTime ? 'Set budget' : 'Save'}</Text>
             </TouchableOpacity>
 
             {!isFirstTime && onClose && (

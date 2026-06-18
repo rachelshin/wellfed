@@ -19,20 +19,23 @@ interface Props {
 export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
-    if (!visible) { setName(''); }
+    if (!visible) { setName(''); setSaving(false); }
   }, [visible]);
 
   const handleAdd = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || saving) return;
+    setSaving(true);
     onAdd({
       displayName: name.trim(),
       itemName: name.trim().toLowerCase(),
       addedDate: todayDate(),
       source: 'manual',
     });
+    onClose();
   };
 
   return (
@@ -55,8 +58,8 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
               onSubmitEditing={handleAdd}
             />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleAdd}>
-              <Text style={modalSheet.primaryBtnText}>Add</Text>
+            <TouchableOpacity style={[modalSheet.primaryBtn, saving && { opacity: 0.5 }]} onPress={handleAdd} disabled={saving}>
+              <Text style={modalSheet.primaryBtnText}>{saving ? 'Adding…' : 'Add'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={onClose}>
               <Text style={modalSheet.cancelText}>Cancel</Text>

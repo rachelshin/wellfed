@@ -122,6 +122,7 @@ This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on on
 - Aim for only 4–6 unique recipes for the entire week.
 - Scale grocery quantities for ${numPeople * 2}–${numPeople * 3} servings per dish so leftovers cover multiple meals.
 - Maximise use of pantry items to reduce grocery spend.
+- Use perishable ingredients (fresh produce, dairy, fresh meat) in earlier meals of the week.
 - Grocery list: include ALL ingredients needed for the week. Mark inPantry: true for items that clearly match the pantry list (no need to buy), and inPantry: false for items that must be purchased.
 - Estimate costs from the provided price data where possible, otherwise use typical US grocery prices.
 - Use the price data to inform cost estimates, do not use the price data to dictate what ingredients to use or what meals to make.
@@ -237,6 +238,8 @@ exports.generateRecipes = functions.https.onRequest(async (req, res) => {
 ${moodLine}
 
 ${scopeInstructions}
+
+Prioritize using ingredients that spoil quickly (fresh produce, dairy, fresh meat, bread) before shelf-stable staples.
 
 Suggest 5 delicious recipes. Be creative and encouraging!
 

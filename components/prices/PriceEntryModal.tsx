@@ -39,6 +39,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
   const [unit, setUnit] = useState<Unit>('oz');
   const [dateAdded, setDateAdded] = useState(today());
   const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
       setViewMode(false);
       setDisplayName(''); setCategory(''); setStore('');
       setPrice(''); setSize(''); setUnit('oz'); setShowUnitPicker(false);
-      setDateAdded(today());
+      setDateAdded(today()); setSaving(false);
       return;
     }
     setViewMode(!!entry);
@@ -82,7 +83,8 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
   const handleSave = () => {
     const priceVal = parseFloat(price);
     const sizeVal = parseFloat(size);
-    if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0) return;
+    if (!displayName.trim() || isNaN(priceVal) || priceVal <= 0 || saving) return;
+    setSaving(true);
     const matched = existingCategories.find((n) => n.toLowerCase() === category.trim().toLowerCase());
     const resolvedCategory = matched
       ? matched.toLowerCase()
@@ -99,6 +101,7 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
       },
       entry?.id,
     );
+    onClose();
   };
 
   const isEdit = !!entry;
@@ -223,8 +226,8 @@ export default function PriceEntryModal({ visible, entry, prefill, existingCateg
             <Text style={modalSheet.label}>Date</Text>
             <DatePicker value={dateAdded} onChange={setDateAdded} />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-              <Text style={modalSheet.primaryBtnText}>Save</Text>
+            <TouchableOpacity style={[modalSheet.primaryBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
+              <Text style={modalSheet.primaryBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={modalSheet.cancelBtn} onPress={isEdit ? () => setViewMode(true) : onClose}>
               <Text style={modalSheet.cancelText}>{isEdit ? 'Back' : 'Cancel'}</Text>

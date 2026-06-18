@@ -25,6 +25,7 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(today());
+  const [saving, setSaving] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
 
   useEffect(() => {
@@ -36,18 +37,21 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
       setAmount('');
       setNote('');
       setDate(today());
+      setSaving(false);
     }
   }, [visible, record]);
 
   const handleSave = () => {
     const val = parseFloat(amount);
-    if (isNaN(val) || val <= 0) return;
+    if (isNaN(val) || val <= 0 || saving) return;
+    setSaving(true);
     onSave({
       date,
       amount: val,
       note: note.trim(),
       type: record?.type ?? 'manual',
     });
+    onClose();
   };
 
   const title = isEdit ? (record!.type === 'daily-increment' ? 'Edit Daily Budget' : 'Edit Funds') : 'Add Funds';
@@ -87,8 +91,8 @@ export default function FundsRecordModal({ visible, onClose, record, onSave, onD
               returnKeyType="done"
             />
 
-            <TouchableOpacity style={modalSheet.primaryBtn} onPress={handleSave}>
-              <Text style={modalSheet.primaryBtnText}>{isEdit ? 'Save' : 'Add'}</Text>
+            <TouchableOpacity style={[modalSheet.primaryBtn, saving && { opacity: 0.5 }]} onPress={handleSave} disabled={saving}>
+              <Text style={modalSheet.primaryBtnText}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Add'}</Text>
             </TouchableOpacity>
 
             {isEdit && onDelete && (
