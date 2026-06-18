@@ -84,13 +84,15 @@ export function hashItems(items: string[]): string {
 // Returns a map of itemName → estimated shelf life in days.
 // itemNames should already be lowercase (the itemName field on PantryItem).
 export async function estimateShelfLife(itemNames: string[]): Promise<Record<string, number>> {
-  const headers = await getAuthHeaders();
   const res = await fetch(SHELF_LIFE_FUNCTION_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
     body: JSON.stringify({ items: itemNames }),
   });
-  if (!res.ok) throw new Error(`shelfLife: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`${res.status}: ${err}`);
+  }
   return res.json();
 }
 

@@ -70,7 +70,7 @@ export default function PantryTab() {
         }
         setShelfCache((prev) => ({ ...prev, ...normalized }));
       })
-      .catch(() => setShelfError('Couldn\'t sort by freshness. Check your connection and try again.'))
+      .catch((e: Error) => setShelfError(`Couldn't sort by freshness: ${e.message}`))
       .finally(() => setShelfLoading(false));
   }, [sortMode, items]);
 
