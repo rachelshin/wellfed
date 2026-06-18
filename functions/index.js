@@ -220,18 +220,20 @@ exports.shelfLife = functions.https.onRequest(async (req, res) => {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 512,
+      system: 'You respond only with valid JSON. No markdown, no explanation, no code fences.',
       messages: [{
         role: 'user',
-        content: `For each food item, estimate how many days it typically lasts when stored properly (refrigerate perishables, pantry for shelf-stable, freezer for frozen). Return ONLY raw JSON mapping each item name exactly as given to an integer number of days. No markdown, no explanation.
+        content: `Estimate how many days each food item lasts when stored properly. Return a JSON object mapping each item name exactly as given to an integer number of days.
 
 Items: ${items.join(', ')}
 
-Example: {"milk": 7, "canned beans": 730, "chicken breast": 4, "frozen peas": 180}`,
+Example output: {"milk": 7, "canned beans": 730, "chicken breast": 4}`,
       }],
     });
 
     const raw = message.content[0].text.trim();
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const clean = raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
     if (!jsonMatch) { res.status(500).json({ error: 'No JSON in response' }); return; }
     res.json(JSON.parse(jsonMatch[0]));
   } catch (e) {
