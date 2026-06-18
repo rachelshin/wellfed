@@ -232,7 +232,7 @@ Example output: {"milk": 7, "canned beans": 730, "chicken breast": 4}`,
     });
 
     const raw = message.content[0].text.trim();
-    console.log('shelfLife raw response:', raw);
+    console.log('shelfLife stop_reason:', message.stop_reason, 'length:', raw.length);
     const clean = raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
     const jsonMatch = clean.match(/\{[\s\S]*\}/);
     if (!jsonMatch) { res.status(500).json({ error: 'No JSON in response' }); return; }
