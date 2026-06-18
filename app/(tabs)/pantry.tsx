@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl,
@@ -8,6 +8,8 @@ import { useFocusEffect } from 'expo-router';
 import {
   loadPantry, addPantryItem, updatePantryItem, deletePantryItem, PantryItem,
 } from '../../store/pantry';
+import { estimatedShelfDays } from '../../lib/shelfLife';
+import { estimateShelfLife } from '../../lib/ai';
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import EditPantryModal from '../../components/pantry/EditPantryModal';
 import HeroHeader from '../../components/HeroHeader';
@@ -26,6 +28,29 @@ function itemColor(name: string): string {
   return DOT_PALETTE[Math.abs(h) % DOT_PALETTE.length];
 }
 
+type SortMode = 'alpha' | 'expiring';
+
+function daysAgo(dateStr: string): number {
+  const added = new Date(dateStr + 'T00:00:00');
+  return Math.floor((Date.now() - added.getTime()) / 86400000);
+}
+
+function expiryLabel(daysLeft: number): string {
+  if (daysLeft < 0) return `${Math.abs(daysLeft)}d over`;
+  if (daysLeft === 0) return 'Use today';
+  if (daysLeft === 1) return '1 day left';
+  if (daysLeft < 14) return `${daysLeft} days left`;
+  if (daysLeft < 60) return `${Math.floor(daysLeft / 7)} wk left`;
+  return `${Math.floor(daysLeft / 30)} mo left`;
+}
+
+function expiryColor(daysLeft: number): string {
+  if (daysLeft <= 1) return theme.negative;
+  if (daysLeft <= 4) return theme.warning;
+  if (daysLeft <= 7) return '#d4a855';
+  return theme.textFaint;
+}
+
 export default function PantryTab() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -35,10 +60,21 @@ export default function PantryTab() {
   const [editing, setEditing] = useState<PantryItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('alpha');
+  const [shelfCache, setShelfCache] = useState<Record<string, number>>({});
 
   const load = async () => { setItems(await loadPantry(user?.uid)); setLoaded(true); };
   useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  useEffect(() => {
+    if (sortMode !== 'expiring' || items.length === 0) return;
+    const uncached = [...new Set(items.map((i) => i.itemName))].filter((n) => shelfCache[n] === undefined);
+    if (uncached.length === 0) return;
+    estimateShelfLife(uncached)
+      .then((results) => setShelfCache((prev) => ({ ...prev, ...results })))
+      .catch(() => {});
+  }, [sortMode, items]);
 
   const handleDelete = async (id: string) => {
     setItems(await deletePantryItem(items, id, user?.uid));
@@ -53,15 +89,27 @@ export default function PantryTab() {
     ? items.filter((i) => i.itemName.includes(search.toLowerCase().trim()))
     : items;
 
-  const grouped = filtered
+  const sortedAlpha = filtered
     .slice()
-    .sort((a, b) => a.displayName.localeCompare(b.displayName))
-    .reduce<Record<string, PantryItem[]>>((acc, item) => {
-      const letter = item.displayName[0].toUpperCase();
-      if (!acc[letter]) acc[letter] = [];
-      acc[letter].push(item);
-      return acc;
-    }, {});
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+  const grouped = sortedAlpha.reduce<Record<string, PantryItem[]>>((acc, item) => {
+    const letter = item.displayName[0].toUpperCase();
+    if (!acc[letter]) acc[letter] = [];
+    acc[letter].push(item);
+    return acc;
+  }, {});
+
+  const getShelfDays = (item: PantryItem) =>
+    shelfCache[item.itemName] ?? estimatedShelfDays(item.itemName);
+
+  const sortedExpiring = filtered
+    .slice()
+    .sort((a, b) => {
+      const aLeft = getShelfDays(a) - daysAgo(a.addedDate);
+      const bLeft = getShelfDays(b) - daysAgo(b.addedDate);
+      return aLeft - bLeft;
+    });
 
   const receiptCount = items.filter((i) => i.source === 'receipt').length;
 
@@ -88,6 +136,23 @@ export default function PantryTab() {
         </View>
       </HeroHeader>
 
+      <View style={s.sortRow}>
+        <TouchableOpacity
+          style={[s.sortBtn, sortMode === 'alpha' && s.sortBtnActive]}
+          onPress={() => setSortMode('alpha')}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.sortBtnText, sortMode === 'alpha' && s.sortBtnTextActive]}>A–Z</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.sortBtn, sortMode === 'expiring' && s.sortBtnActive]}
+          onPress={() => setSortMode('expiring')}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.sortBtnText, sortMode === 'expiring' && s.sortBtnTextActive]}>Use first</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
@@ -108,33 +173,56 @@ export default function PantryTab() {
           </View>
         )}
 
-        {Object.entries(grouped).map(([letter, groupItems]) => (
+        {sortMode === 'alpha' && Object.entries(grouped).map(([letter, groupItems]) => (
           <View key={letter}>
             <Text style={s.groupLetter}>{letter}</Text>
-            {groupItems.map((item) => {
-              return (
+            {groupItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={s.itemRow}
+                onPress={() => setEditing(item)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.itemDot, { backgroundColor: itemColor(item.itemName) }]} />
+                <View style={s.itemInfo}>
+                  <Text style={s.itemName}>{item.displayName}</Text>
+                </View>
                 <TouchableOpacity
-                  key={item.id}
-                  style={s.itemRow}
-                  onPress={() => setEditing(item)}
-                  activeOpacity={0.7}
+                  style={s.deleteBtn}
+                  onPress={() => handleDelete(item.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <View style={[s.itemDot, { backgroundColor: itemColor(item.itemName) }]} />
-                  <View style={s.itemInfo}>
-                    <Text style={s.itemName}>{item.displayName}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={s.deleteBtn}
-                    onPress={() => handleDelete(item.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={s.deleteX}>✕</Text>
-                  </TouchableOpacity>
+                  <Text style={s.deleteX}>✕</Text>
                 </TouchableOpacity>
-              );
-            })}
+              </TouchableOpacity>
+            ))}
           </View>
         ))}
+
+        {sortMode === 'expiring' && sortedExpiring.map((item) => {
+          const daysLeft = getShelfDays(item) - daysAgo(item.addedDate);
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={s.itemRow}
+              onPress={() => setEditing(item)}
+              activeOpacity={0.7}
+            >
+              <View style={[s.itemDot, { backgroundColor: itemColor(item.itemName) }]} />
+              <View style={s.itemInfo}>
+                <Text style={s.itemName}>{item.displayName}</Text>
+              </View>
+              <Text style={[s.ageBadge, { color: expiryColor(daysLeft) }]}>{expiryLabel(daysLeft)}</Text>
+              <TouchableOpacity
+                style={s.deleteBtn}
+                onPress={() => handleDelete(item.id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={s.deleteX}>✕</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          );
+        })}
 
         <View style={{ height: 110 }} />
       </ScrollView>
@@ -189,6 +277,17 @@ const s = StyleSheet.create({
     textTransform: 'uppercase', marginTop: 16, marginBottom: 6, paddingLeft: 4,
   },
 
+  sortRow: {
+    flexDirection: 'row', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, gap: 8,
+  },
+  sortBtn: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    borderWidth: 1, borderColor: theme.border,
+  },
+  sortBtnActive: { backgroundColor: theme.heroPantry, borderColor: theme.heroPantry },
+  sortBtnText: { fontSize: 13, fontWeight: '700', color: theme.textFaint },
+  sortBtnTextActive: { color: '#FFFFFF' },
+
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 9,
@@ -197,6 +296,7 @@ const s = StyleSheet.create({
   itemDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: '400', color: theme.textDark },
+  ageBadge: { fontSize: 12, fontWeight: '700', marginRight: 8 },
   deleteBtn: { padding: 4 },
   deleteX: { fontSize: 14, color: theme.textFaint, fontWeight: '700' },
 });

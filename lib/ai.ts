@@ -9,6 +9,8 @@ const FUNCTION_URL =
   'https://us-central1-well-fed-66136.cloudfunctions.net/generateRecipes';
 const MEAL_PLAN_FUNCTION_URL =
   'https://us-central1-well-fed-66136.cloudfunctions.net/generateMealPlan';
+const SHELF_LIFE_FUNCTION_URL =
+  'https://us-central1-well-fed-66136.cloudfunctions.net/shelfLife';
 
 export interface MealPlanMeal {
   name: string;
@@ -77,6 +79,19 @@ export interface AIRecipe {
 
 export function hashItems(items: string[]): string {
   return items.slice().sort().join(',');
+}
+
+// Returns a map of itemName → estimated shelf life in days.
+// itemNames should already be lowercase (the itemName field on PantryItem).
+export async function estimateShelfLife(itemNames: string[]): Promise<Record<string, number>> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(SHELF_LIFE_FUNCTION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ items: itemNames }),
+  });
+  if (!res.ok) throw new Error(`shelfLife: ${res.status}`);
+  return res.json();
 }
 
 let _memAiRecipes: AIRecipe[] | null = null;

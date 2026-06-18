@@ -199,6 +199,47 @@ Return ONLY this JSON (no markdown, no extra text):
   }
 });
 
+exports.shelfLife = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+  if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
+  if (!(await requireAuth(req, res))) return;
+
+  const { items } = req.body;
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: 'items array required' }); return;
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      messages: [{
+        role: 'user',
+        content: `For each food item, estimate how many days it typically lasts when stored properly (refrigerate perishables, pantry for shelf-stable, freezer for frozen). Return ONLY raw JSON mapping each item name exactly as given to an integer number of days. No markdown, no explanation.
+
+Items: ${items.join(', ')}
+
+Example: {"milk": 7, "canned beans": 730, "chicken breast": 4, "frozen peas": 180}`,
+      }],
+    });
+
+    const raw = message.content[0].text.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) { res.status(500).json({ error: 'No JSON in response' }); return; }
+    res.json(JSON.parse(jsonMatch[0]));
+  } catch (e) {
+    console.error('shelfLife error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 exports.generateRecipes = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
