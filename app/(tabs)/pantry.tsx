@@ -8,6 +8,7 @@ import { useFocusEffect } from 'expo-router';
 import {
   loadPantry, addPantryItem, updatePantryItem, deletePantryItem, PantryItem,
 } from '../../store/pantry';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { estimateShelfLife } from '../../lib/ai';
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import EditPantryModal from '../../components/pantry/EditPantryModal';
@@ -15,6 +16,8 @@ import HeroHeader from '../../components/HeroHeader';
 import { fab, darkSearch } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
 import theme from '../../lib/theme';
+
+const SHELF_CACHE_KEY = '@shelf_life_cache';
 
 const DOT_PALETTE = [
   '#8a7aaa', '#7BAFD4', '#94B8A4', '#E87830',
@@ -55,6 +58,15 @@ export default function PantryTab() {
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   useEffect(() => {
+    AsyncStorage.getItem(SHELF_CACHE_KEY).then((json) => {
+      if (!json) return;
+      const cached: Record<string, number> = JSON.parse(json);
+      setShelfCache(cached);
+      Object.keys(cached).forEach((n) => requestedNames.current.add(n));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (sortMode !== 'expiring' || items.length === 0) return;
     const toFetch = [...new Set(items.map((i) => i.itemName))]
       .filter((n) => !requestedNames.current.has(n));
@@ -68,7 +80,11 @@ export default function PantryTab() {
         for (const [key, val] of Object.entries(results)) {
           normalized[key.toLowerCase()] = val as number;
         }
-        setShelfCache((prev) => ({ ...prev, ...normalized }));
+        setShelfCache((prev) => {
+          const updated = { ...prev, ...normalized };
+          AsyncStorage.setItem(SHELF_CACHE_KEY, JSON.stringify(updated)).catch(() => {});
+          return updated;
+        });
       })
       .catch((e: Error) => setShelfError(`Couldn't sort by freshness: ${e.message}`))
       .finally(() => setShelfLoading(false));

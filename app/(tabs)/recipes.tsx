@@ -747,7 +747,6 @@ export default function RecipesTab() {
                 onChangeText={setPromptText}
                 placeholder="Tell Claude what you're craving."
                 placeholderTextColor={theme.placeholder}
-                autoFocus
                 returnKeyType="done"
                 onSubmitEditing={() => handleGenerate(promptText.trim() || undefined)}
               />
