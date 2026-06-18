@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl,
+  TextInput, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadPantry, addPantryItem, updatePantryItem, deletePantryItem, PantryItem,
 } from '../../store/pantry';
-import { estimatedShelfDays } from '../../lib/shelfLife';
 import { estimateShelfLife } from '../../lib/ai';
 import AddPantryModal from '../../components/pantry/AddPantryModal';
 import EditPantryModal from '../../components/pantry/EditPantryModal';
@@ -47,6 +46,8 @@ export default function PantryTab() {
   const [loaded, setLoaded] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('alpha');
   const [shelfCache, setShelfCache] = useState<Record<string, number>>({});
+  const [shelfLoading, setShelfLoading] = useState(false);
+  const [shelfError, setShelfError] = useState('');
   const requestedNames = useRef<Set<string>>(new Set());
 
   const load = async () => { setItems(await loadPantry(user?.uid)); setLoaded(true); };
@@ -59,6 +60,8 @@ export default function PantryTab() {
       .filter((n) => !requestedNames.current.has(n));
     if (toFetch.length === 0) return;
     toFetch.forEach((n) => requestedNames.current.add(n));
+    setShelfLoading(true);
+    setShelfError('');
     estimateShelfLife(toFetch)
       .then((results) => {
         const normalized: Record<string, number> = {};
@@ -67,7 +70,8 @@ export default function PantryTab() {
         }
         setShelfCache((prev) => ({ ...prev, ...normalized }));
       })
-      .catch(() => {});
+      .catch(() => setShelfError('Couldn\'t sort by freshness. Check your connection and try again.'))
+      .finally(() => setShelfLoading(false));
   }, [sortMode, items]);
 
   const handleDelete = async (id: string) => {
@@ -94,8 +98,7 @@ export default function PantryTab() {
     return acc;
   }, {});
 
-  const getShelfDays = (item: PantryItem) =>
-    shelfCache[item.itemName] ?? estimatedShelfDays(item.itemName);
+  const getShelfDays = (item: PantryItem) => shelfCache[item.itemName] ?? Infinity;
 
   const sortedExpiring = filtered
     .slice()
@@ -193,7 +196,20 @@ export default function PantryTab() {
           </View>
         ))}
 
-        {sortMode === 'expiring' && sortedExpiring.map((item) => (
+        {sortMode === 'expiring' && shelfLoading && (
+          <View style={s.shelfStatus}>
+            <ActivityIndicator size="small" color={theme.textFaint} />
+            <Text style={s.shelfStatusText}>Sorting by freshness…</Text>
+          </View>
+        )}
+
+        {sortMode === 'expiring' && shelfError ? (
+          <View style={s.empty}>
+            <Text style={s.emptyText}>{shelfError}</Text>
+          </View>
+        ) : null}
+
+        {sortMode === 'expiring' && !shelfLoading && !shelfError && sortedExpiring.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={s.itemRow}
@@ -266,6 +282,9 @@ const s = StyleSheet.create({
     fontSize: 12, fontWeight: '800', color: theme.textFaint, letterSpacing: 1,
     textTransform: 'uppercase', marginTop: 16, marginBottom: 6, paddingLeft: 4,
   },
+
+  shelfStatus: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 24, justifyContent: 'center' },
+  shelfStatusText: { fontSize: 14, color: theme.textFaint },
 
   sortRow: {
     flexDirection: 'row', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, gap: 8,
