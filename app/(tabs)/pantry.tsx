@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl,
@@ -35,21 +35,6 @@ function daysAgo(dateStr: string): number {
   return Math.floor((Date.now() - added.getTime()) / 86400000);
 }
 
-function expiryLabel(daysLeft: number): string {
-  if (daysLeft < 0) return `${Math.abs(daysLeft)}d over`;
-  if (daysLeft === 0) return 'Use today';
-  if (daysLeft === 1) return '1 day left';
-  if (daysLeft < 14) return `${daysLeft} days left`;
-  if (daysLeft < 60) return `${Math.floor(daysLeft / 7)} wk left`;
-  return `${Math.floor(daysLeft / 30)} mo left`;
-}
-
-function expiryColor(daysLeft: number): string {
-  if (daysLeft <= 1) return theme.negative;
-  if (daysLeft <= 4) return theme.warning;
-  if (daysLeft <= 7) return '#d4a855';
-  return theme.textFaint;
-}
 
 export default function PantryTab() {
   const insets = useSafeAreaInsets();
@@ -62,6 +47,7 @@ export default function PantryTab() {
   const [loaded, setLoaded] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('alpha');
   const [shelfCache, setShelfCache] = useState<Record<string, number>>({});
+  const requestedNames = useRef<Set<string>>(new Set());
 
   const load = async () => { setItems(await loadPantry(user?.uid)); setLoaded(true); };
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -69,10 +55,18 @@ export default function PantryTab() {
 
   useEffect(() => {
     if (sortMode !== 'expiring' || items.length === 0) return;
-    const uncached = [...new Set(items.map((i) => i.itemName))].filter((n) => shelfCache[n] === undefined);
-    if (uncached.length === 0) return;
-    estimateShelfLife(uncached)
-      .then((results) => setShelfCache((prev) => ({ ...prev, ...results })))
+    const toFetch = [...new Set(items.map((i) => i.itemName))]
+      .filter((n) => !requestedNames.current.has(n));
+    if (toFetch.length === 0) return;
+    toFetch.forEach((n) => requestedNames.current.add(n));
+    estimateShelfLife(toFetch)
+      .then((results) => {
+        const normalized: Record<string, number> = {};
+        for (const [key, val] of Object.entries(results)) {
+          normalized[key.toLowerCase()] = val as number;
+        }
+        setShelfCache((prev) => ({ ...prev, ...normalized }));
+      })
       .catch(() => {});
   }, [sortMode, items]);
 
@@ -199,9 +193,7 @@ export default function PantryTab() {
           </View>
         ))}
 
-        {sortMode === 'expiring' && sortedExpiring.map((item) => {
-          const daysLeft = getShelfDays(item) - daysAgo(item.addedDate);
-          return (
+        {sortMode === 'expiring' && sortedExpiring.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={s.itemRow}
@@ -212,7 +204,6 @@ export default function PantryTab() {
               <View style={s.itemInfo}>
                 <Text style={s.itemName}>{item.displayName}</Text>
               </View>
-              <Text style={[s.ageBadge, { color: expiryColor(daysLeft) }]}>{expiryLabel(daysLeft)}</Text>
               <TouchableOpacity
                 style={s.deleteBtn}
                 onPress={() => handleDelete(item.id)}
@@ -221,8 +212,7 @@ export default function PantryTab() {
                 <Text style={s.deleteX}>✕</Text>
               </TouchableOpacity>
             </TouchableOpacity>
-          );
-        })}
+        ))}
 
         <View style={{ height: 110 }} />
       </ScrollView>
@@ -296,7 +286,6 @@ const s = StyleSheet.create({
   itemDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: '400', color: theme.textDark },
-  ageBadge: { fontSize: 12, fontWeight: '700', marginRight: 8 },
   deleteBtn: { padding: 4 },
   deleteX: { fontSize: 14, color: theme.textFaint, fontWeight: '700' },
 });
