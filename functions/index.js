@@ -219,15 +219,15 @@ exports.shelfLife = functions.https.onRequest(async (req, res) => {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system: 'You respond only with valid JSON. No markdown, no explanation, no code fences.',
+      max_tokens: 4096,
+      system: 'You respond only with valid JSON. No markdown, no explanation, no code fences, no whitespace.',
       messages: [{
         role: 'user',
-        content: `Estimate how many days each food item lasts when stored properly. Return a JSON object mapping each item name exactly as given to an integer number of days.
+        content: `Estimate how many days each food item lasts when stored properly. Return a compact JSON object (no spaces or newlines) mapping each item name exactly as given to an integer number of days.
 
 Items: ${items.join(', ')}
 
-Example output: {"milk": 7, "canned beans": 730, "chicken breast": 4}`,
+Example output: {"milk":7,"canned beans":730,"chicken breast":4}`,
       }],
     });
 
