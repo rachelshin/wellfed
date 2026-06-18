@@ -741,15 +741,6 @@ export default function RecipesTab() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={s.surpriseBtn}
-                onPress={() => handleGenerate(undefined)}
-              >
-                <Text style={s.surpriseBtnText}>🎲 Surprise me!</Text>
-              </TouchableOpacity>
-
-              <Text style={s.promptSub}>or</Text>
-
               <TextInput
                 style={modalSheet.input}
                 value={promptText}
@@ -762,10 +753,19 @@ export default function RecipesTab() {
               />
 
               <TouchableOpacity
-                style={modalSheet.primaryBtn}
+                style={[modalSheet.primaryBtn, { backgroundColor: theme.heroRecipes }]}
                 onPress={() => handleGenerate(promptText.trim() || undefined)}
               >
                 <Text style={modalSheet.primaryBtnText}>Generate</Text>
+              </TouchableOpacity>
+
+              <Text style={s.promptSub}>or</Text>
+
+              <TouchableOpacity
+                style={s.surpriseBtn}
+                onPress={() => handleGenerate(undefined)}
+              >
+                <Text style={s.surpriseBtnText}>🎲 Surprise me!</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={modalSheet.cancelBtn} onPress={() => setShowPrompt(false)}>
