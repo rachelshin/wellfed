@@ -167,16 +167,20 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
               returnKeyType="next"
             />
 
-            <Text style={modalSheet.label}>Weekly grocery budget (optional)</Text>
-            <TextInput
-              style={modalSheet.input}
-              value={budget}
-              onChangeText={setBudget}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 100"
-              placeholderTextColor={theme.placeholder}
-              returnKeyType="next"
-            />
+            {!pantryOnly && (
+              <>
+                <Text style={modalSheet.label}>Weekly grocery budget (optional)</Text>
+                <TextInput
+                  style={modalSheet.input}
+                  value={budget}
+                  onChangeText={setBudget}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g. 100"
+                  placeholderTextColor={theme.placeholder}
+                  returnKeyType="next"
+                />
+              </>
+            )}
 
             <Text style={modalSheet.label}>Anything else? (optional)</Text>
             <TextInput
