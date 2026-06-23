@@ -187,7 +187,7 @@ Return ONLY this JSON (no markdown, no extra text):
   try {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
-      model: 'claude-opus-4-8',
+      model: 'claude-sonnet-4-6',
       max_tokens: 16000,
       system: 'You are a helpful meal planning assistant. You respond only with valid JSON. Be as concise as possible — use short meal names, brief descriptions, and compact field values to minimize token usage.',
       messages: [{ role: 'user', content: prompt }],
