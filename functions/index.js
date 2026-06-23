@@ -126,7 +126,7 @@ This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on on
 - Use perishable ingredients (fresh produce, dairy, fresh meat) in earlier meals of the week.
 ${pantryOnly
   ? `- You MUST ONLY use pantry items in the meal plan. Do not include any ingredient not listed above.
-- Grocery list: list only the pantry items being used this week, all marked inPantry: true. Set totalEstimatedCost to 0.`
+- Grocery list: list only the pantry items being used this week. Set totalEstimatedCost to 0.`
   : `- Maximise use of pantry items to reduce grocery spend.
 - Grocery list: include ALL ingredients needed for the week. Mark inPantry: true for items that clearly match the pantry list (no need to buy), and inPantry: false for items that must be purchased.
 - Estimate costs from the provided price data where possible, otherwise use typical US grocery prices.
@@ -197,7 +197,19 @@ Return ONLY this JSON (no markdown, no extra text):
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) { res.status(500).json({ error: 'No JSON in response' }); return; }
 
-    res.json(JSON.parse(jsonMatch[0]));
+    const plan = JSON.parse(jsonMatch[0]);
+
+    // Re-compute inPantry from the actual pantry list instead of trusting the AI.
+    if (Array.isArray(pantryItems) && pantryItems.length && Array.isArray(plan.groceryList)) {
+      const pantryLower = pantryItems.map((i) => i.toLowerCase());
+      plan.groceryList = plan.groceryList.map((item) => {
+        const itemLow = (item.item || '').toLowerCase();
+        const inPantry = pantryLower.some((p) => p.includes(itemLow) || itemLow.includes(p));
+        return { ...item, inPantry };
+      });
+    }
+
+    res.json(plan);
   } catch (e) {
     console.error('generateMealPlan error:', e.message, e.stack);
     res.status(500).json({ error: e.message });
