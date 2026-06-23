@@ -260,8 +260,12 @@ export default function PantryTab() {
       <AddPantryModal
         visible={showAdd}
         onClose={() => setShowAdd(false)}
-        onAdd={async (item) => {
-          setItems(await addPantryItem(items, item, user?.uid));
+        onAdd={async (newItems) => {
+          let current = items;
+          for (const item of newItems) {
+            current = await addPantryItem(current, item, user?.uid);
+          }
+          setItems(current);
           setShowAdd(false);
         }}
       />

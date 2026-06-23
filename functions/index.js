@@ -86,7 +86,7 @@ exports.generateMealPlan = functions.runWith({ timeoutSeconds: 540 }).https.onRe
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
   if (!(await requireAuth(req, res))) return;
 
-  const { pantryItems, priceData, people, dietaryRestrictions, weeklyBudget, notes } = req.body;
+  const { pantryItems, priceData, people, dietaryRestrictions, weeklyBudget, notes, pantryOnly } = req.body;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
@@ -94,7 +94,9 @@ exports.generateMealPlan = functions.runWith({ timeoutSeconds: 540 }).https.onRe
   const numPeople = Math.max(1, parseInt(people, 10) || 2);
 
   const pantryLine = pantryItems?.length
-    ? `Pantry items the user already has: ${pantryItems.join(', ')}.`
+    ? pantryOnly
+      ? `Pantry items the user already has: ${pantryItems.join(', ')}. BUILD THE ENTIRE PLAN USING ONLY THESE ITEMS — do not include any ingredient not on this list.`
+      : `Pantry items the user already has: ${pantryItems.join(', ')}.`
     : 'The pantry is empty — suggest a full shopping list.';
 
   const dietLine = dietaryRestrictions ? `Dietary restrictions: ${dietaryRestrictions}.` : '';
@@ -121,12 +123,15 @@ This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on on
 - Dinners on non-prep days: reheat batch-cooked dishes or assemble in under 15 min. No from-scratch cooking.
 - Aim for only 4–6 unique recipes for the entire week.
 - Scale grocery quantities for ${numPeople * 2}–${numPeople * 3} servings per dish so leftovers cover multiple meals.
-- Maximise use of pantry items to reduce grocery spend.
 - Use perishable ingredients (fresh produce, dairy, fresh meat) in earlier meals of the week.
+${pantryOnly
+  ? `- You MUST ONLY use pantry items in the meal plan. Do not include any ingredient not listed above.
+- Grocery list: list only the pantry items being used this week, all marked inPantry: true. Set totalEstimatedCost to 0.`
+  : `- Maximise use of pantry items to reduce grocery spend.
 - Grocery list: include ALL ingredients needed for the week. Mark inPantry: true for items that clearly match the pantry list (no need to buy), and inPantry: false for items that must be purchased.
 - Estimate costs from the provided price data where possible, otherwise use typical US grocery prices.
 - Use the price data to inform cost estimates, do not use the price data to dictate what ingredients to use or what meals to make.
-${weeklyBudget ? `- Total grocery cost must stay under $${weeklyBudget}.` : ''}
+${weeklyBudget ? `- Total grocery cost must stay under $${weeklyBudget}.` : ''}`}
 
 Return ONLY this JSON (no markdown, no extra text):
 {

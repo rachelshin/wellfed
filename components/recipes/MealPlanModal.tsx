@@ -33,6 +33,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   const [dietary, setDietary] = useState('');
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
+  const [pantryOnly, setPantryOnly] = useState(false);
   const iosPWAKeyboard = useIosPWAKeyboard();
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(0);
@@ -93,6 +94,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
       dietaryRestrictions: dietary.trim(),
       weeklyBudget: !isNaN(bg) && bg > 0 ? bg : null,
       notes: notes.trim(),
+      pantryOnly,
     });
   };
 
@@ -111,6 +113,23 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
             onLayout={e => { viewH.current = e.nativeEvent.layout.height; }}
           >
             <Text style={modalSheet.title}>Prep your week 🥘</Text>
+
+            <View style={s.scopeToggle}>
+              <TouchableOpacity
+                style={[s.scopeBtn, pantryOnly && s.scopeBtnActive]}
+                onPress={() => setPantryOnly(true)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.scopeBtnText, pantryOnly && s.scopeBtnTextActive]}>Pantry only</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.scopeBtn, !pantryOnly && s.scopeBtnActive]}
+                onPress={() => setPantryOnly(false)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.scopeBtnText, !pantryOnly && s.scopeBtnTextActive]}>Allow extras + list</Text>
+              </TouchableOpacity>
+            </View>
 
             {profiles.length > 0 && (
               <View style={s.profilesRow}>
@@ -209,6 +228,18 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
 }
 
 const s = StyleSheet.create({
+  scopeToggle: {
+    flexDirection: 'row', borderRadius: 12, overflow: 'hidden',
+    borderWidth: 1, borderColor: theme.border, marginBottom: 20,
+  },
+  scopeBtn: {
+    flex: 1, paddingVertical: 10, alignItems: 'center',
+    backgroundColor: theme.bg,
+  },
+  scopeBtnActive: { backgroundColor: theme.heroRecipes },
+  scopeBtnText: { fontSize: 14, fontWeight: '700', color: theme.textFaint },
+  scopeBtnTextActive: { color: '#FFFFFF' },
+
   profilesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

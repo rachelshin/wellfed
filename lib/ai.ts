@@ -58,6 +58,7 @@ export interface MealPlanOptions {
   dietaryRestrictions: string;
   weeklyBudget: number | null;
   notes: string;
+  pantryOnly: boolean;
 }
 
 export interface AIRecipeIngredient {
