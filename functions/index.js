@@ -86,12 +86,13 @@ exports.generateMealPlan = functions.runWith({ timeoutSeconds: 540 }).https.onRe
   if (req.method !== 'POST') { res.status(405).send('Method not allowed'); return; }
   if (!(await requireAuth(req, res))) return;
 
-  const { pantryItems, priceData, people, dietaryRestrictions, weeklyBudget, notes, pantryOnly } = req.body;
+  const { pantryItems, priceData, people, days, dietaryRestrictions, weeklyBudget, notes, pantryOnly } = req.body;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
 
   const numPeople = Math.max(1, parseInt(people, 10) || 2);
+  const numDays = Math.max(1, parseInt(days, 10) || 7);
 
   const pantryLine = pantryItems?.length
     ? pantryOnly
@@ -107,7 +108,7 @@ exports.generateMealPlan = functions.runWith({ timeoutSeconds: 540 }).https.onRe
     ? `Real price data the user has tracked (use for cost estimates):\n${priceData.map((p) => `  ${p.name}: $${p.price.toFixed(2)} for ${p.size}${p.unit}`).join('\n')}`
     : '';
 
-  const prompt = `Create a 7-day meal prep plan for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}.
+  const prompt = `Create a ${numDays}-day meal prep plan for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}.
 
 ${pantryLine}
 ${dietLine}
@@ -116,13 +117,13 @@ ${priceLine}
 ${notesLine}
 
 This is a MEAL PREP plan — the goal is minimal daily cooking. Batch cook on one or two days so the rest of the week practically runs itself:
-- Designate Sunday as the main prep day: cook 3–4 dishes in large batches.
-- Add a Wednesday refresh session if useful for mid-week variety.
+- Designate the first day as the main prep day: cook 3–4 dishes in large batches.
+${numDays >= 5 ? '- Add a mid-plan refresh session if useful for variety.' : ''}
 - Breakfasts: simple, repeating, no cooking required (overnight oats, yogurt + fruit, toast). Use the same 2–3 options across the week.
 - Lunches: leftovers from batch-cooked dinners. Always name them "Leftover [dish name]".
 - Dinners on non-prep days: reheat batch-cooked dishes or assemble in under 15 min. No from-scratch cooking.
 - Aim for only 4–6 unique recipes for the entire week.
-- Scale grocery quantities for ${numPeople * 2}–${numPeople * 3} servings per dish so leftovers cover multiple meals.
+- Scale grocery quantities for ${numPeople * Math.ceil(numDays / 2)}–${numPeople * Math.ceil(numDays / 1.5)} servings per dish so leftovers cover multiple meals.
 - Use perishable ingredients (fresh produce, dairy, fresh meat) in earlier meals of the week.
 ${pantryOnly
   ? `- You MUST ONLY use pantry items in the meal plan. Do not include any ingredient not listed above.

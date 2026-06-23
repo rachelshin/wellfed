@@ -55,6 +55,7 @@ export interface MealPlan {
 
 export interface MealPlanOptions {
   people: number;
+  days: number;
   dietaryRestrictions: string;
   weeklyBudget: number | null;
   notes: string;

@@ -19,6 +19,7 @@ interface MealPlanProfile {
   dietary: string;
   budget: string;
   notes: string;
+  days: string;
 }
 
 interface Props {
@@ -30,6 +31,7 @@ interface Props {
 export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
   const insets = useSafeAreaInsets();
   const [people, setPeople] = useState('2');
+  const [days, setDays] = useState('7');
   const [dietary, setDietary] = useState('');
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
@@ -62,6 +64,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
 
   const applyProfile = (p: MealPlanProfile) => {
     setPeople(p.people);
+    setDays(p.days || '7');
     setDietary(p.dietary);
     setBudget(p.budget);
     setNotes(p.notes);
@@ -78,8 +81,8 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
     if (!name) return;
     const existing = profiles.find(p => p.name.toLowerCase() === name.toLowerCase());
     const updated = existing
-      ? profiles.map(p => p.id === existing.id ? { ...p, people, dietary, budget, notes } : p)
-      : [...profiles, { id: Date.now().toString(), name, people, dietary, budget, notes }];
+      ? profiles.map(p => p.id === existing.id ? { ...p, people, days, dietary, budget, notes } : p)
+      : [...profiles, { id: Date.now().toString(), name, people, days, dietary, budget, notes }];
     setProfiles(updated);
     await AsyncStorage.setItem(PROFILES_KEY, JSON.stringify(updated));
     setShowSave(false);
@@ -88,11 +91,13 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
 
   const handleGenerate = () => {
     const p = parseInt(people, 10);
+    const d = parseInt(days, 10);
     const bg = parseFloat(budget);
     onGenerate({
       people: isNaN(p) || p < 1 ? 2 : p,
+      days: isNaN(d) || d < 1 ? 7 : d,
       dietaryRestrictions: dietary.trim(),
-      weeklyBudget: !isNaN(bg) && bg > 0 ? bg : null,
+      weeklyBudget: pantryOnly ? null : (!isNaN(bg) && bg > 0 ? bg : null),
       notes: notes.trim(),
       pantryOnly,
     });
@@ -117,7 +122,7 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
             <View style={s.scopeToggle}>
               <TouchableOpacity
                 style={[s.scopeBtn, pantryOnly && s.scopeBtnActive]}
-                onPress={() => setPantryOnly(true)}
+                onPress={() => { setPantryOnly(true); setBudget(''); }}
                 activeOpacity={0.75}
               >
                 <Text style={[s.scopeBtnText, pantryOnly && s.scopeBtnTextActive]}>Pantry only</Text>
@@ -134,28 +139,47 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
             {profiles.length > 0 && (
               <View style={s.profilesRow}>
                 {profiles.map(p => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={s.chip}
-                    onPress={() => applyProfile(p)}
-                    onLongPress={() => deleteProfile(p.id)}
-                  >
-                    <Text style={s.chipText}>{p.name}</Text>
-                  </TouchableOpacity>
+                  <View key={p.id} style={s.chip}>
+                    <TouchableOpacity onPress={() => applyProfile(p)} activeOpacity={0.7}>
+                      <Text style={s.chipText}>{p.name}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deleteProfile(p.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={s.chipX}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             )}
 
-            <Text style={modalSheet.label}>How many people is this for?</Text>
-            <TextInput
-              style={modalSheet.input}
-              value={people}
-              onChangeText={setPeople}
-              keyboardType="number-pad"
-              placeholder="2"
-              placeholderTextColor={theme.placeholder}
-              returnKeyType="next"
-            />
+            <View style={s.twoColRow}>
+              <View style={s.twoColField}>
+                <Text style={modalSheet.label}>How many people?</Text>
+                <TextInput
+                  style={modalSheet.input}
+                  value={people}
+                  onChangeText={setPeople}
+                  keyboardType="number-pad"
+                  placeholder="2"
+                  placeholderTextColor={theme.placeholder}
+                  returnKeyType="next"
+                />
+              </View>
+              <View style={s.twoColField}>
+                <Text style={modalSheet.label}>How many days?</Text>
+                <TextInput
+                  style={modalSheet.input}
+                  value={days}
+                  onChangeText={setDays}
+                  keyboardType="number-pad"
+                  placeholder="7"
+                  placeholderTextColor={theme.placeholder}
+                  returnKeyType="next"
+                />
+              </View>
+            </View>
 
             <Text style={modalSheet.label}>Dietary restrictions (optional)</Text>
             <TextInput
@@ -232,6 +256,9 @@ export default function MealPlanModal({ visible, onClose, onGenerate }: Props) {
 }
 
 const s = StyleSheet.create({
+  twoColRow: { flexDirection: 'row', gap: 12 },
+  twoColField: { flex: 1 },
+
   scopeToggle: {
     flexDirection: 'row', borderRadius: 12, overflow: 'hidden',
     borderWidth: 1, borderColor: theme.border, marginBottom: 20,
@@ -251,15 +278,19 @@ const s = StyleSheet.create({
     marginBottom: 20,
   },
   chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: theme.primaryLight,
     borderRadius: 20,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 7,
   },
   chipText: {
     color: theme.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  chipX: {
+    fontSize: 11, color: theme.primary, fontWeight: '700',
   },
   saveRow: {
     flexDirection: 'row',
