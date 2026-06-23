@@ -195,9 +195,18 @@ Return ONLY this JSON (no markdown, no extra text):
 
     const text = message.content[0].text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) { res.status(500).json({ error: 'No JSON in response' }); return; }
+    if (!jsonMatch) {
+      console.error('generateMealPlan: no JSON found in response. Raw text:', text.slice(0, 500));
+      res.status(500).json({ error: 'No JSON in response' }); return;
+    }
 
-    const plan = JSON.parse(jsonMatch[0]);
+    let plan;
+    try {
+      plan = JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      console.error('generateMealPlan: JSON.parse failed:', parseErr.message, 'Raw match:', jsonMatch[0].slice(0, 500));
+      res.status(500).json({ error: `JSON parse error: ${parseErr.message}` }); return;
+    }
 
     // Re-compute inPantry from the actual pantry list instead of trusting the AI.
     if (Array.isArray(pantryItems) && pantryItems.length && Array.isArray(plan.groceryList)) {
