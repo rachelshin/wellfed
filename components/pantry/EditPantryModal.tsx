@@ -6,6 +6,7 @@ import {
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PantryItem } from '../../store/pantry';
+import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
 import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
@@ -31,7 +32,7 @@ export default function EditPantryModal({ item, onClose, onSave, onDelete }: Pro
   const handleSave = () => {
     if (!name.trim() || !item || saving) return;
     setSaving(true);
-    onSave(item.id, name.trim(), name.trim().toLowerCase());
+    onSave(item.id, toTitleCase(name.trim()), name.trim().toLowerCase());
     onClose();
   };
 

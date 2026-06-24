@@ -6,6 +6,7 @@ import {
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PantryItem, todayDate } from '../../store/pantry';
+import { toTitleCase } from '../../lib/utils';
 import { modalSheet } from '../../lib/sharedStyles';
 import useIosPWAKeyboard from '../../lib/useIosPWAKeyboard';
 import theme from '../../lib/theme';
@@ -51,9 +52,9 @@ export default function AddPantryModal({ visible, onClose, onAdd }: Props) {
     if (all.length === 0 || saving) return;
     setSaving(true);
     onAdd(
-      all.map((displayName) => ({
-        displayName,
-        itemName: displayName.toLowerCase(),
+      all.map((raw) => ({
+        displayName: toTitleCase(raw),
+        itemName: raw.toLowerCase(),
         addedDate: todayDate(),
         source: 'manual' as const,
       })),
