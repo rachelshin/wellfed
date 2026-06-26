@@ -6,16 +6,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 const Svg = 'svg' as any;
-const Path = 'path' as any;
-const Polyline = 'polyline' as any;
+const Circle = 'circle' as any;
+const Line = 'line' as any;
 
-function LogoutIcon({ size = 22, color = '#999' }: { size?: number; color?: string }) {
+function InfoIcon({ size = 22, color = '#999' }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <Polyline points="16 17 21 12 16 7" />
-      <Path d="M21 12H9" />
+      <Circle cx="12" cy="12" r="10" />
+      <Line x1="12" y1="16" x2="12" y2="12" />
+      <Line x1="12" y1="8" x2="12.01" y2="8" />
     </Svg>
   );
 }
@@ -30,6 +30,7 @@ import {
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import FundsRecordModal from '../../components/budget/FundsRecordModal';
 import EditDailyBudgetModal from '../../components/budget/EditDailyBudgetModal';
+import InfoModal from '../../components/budget/InfoModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
 import { useAuth } from '../../context/auth';
@@ -52,6 +53,7 @@ export default function BudgetTab() {
   const [editFunds, setEditFunds] = useState<FundsRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditBudget, setShowEditBudget] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const todayStr = today();
 
@@ -185,8 +187,8 @@ export default function BudgetTab() {
             <Text style={heroOutlineBtn.text}>Sign in</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={signOut} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <LogoutIcon size={22} color={theme.textFaint} />
+          <TouchableOpacity onPress={() => setShowInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <InfoIcon size={22} color={theme.textFaint} />
           </TouchableOpacity>
         )}
       >
@@ -314,6 +316,13 @@ export default function BudgetTab() {
         onClose={() => setShowEditBudget(false)}
         currentValue={settings?.dailyBudget ?? null}
         onSave={handleSaveDailyBudget}
+      />
+
+      <InfoModal
+        visible={showInfo}
+        onClose={() => setShowInfo(false)}
+        onSignOut={signOut}
+        uid={user?.uid}
       />
     </View>
   );
