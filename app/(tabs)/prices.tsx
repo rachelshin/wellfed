@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import {
   loadPrices, loadPricesFromCache, saveNewPrices, addPrice, updatePrice, deletePrice,
-  pricePerUnit, formatPricePerUnit, bestPrice, unitGroup, getPricesSync,
+  pricePerUnit, formatPricePerUnit, bestPrice, unitGroup, getPricesSync, isDuplicatePrice,
   PriceEntry, Unit,
 } from '../../store/prices';
 import {
@@ -420,12 +420,9 @@ export default function PricesTab() {
 
           const newPriceEntries: PriceEntry[] = [];
           for (const { entry } of priceItems) {
-            const isDup = !!entry.scannedName && prices.some(
-              (p) => p.scannedName === entry.scannedName &&
-                Math.abs(p.price - entry.price) < 0.001 &&
-                p.store.toLowerCase() === entry.store.toLowerCase(),
-            );
-            if (!isDup) newPriceEntries.push({ ...entry, id: `${Date.now()}-${Math.random()}` });
+            if (!isDuplicatePrice(prices, entry)) {
+              newPriceEntries.push({ ...entry, id: `${Date.now()}-${Math.random()}` });
+            }
           }
           const allPrices = [...prices, ...newPriceEntries];
 

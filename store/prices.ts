@@ -52,20 +52,29 @@ export async function loadPrices(uid?: string | null): Promise<PriceEntry[]> {
   return result;
 }
 
+function roundedPPU(price: number, size: number, unit: Unit): number {
+  const n = normalizeSize(size, unit);
+  const ppu = n.size > 0 ? price / n.size : price;
+  return Math.round(ppu * 100) / 100;
+}
+
+export function isDuplicatePrice(existing: PriceEntry[], candidate: Omit<PriceEntry, 'id'>): boolean {
+  const candidatePPU = roundedPPU(candidate.price, candidate.size, candidate.unit);
+  const candidateStore = candidate.store.toLowerCase().trim();
+  const candidateName = candidate.itemName.toLowerCase().trim();
+  return existing.some((p) =>
+    p.store.toLowerCase().trim() === candidateStore &&
+    p.itemName.toLowerCase().trim() === candidateName &&
+    roundedPPU(p.price, p.size, p.unit) === candidatePPU,
+  );
+}
+
 export async function addPrice(
   prices: PriceEntry[],
   price: Omit<PriceEntry, 'id'>,
   uid?: string | null,
 ): Promise<PriceEntry[]> {
-  if (price.scannedName) {
-    const isDuplicate = prices.some(
-      (p) =>
-        p.scannedName === price.scannedName &&
-        Math.abs(p.price - price.price) < 0.001 &&
-        p.store.toLowerCase() === price.store.toLowerCase(),
-    );
-    if (isDuplicate) return prices;
-  }
+  if (isDuplicatePrice(prices, price)) return prices;
   const newPrice: PriceEntry = { ...price, id: `${Date.now()}-${Math.random()}` };
   if (uid) {
     await setDoc(doc(pricesCol(uid), newPrice.id), newPrice);
