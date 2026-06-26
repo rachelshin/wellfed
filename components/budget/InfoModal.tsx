@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, Pressable, StyleSheet,
 } from 'react-native';
@@ -18,43 +18,57 @@ interface Props {
 
 type CopyState = 'idle' | 'loading' | 'copied';
 
-async function copyToClipboard(text: string) {
-  await navigator.clipboard.writeText(text);
+function copyText(text: string) {
+  if (typeof navigator === 'undefined') return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+  } else if ((navigator as any).share) {
+    (navigator as any).share({ text });
+  }
 }
 
 export default function InfoModal({ visible, onClose, onSignOut, uid }: Props) {
   const insets = useSafeAreaInsets();
+  const [pantryJson, setPantryJson] = useState<string | null>(null);
+  const [pricesJson, setPricesJson] = useState<string | null>(null);
   const [pantryState, setPantryState] = useState<CopyState>('idle');
   const [pricesState, setPricesState] = useState<CopyState>('idle');
 
-  const handleCopyPantry = async () => {
-    if (pantryState !== 'idle') return;
+  // Pre-load data while modal is open so copy taps have no async gap
+  useEffect(() => {
+    if (!visible) {
+      setPantryJson(null);
+      setPricesJson(null);
+      return;
+    }
     setPantryState('loading');
-    try {
-      const items = await loadPantry(uid);
-      await copyToClipboard(JSON.stringify(items, null, 2));
-      setPantryState('copied');
-      setTimeout(() => setPantryState('idle'), 2000);
-    } catch {
-      setPantryState('idle');
-    }
-  };
-
-  const handleCopyPrices = async () => {
-    if (pricesState !== 'idle') return;
     setPricesState('loading');
-    try {
-      const prices = await loadPrices(uid);
-      await copyToClipboard(JSON.stringify(prices, null, 2));
-      setPricesState('copied');
-      setTimeout(() => setPricesState('idle'), 2000);
-    } catch {
+    loadPantry(uid).then((items) => {
+      setPantryJson(JSON.stringify(items, null, 2));
+      setPantryState('idle');
+    });
+    loadPrices(uid).then((prices) => {
+      setPricesJson(JSON.stringify(prices, null, 2));
       setPricesState('idle');
-    }
+    });
+  }, [visible]);
+
+  const handleCopyPantry = () => {
+    if (!pantryJson || pantryState !== 'idle') return;
+    copyText(pantryJson);
+    setPantryState('copied');
+    setTimeout(() => setPantryState('idle'), 2000);
   };
 
-  const pantryLabel = pantryState === 'loading' ? 'Copying…' : pantryState === 'copied' ? 'Copied!' : 'Copy pantry';
-  const pricesLabel = pricesState === 'loading' ? 'Copying…' : pricesState === 'copied' ? 'Copied!' : 'Copy pricing';
+  const handleCopyPrices = () => {
+    if (!pricesJson || pricesState !== 'idle') return;
+    copyText(pricesJson);
+    setPricesState('copied');
+    setTimeout(() => setPricesState('idle'), 2000);
+  };
+
+  const pantryLabel = pantryState === 'loading' ? 'Loading…' : pantryState === 'copied' ? 'Copied!' : 'Copy pantry';
+  const pricesLabel = pricesState === 'loading' ? 'Loading…' : pricesState === 'copied' ? 'Copied!' : 'Copy pricing';
 
   return (
     <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
