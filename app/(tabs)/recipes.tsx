@@ -9,7 +9,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { loadPantry, addPantryItem, todayDate, PantryItem, getPantrySync } from '../../store/pantry';
 import { loadPrices, groupByItem, bestPrice } from '../../store/prices';
 import {
-  generateRecipes, loadCachedRecipes, getCachedPantryHash, hashItems,
+  generateRecipes, loadCachedRecipes,
   generateMealPlan, loadCachedMealPlan, getAiRecipesSync, getMealPlanSync,
   AIRecipe, MealPlan, MealPlanMeal, MealPlanOptions, PrepSession, PrepDish, GroceryListItem,
 } from '../../lib/ai';
@@ -96,11 +96,8 @@ export default function RecipesTab() {
     const items = await loadPantry(user?.uid);
     setPantryItems(items);
     const cached = await loadCachedRecipes();
-    const cachedHash = await getCachedPantryHash();
-    if (cached && cachedHash === hashItems(items.map((i) => i.displayName))) {
+    if (cached) {
       setAiRecipes(cached);
-    } else {
-      setAiRecipes([]);
     }
     setSavedRecipes(await loadSavedRecipes(user?.uid));
     const cachedPlan = await loadCachedMealPlan();
