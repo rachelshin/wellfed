@@ -63,11 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch {}
       }
-      // Move any local guest data into the account before screens mount and
-      // start reading Firestore. No-op after the first run per account.
-      if (u) {
-        try { await migrateGuestData(u.uid); } catch {}
-      }
+      // Migrate local guest data in the background — don't block auth resolving.
+      if (u) migrateGuestData(u.uid).catch(() => {});
       setUser(u);
       setIsGuest(u?.isAnonymous ?? false);
       setLoading(false);
