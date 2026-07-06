@@ -30,6 +30,7 @@ import {
 import AddEntryModal from '../../components/budget/AddEntryModal';
 import FundsRecordModal from '../../components/budget/FundsRecordModal';
 import EditDailyBudgetModal from '../../components/budget/EditDailyBudgetModal';
+import EditAvailableModal from '../../components/budget/EditAvailableModal';
 import InfoModal from '../../components/budget/InfoModal';
 import HeroHeader from '../../components/HeroHeader';
 import { fab, heroOutlineBtn } from '../../lib/sharedStyles';
@@ -53,6 +54,7 @@ export default function BudgetTab() {
   const [editFunds, setEditFunds] = useState<FundsRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditBudget, setShowEditBudget] = useState(false);
+  const [showEditAvailable, setShowEditAvailable] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
   const todayStr = today();
@@ -140,6 +142,16 @@ export default function BudgetTab() {
     saveSettings(newSettings, user?.uid);
   };
 
+  const handleSaveAvailable = async (newAmount: number) => {
+    const adjustment = newAmount - remaining;
+    setFundsRecords(await addFundsRecord(fundsRecords, {
+      date: todayStr,
+      amount: adjustment,
+      note: 'Balance adjusted',
+      type: 'adjustment',
+    }, user?.uid));
+  };
+
   const handleSaveEntry = async (entryData: Omit<SpendingEntry, 'id' | 'timestamp'>) => {
     if (editEntry) {
       setEntries(await updateEntry(entries, editEntry.id, entryData, user?.uid));
@@ -200,12 +212,12 @@ export default function BudgetTab() {
                 <Text style={s.statLabel}>DAILY BUDGET</Text>
               </TouchableOpacity>
               <View style={s.statDivider} />
-              <View style={s.stat}>
+              <TouchableOpacity style={s.stat} onPress={() => setShowEditAvailable(true)} activeOpacity={0.6}>
                 <Text style={[s.statVal, remaining < 0 && s.bigAmountNeg]}>
                   ${Math.abs(remaining).toFixed(2)}
                 </Text>
                 <Text style={s.statLabel}>AVAILABLE TODAY</Text>
-              </View>
+              </TouchableOpacity>
               <View style={s.statDivider} />
               <View style={s.stat}>
                 <Text style={[s.statVal, s.statSpent]}>${todaySpent.toFixed(2)}</Text>
@@ -268,12 +280,15 @@ export default function BudgetTab() {
                   );
                 } else {
                   const { record } = item;
-                  const label = record.type === 'daily-increment' ? 'Daily Budget' : (record.note || 'Funds Added');
+                  const label = record.type === 'daily-increment' ? 'Daily Budget' : record.type === 'adjustment' ? 'Balance adjusted' : (record.note || 'Funds Added');
+                  const dotColor = record.type === 'adjustment' ? theme.textFaint : theme.positive;
+                  const amtSign = record.amount >= 0 ? '+' : '-';
+                  const amtStyle = record.amount >= 0 ? s.entryAmtPos : s.entryAmtNeg;
                   return (
-                    <TouchableOpacity key={record.id} style={s.entryRow} onPress={() => { setEditFunds(record); setShowFundsModal(true); }} activeOpacity={0.7}>
-                      <View style={[s.catDot, { backgroundColor: theme.positive }]} />
+                    <TouchableOpacity key={record.id} style={s.entryRow} onPress={() => { if (record.type !== 'adjustment') { setEditFunds(record); setShowFundsModal(true); } }} activeOpacity={0.7}>
+                      <View style={[s.catDot, { backgroundColor: dotColor }]} />
                       <Text style={s.entryDesc} numberOfLines={1}>{label}</Text>
-                      <Text style={[s.entryAmt, s.entryAmtPos]}>+${record.amount.toFixed(2)}</Text>
+                      <Text style={[s.entryAmt, amtStyle]}>{amtSign}${Math.abs(record.amount).toFixed(2)}</Text>
                     </TouchableOpacity>
                   );
                 }
@@ -316,6 +331,13 @@ export default function BudgetTab() {
         onClose={() => setShowEditBudget(false)}
         currentValue={settings?.dailyBudget ?? null}
         onSave={handleSaveDailyBudget}
+      />
+
+      <EditAvailableModal
+        visible={showEditAvailable}
+        onClose={() => setShowEditAvailable(false)}
+        currentAvailable={remaining}
+        onSave={handleSaveAvailable}
       />
 
       <InfoModal

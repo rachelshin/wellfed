@@ -8,7 +8,7 @@ export interface FundsRecord {
   amount: number;
   note: string;
   timestamp: number;
-  type: 'daily-increment' | 'manual';
+  type: 'daily-increment' | 'manual' | 'adjustment';
 }
 
 export type Category =
