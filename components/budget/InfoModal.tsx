@@ -5,8 +5,8 @@ import {
 import AppModal from '../AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { modalSheet } from '../../lib/sharedStyles';
-import { loadPantry } from '../../store/pantry';
-import { loadPrices } from '../../store/prices';
+import { loadPantry, PantryItem } from '../../store/pantry';
+import { loadPrices, PriceEntry } from '../../store/prices';
 import theme from '../../lib/theme';
 
 interface Props {
@@ -17,6 +17,34 @@ interface Props {
 }
 
 type CopyState = 'idle' | 'loading' | 'copied';
+
+function formatPantryText(items: PantryItem[]): string {
+  return items
+    .slice()
+    .sort((a, b) => a.displayName.localeCompare(b.displayName))
+    .map((i) => i.displayName)
+    .join('\n');
+}
+
+function formatPricesText(prices: PriceEntry[]): string {
+  const grouped: Record<string, PriceEntry[]> = {};
+  for (const p of prices) {
+    const cat = p.category || 'other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(p);
+  }
+  return Object.keys(grouped)
+    .sort()
+    .map((cat) => {
+      const header = cat.charAt(0).toUpperCase() + cat.slice(1);
+      const lines = grouped[cat]
+        .slice()
+        .sort((a, b) => a.itemName.localeCompare(b.itemName))
+        .map((p) => `  ${p.itemName} (${p.size} ${p.unit}) — $${p.price.toFixed(2)} at ${p.store}`);
+      return [header, ...lines].join('\n');
+    })
+    .join('\n\n');
+}
 
 function copyText(text: string) {
   if (typeof navigator === 'undefined') return;
@@ -44,11 +72,11 @@ export default function InfoModal({ visible, onClose, onSignOut, uid }: Props) {
     setPantryState('loading');
     setPricesState('loading');
     loadPantry(uid).then((items) => {
-      setPantryJson(JSON.stringify(items, null, 2));
+      setPantryJson(formatPantryText(items));
       setPantryState('idle');
     });
     loadPrices(uid).then((prices) => {
-      setPricesJson(JSON.stringify(prices, null, 2));
+      setPricesJson(formatPricesText(prices));
       setPricesState('idle');
     });
   }, [visible]);
@@ -78,7 +106,7 @@ export default function InfoModal({ visible, onClose, onSignOut, uid }: Props) {
           <Text style={modalSheet.title}>Well Fed</Text>
 
           <Text style={s.sectionLabel}>Export your data</Text>
-          <Text style={s.hint}>Copy your data as JSON to paste into an AI tool.</Text>
+          <Text style={s.hint}>Copy your data as plain text to paste into an AI for meal planning.</Text>
 
           <TouchableOpacity
             style={[s.row, pantryState !== 'idle' && s.rowDisabled]}
