@@ -246,7 +246,7 @@ export default function PantryTab() {
             </TouchableOpacity>
         ))}
 
-        <View style={{ height: 110 }} />
+        <View style={{ height: 160 }} />
       </ScrollView>
 
       <TouchableOpacity
@@ -291,7 +291,7 @@ const s = StyleSheet.create({
   },
 
   scroll: { flex: 1 },
-  scrollContent: { paddingLeft: 20, paddingRight: 80, paddingTop: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20 },
 
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 24 },
   emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.textDark, marginBottom: 8 },
